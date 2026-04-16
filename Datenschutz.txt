@@ -8,7 +8,7 @@ E-Mail: schobvasily.digital@gmail.com
 Telefon: +49 156 78301732
 
 2. Hosting und Zugriffsdaten
-2.1. Bereitstellung der Website
+2.1. Bereitstellung der Website über GitHub Pages
 Diese Website wird über GitHub Pages bereitgestellt. Beim Aufruf der Website verarbeitet GitHub technische Daten, die erforderlich sind, um die Inhalte korrekt auszuliefern und die Sicherheit sowie Stabilität des Angebots zu gewährleisten.
 Diese Daten sind:
 - IP-Adresse
@@ -21,11 +21,39 @@ Rechtsgrundlage für diese Verarbeitung ist Art. 6 Abs. 1 lit. f DSGVO. Mein ber
 Weitere Informationen zur Datenverarbeitung durch GitHub finden Sie unter:
 https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement
 
-2.2. Keine Cookies und kein Tracking
-Auf dieser Website setze ich keine Analyse-, Marketing- oder Tracking-Cookies ein. Es werden keine Newsletter-Tools, kein Kontaktformular und keine externen Analyseplattformen verwendet.
+2.2. Kontaktformular
+Wenn Sie das Kontaktformular auf dieser Website verwenden, verarbeite ich die von Ihnen eingegebenen Daten, um Ihre Anfrage zu beantworten und eine weitere Kommunikation zu ermöglichen.
+Dabei können insbesondere folgende Angaben verarbeitet werden:
+- Name
+- E-Mail-Adresse
+- Unternehmen
+- Inhalt Ihrer Nachricht
+Für die technische Übermittlung des Formulars verwende ich den Dienst FormSubmit. Anbieter ist FormSubmit, weitere Informationen finden Sie unter:
+https://formsubmit.co/privacy.pdf
+Die Verarbeitung erfolgt je nach Anlass auf Grundlage von Art. 6 Abs. 1 lit. b DSGVO, soweit es um vorvertragliche Maßnahmen oder konkrete Leistungsanfragen geht, oder auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO aufgrund meines berechtigten Interesses an einer effizienten Bearbeitung von Anfragen.
 
-3. Kontaktaufnahme per E-Mail
-Wenn Sie mich per E-Mail kontaktieren, verarbeite ich die von Ihnen übermittelten Angaben, um Ihre Anfrage zu beantworten und eine weitere Kommunikation zu ermöglichen.
+2.3. Cookies und Cookie-Einstellungen
+Diese Website verwendet ein notwendiges Cookie, um Ihre Auswahl im Cookie-Banner zu speichern. Ohne dieses Cookie kann Ihre Entscheidung zu optionalen Cookies nicht zuverlässig berücksichtigt werden.
+Dieses Cookie ist:
+- schob_cookie_consent, 6 Monate, speichert Ihre Entscheidung zu notwendigen und optionalen Cookies
+Rechtsgrundlage für dieses notwendige Cookie ist § 25 Abs. 2 Nr. 2 TDDDG. Die anschließende Verarbeitung erfolgt auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO, weil ich ein berechtigtes Interesse an einer rechtssicheren Steuerung der Cookie-Einwilligung habe.
+Sie können Ihre Auswahl jederzeit erneut öffnen und anpassen:
+[[COOKIE_SETTINGS_BUTTON]]
+
+2.4. Google Analytics
+Sofern Sie im Cookie-Banner ausdrücklich einwilligen, setze ich Google Analytics ein, um die Nutzung meiner Website besser zu verstehen und Inhalte sowie Marketingmaßnahmen gezielt weiterzuentwickeln.
+Anbieter ist die Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland. Im Rahmen der Nutzung kann eine Verarbeitung auch durch die Google LLC, 1600 Amphitheatre Parkway, Mountain View, CA 94043, USA, erfolgen.
+Diese Cookies können insbesondere gesetzt werden:
+- _ga, 2 Jahre, Unterscheidung von Nutzerinnen und Nutzern
+- _ga_*, 2 Jahre, Speichert den Sitzungsstatus
+- _gid, 24 Stunden, Erkennung von Nutzerinnen und Nutzern für einen Tag
+- _gat_*, 1 Minute, Drosselung der Anforderungsrate
+Die Rechtsgrundlage für das Speichern dieser Cookies ist § 25 Abs. 1 TDDDG. Die anschließende Datenverarbeitung erfolgt ausschließlich auf Grundlage Ihrer Einwilligung gemäß Art. 6 Abs. 1 lit. a DSGVO.
+Weitere Informationen finden Sie unter:
+https://policies.google.com/privacy?hl=de
+
+3. Kontaktaufnahme per E-Mail oder Telefon
+Wenn Sie mich per E-Mail oder Telefon kontaktieren, verarbeite ich die von Ihnen übermittelten Angaben, um Ihre Anfrage zu beantworten und eine weitere Kommunikation zu ermöglichen.
 Die Verarbeitung erfolgt je nach Anlass auf Grundlage von Art. 6 Abs. 1 lit. b DSGVO, soweit es um vorvertragliche Maßnahmen oder konkrete Leistungsanfragen geht, oder auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO aufgrund meines berechtigten Interesses an einer effizienten Bearbeitung von Anfragen.
 
 4. Rechtsgrundlagen der Verarbeitung

@@ -58,7 +58,14 @@ function formatLegalText(text, source) {
   for (const rawLine of text.replace(/\r/g, "").split("\n")) {
     const line = rawLine.trim();
 
-    if (!line || /^\[\[.*\]\]$/.test(line)) {
+    if (!line) {
+      list = null;
+      listMode = null;
+      continue;
+    }
+
+    if (line === "[[COOKIE_SETTINGS_BUTTON]]") {
+      wrapper.appendChild(createCookieSettingsButton());
       list = null;
       listMode = null;
       continue;
@@ -178,6 +185,20 @@ function appendRichText(element, text) {
 
     element.appendChild(document.createTextNode(part));
   }
+}
+
+function createCookieSettingsButton() {
+  const wrapper = document.createElement("div");
+  const button = document.createElement("button");
+
+  wrapper.className = "legal-action";
+  button.className = "button button--ghost legal-action__button";
+  button.type = "button";
+  button.textContent = "Cookie-Einstellungen öffnen";
+  button.setAttribute("data-open-cookie-settings", "");
+  wrapper.appendChild(button);
+
+  return wrapper;
 }
 
 function createHeadingId(text) {
