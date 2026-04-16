@@ -1,0 +1,54 @@
+1. Verantwortlicher
+Verantwortlich für die Datenverarbeitung auf dieser Website ist:
+Vasily Schob
+Straße der Jugend 18
+14974 Ludwigsfelde
+Deutschland
+E-Mail: schobvasily.digital@gmail.com
+Telefon: +49 156 78301732
+
+2. Hosting und Zugriffsdaten
+2.1. Bereitstellung der Website
+Diese Website wird über GitHub Pages bereitgestellt. Beim Aufruf der Website verarbeitet GitHub technische Daten, die erforderlich sind, um die Inhalte korrekt auszuliefern und die Sicherheit sowie Stabilität des Angebots zu gewährleisten.
+Diese Daten sind:
+- IP-Adresse
+- Datum und Uhrzeit des Abrufs
+- angeforderte Datei
+- Browsertyp und Browserversion
+- verwendetes Betriebssystem
+- Referrer-URL
+Rechtsgrundlage für diese Verarbeitung ist Art. 6 Abs. 1 lit. f DSGVO. Mein berechtigtes Interesse liegt in der sicheren und zuverlässigen Bereitstellung dieser Website.
+Weitere Informationen zur Datenverarbeitung durch GitHub finden Sie unter:
+https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement
+
+2.2. Keine Cookies und kein Tracking
+Auf dieser Website setze ich keine Analyse-, Marketing- oder Tracking-Cookies ein. Es werden keine Newsletter-Tools, kein Kontaktformular und keine externen Analyseplattformen verwendet.
+
+3. Kontaktaufnahme per E-Mail
+Wenn Sie mich per E-Mail kontaktieren, verarbeite ich die von Ihnen übermittelten Angaben, um Ihre Anfrage zu beantworten und eine weitere Kommunikation zu ermöglichen.
+Die Verarbeitung erfolgt je nach Anlass auf Grundlage von Art. 6 Abs. 1 lit. b DSGVO, soweit es um vorvertragliche Maßnahmen oder konkrete Leistungsanfragen geht, oder auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO aufgrund meines berechtigten Interesses an einer effizienten Bearbeitung von Anfragen.
+
+4. Rechtsgrundlagen der Verarbeitung
+Soweit ich personenbezogene Daten verarbeite, geschieht dies ausschließlich auf einer gesetzlichen Grundlage. In Betracht kommen insbesondere:
+- Art. 6 Abs. 1 lit. a DSGVO bei einer Einwilligung
+- Art. 6 Abs. 1 lit. b DSGVO zur Erfüllung eines Vertrags oder vorvertraglicher Maßnahmen
+- Art. 6 Abs. 1 lit. c DSGVO zur Erfüllung rechtlicher Pflichten
+- Art. 6 Abs. 1 lit. f DSGVO auf Grundlage berechtigter Interessen
+
+5. Speicherdauer
+Ich speichere personenbezogene Daten nur so lange, wie dies für den jeweiligen Zweck erforderlich ist oder gesetzliche Aufbewahrungspflichten bestehen. Sobald der Zweck entfällt und keine gesetzlichen Pflichten entgegenstehen, werden die Daten gelöscht.
+
+6. Ihre Rechte
+Sie haben folgende Rechte:
+- Auskunft über die verarbeiteten personenbezogenen Daten
+- Berichtigung unrichtiger Daten
+- Löschung Ihrer Daten
+- Einschränkung der Verarbeitung
+- Widerspruch gegen die Verarbeitung
+- Datenübertragbarkeit
+- Widerruf einer erteilten Einwilligung mit Wirkung für die Zukunft
+
+Außerdem haben Sie das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren.
+
+7. Aktualität dieser Datenschutzerklärung
+Ich behalte mir vor, diese Datenschutzerklärung zu aktualisieren, wenn dies aufgrund technischer oder rechtlicher Änderungen erforderlich wird.
