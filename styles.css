@@ -650,23 +650,48 @@ a {
   border-radius: 10px;
 }
 
-.pricing-card__toggle {
+.pricing-card__toggle,
+.pricing-card__summary {
   justify-self: start;
   margin-top: 0.35rem;
   padding-inline: 1rem;
 }
 
 .pricing-card__details {
+  margin-top: 1.2rem;
+}
+
+.pricing-card__summary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+}
+
+.pricing-card__summary::-webkit-details-marker {
+  display: none;
+}
+
+.pricing-card__summary::after {
+  content: "+";
+  margin-left: 0.55rem;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.pricing-card__details[open] .pricing-card__summary::after {
+  content: "-";
+}
+
+.pricing-card__details-body {
   display: grid;
   gap: 1rem;
   margin-top: 1.2rem;
 }
 
-.pricing-card__details[hidden] {
-  display: none;
-}
-
-.pricing-card__details p {
+.pricing-card__details-body p {
   margin: 0;
   color: var(--text-muted);
 }

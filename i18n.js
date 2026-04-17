@@ -12,6 +12,7 @@ if (currentLanguage !== 'de') {
   applyCommonLanguageUi();
   applyPageLanguageUi();
 }
+upgradePricingDetails();
 document.dispatchEvent(new CustomEvent('schob:content-updated', {
   detail: {
     page: currentPage,
@@ -23,7 +24,7 @@ function applyCommonLanguageUi() {
   const navLabels = {
     de: ['KI-Lernen', 'Website bestellen', 'Startup Unterstützung', 'Impressum', 'Datenschutz'],
     en: ['Learn AI', 'Order a Website', 'Startup Support', 'Legal Notice', 'Privacy'],
-    uk: ['AI-навчання', 'Замовити сайт', 'Підтримка стартапу', 'Вихідні дані', 'Конфіденційність'],
+    uk: ['AI-навчання', 'Замовити сайт', 'Підтримка стартапу', 'Дані', 'Конфіденційність'],
   };
 
   const navAria = {
@@ -771,11 +772,11 @@ function applyImprintTranslations() {
       source: 'Impressum.en.txt',
     },
     uk: {
-      title: 'Вихідні дані | Schob Digital',
+      title: 'Дані | Schob Digital',
       description: 'Правова інформація для вебсайту Schob Digital.',
       cta: 'Контакт',
       heroEyebrow: 'Правова інформація',
-      heroTitle: 'Вихідні дані',
+      heroTitle: 'Дані',
       heroText: 'Наведені нижче дані містять обов’язкову інформацію про цей вебсайт і запропоновані послуги.',
       footerCopy: 'Дві сервісні сторінки, єдиний стиль і чиста юридична база для GitHub Pages.',
       source: 'Impressum.uk.txt',
@@ -825,6 +826,32 @@ function rewriteInternalLinks() {
     }
 
     link.setAttribute('href', buildLocalizedUrl(pathPart, currentLanguage, hashPart ? `#${hashPart}` : ''));
+  });
+}
+
+function upgradePricingDetails() {
+  const toggleButtons = document.querySelectorAll('[data-pricing-toggle]');
+
+  toggleButtons.forEach((button) => {
+    const detailsBody = button.nextElementSibling;
+
+    if (!detailsBody || !detailsBody.classList.contains('pricing-card__details')) {
+      return;
+    }
+
+    const details = document.createElement('details');
+    const summary = document.createElement('summary');
+    const toneClass = Array.from(button.classList).find((className) => className.startsWith('pricing-card__toggle--'));
+
+    details.className = `pricing-card__details${toneClass ? ` ${toneClass.replace('toggle', 'details')}` : ''}`;
+    summary.className = `button pricing-card__summary${toneClass ? ` ${toneClass}` : ''}`;
+    summary.textContent = button.textContent.trim();
+
+    detailsBody.classList.add('pricing-card__details-body');
+    detailsBody.removeAttribute('hidden');
+
+    details.append(summary, detailsBody);
+    button.replaceWith(details);
   });
 }
 
