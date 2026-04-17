@@ -443,7 +443,8 @@ a {
 
 .offer-grid,
 .audience-grid,
-.method-steps {
+.method-steps,
+.pricing-grid {
   display: grid;
   gap: 1rem;
 }
@@ -453,9 +454,15 @@ a {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.pricing-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+}
+
 .offer-card,
 .audience-card,
-.method-step {
+.method-step,
+.pricing-card {
   padding: 1.6rem;
 }
 
@@ -476,6 +483,7 @@ a {
 .offer-card:hover,
 .audience-card:hover,
 .method-step:hover,
+.pricing-card:hover,
 .contact-panel__form:hover,
 .legal-content:hover {
   border-color: rgba(255, 90, 31, 0.26);
@@ -493,7 +501,8 @@ a {
 
 .offer-card h3,
 .audience-card h3,
-.method-step h3 {
+.method-step h3,
+.pricing-card h3 {
   margin: 0 0 0.65rem;
   font-family: var(--font-display);
   font-size: 1.55rem;
@@ -515,9 +524,41 @@ a {
 
 .offer-card p:last-child,
 .audience-card p:last-child,
-.method-step p:last-child {
+.method-step p:last-child,
+.pricing-card p:last-child {
   margin-bottom: 0;
   color: var(--text-muted);
+}
+
+.pricing-card__image {
+  height: 300px;
+}
+
+.pricing-card__intro {
+  margin-top: 0;
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.pricing-meta {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1.2rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.pricing-meta p {
+  margin: 0;
+}
+
+.pricing-meta strong {
+  color: var(--text-main);
+}
+
+.pricing-meta span {
+  color: var(--text-soft);
 }
 
 .method-layout {
@@ -1062,6 +1103,7 @@ body.cookie-modal-open {
   .offer-grid,
   .audience-grid,
   .method-steps,
+  .pricing-grid,
   .contact-panel {
     grid-template-columns: 1fr;
   }
