@@ -1,4 +1,5 @@
 let successPopupTimeout = null;
+let packageClickStorageBound = false;
 const uiLang = getUiLang();
 const PACKAGE_STORAGE_KEY = 'schob_selected_package';
 const PACKAGE_QUERY_KEY = 'service';
@@ -51,6 +52,7 @@ function initializeContactAndPricing() {
   }
 
   applySelectedPackage(contactService);
+  bindPackageRequestStorage();
 }
 
 function showSuccessPopup() {
@@ -120,6 +122,28 @@ function applySelectedPackage(contactService) {
     currentUrl.searchParams.delete(PACKAGE_QUERY_KEY);
     window.history.replaceState({}, '', currentUrl.toString());
   }
+}
+
+function bindPackageRequestStorage() {
+  if (packageClickStorageBound) {
+    return;
+  }
+
+  document.addEventListener('click', (event) => {
+    const trigger = event.target.closest('[data-package-request]');
+
+    if (!trigger) {
+      return;
+    }
+
+    const selectedPackage = trigger.getAttribute('data-package-request');
+
+    if (selectedPackage) {
+      window.sessionStorage.setItem(PACKAGE_STORAGE_KEY, selectedPackage);
+    }
+  });
+
+  packageClickStorageBound = true;
 }
 
 function fillAndScrollToContact(selectedPackage) {

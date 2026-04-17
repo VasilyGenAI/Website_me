@@ -872,6 +872,7 @@ function decoratePackageRequestLinks() {
     link.className = button.className;
     link.href = buildPackageRequestUrl(selectedPackage);
     link.innerHTML = button.innerHTML;
+    link.setAttribute('data-package-request', selectedPackage);
 
     const ariaLabel = button.getAttribute('aria-label');
     if (ariaLabel) {
