@@ -1272,19 +1272,29 @@ body.cookie-modal-open {
 
 @media (max-width: 760px) {
   .site-header {
-    grid-template-columns: 1fr;
-    justify-items: start;
+    position: static;
+    grid-template-columns: 1fr auto;
+    align-items: start;
+    justify-items: stretch;
     padding-top: 0.9rem;
     padding-bottom: 0.9rem;
   }
 
+  .brand {
+    grid-column: 1 / -1;
+  }
+
   .site-nav {
+    grid-column: 1;
     justify-content: flex-start;
     gap: 0.85rem;
   }
 
   .site-header__cta {
-    justify-self: start;
+    grid-column: 2;
+    grid-row: 2;
+    align-self: end;
+    justify-self: end;
   }
 
   .hero__content {
