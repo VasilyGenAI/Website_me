@@ -297,7 +297,7 @@ a {
 }
 
 .hero__copy h1 {
-  font-size: clamp(3.8rem, 7vw, 6.4rem);
+  font-size: clamp(3rem, 5.6vw, 5.1rem);
   max-width: 8.5ch;
 }
 
@@ -353,15 +353,15 @@ a {
   width: 100%;
   min-height: 100%;
   object-fit: cover;
+  object-position: center top;
   opacity: 1;
   filter: none;
+  transform: scale(1.5);
+  transform-origin: center top;
 }
 
 .hero__portrait::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.78));
+  content: none;
 }
 
 .hero__note {
@@ -374,8 +374,8 @@ a {
   gap: 0.1rem;
   padding: 1rem 1.1rem;
   border-radius: 10px;
-  background: #f5f5f5;
-  color: #090909;
+  background: rgba(220, 220, 226, 0.88);
+  color: #141416;
   font-family: var(--font-display);
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -461,8 +461,9 @@ a {
 
 .offer-card__image {
   width: 100%;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
+  height: auto;
+  max-height: none;
+  object-fit: contain;
   margin-bottom: 1rem;
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.06);
@@ -561,6 +562,8 @@ a {
 
 .contact-panel__form {
   padding: 1.4rem;
+  background: rgba(50, 50, 56, 0.72);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .contact-direct {
@@ -610,7 +613,7 @@ a {
   padding: 0.95rem 1rem;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  background: #0d0d0f;
+  background: #34343a;
   color: var(--text-main);
   font: inherit;
 }
