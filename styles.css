@@ -284,7 +284,7 @@ a {
 }
 
 .eyebrow--dark {
-  background: rgba(255, 90, 31, 0.12);
+  background: rgba(255, 90, 31, 0.1);
   color: var(--bg-accent);
 }
 
@@ -478,6 +478,10 @@ a {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.offer-grid--quad {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .pricing-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: start;
@@ -506,6 +510,22 @@ a {
   opacity: 1;
   filter: none;
   padding: 0.35rem;
+}
+
+.offer-card__image-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.offer-card__image-link:hover .offer-card__image,
+.offer-card__image-link:focus-visible .offer-card__image {
+  border-color: rgba(255, 90, 31, 0.3);
+  transform: translateY(-1px);
+}
+
+.offer-card__image-link:focus-visible {
+  outline: none;
 }
 
 .offer-card:hover,
