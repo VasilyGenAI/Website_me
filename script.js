@@ -167,6 +167,7 @@ function looksLikeListItem(line) {
 
 function appendRichText(element, text) {
   const urlPattern = /(https?:\/\/[^\s]+)/g;
+  const boldPattern = /(\*\*[^*]+\*\*)/g;
 
   for (const part of text.split(urlPattern)) {
     if (!part) {
@@ -183,7 +184,20 @@ function appendRichText(element, text) {
       continue;
     }
 
-    element.appendChild(document.createTextNode(part));
+    for (const inlinePart of part.split(boldPattern)) {
+      if (!inlinePart) {
+        continue;
+      }
+
+      if (/^\*\*[^*]+\*\*$/.test(inlinePart)) {
+        const strong = document.createElement("strong");
+        strong.textContent = inlinePart.slice(2, -2);
+        element.appendChild(strong);
+        continue;
+      }
+
+      element.appendChild(document.createTextNode(inlinePart));
+    }
   }
 }
 
