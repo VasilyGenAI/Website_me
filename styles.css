@@ -501,6 +501,17 @@ a {
   letter-spacing: -0.03em;
 }
 
+.portfolio-link {
+  color: #8ec5ff;
+  text-decoration: underline;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.12em;
+}
+
+.portfolio-link:hover {
+  color: #b8dbff;
+}
+
 .offer-card p:last-child,
 .audience-card p:last-child,
 .method-step p:last-child {
