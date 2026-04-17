@@ -751,6 +751,15 @@ a {
   opacity: 0.28;
 }
 
+.contact-panel--startup::before {
+  background:
+    linear-gradient(180deg, rgba(10, 10, 10, 0.3), rgba(10, 10, 10, 0.38)),
+    url("Photos/amt.JPG");
+  background-size: cover;
+  background-position: center;
+  opacity: 0.26;
+}
+
 .contact-panel--with-image > * {
   position: relative;
   z-index: 1;
