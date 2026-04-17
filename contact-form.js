@@ -1,4 +1,3 @@
-let packageButtonsBound = false;
 let successPopupTimeout = null;
 const uiLang = getUiLang();
 const SUCCESS_POPUP_TEXT = {
@@ -47,37 +46,7 @@ function initializeContactAndPricing() {
     }
   }
 
-  if (!packageButtonsBound) {
-    document.addEventListener('click', (event) => {
-      const button = event.target.closest('[data-package-request]');
-      if (!button) {
-        return;
-      }
-
-      const liveContactForm = document.getElementById('contact-form');
-      const liveContactService = document.getElementById('contact-service');
-      const liveContactMessage = document.getElementById('contact-message');
-      const selectedPackage = button.getAttribute('data-package-request');
-
-      if (liveContactService && selectedPackage) {
-        liveContactService.value = selectedPackage;
-      }
-
-      liveContactForm?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
-
-      window.setTimeout(() => {
-        if (liveContactService instanceof HTMLElement) {
-          liveContactService.focus();
-        } else if (liveContactMessage instanceof HTMLElement) {
-          liveContactMessage.focus();
-        }
-      }, 320);
-    });
-    packageButtonsBound = true;
-  }
+  bindPackageRequestButtons();
 }
 
 function showSuccessPopup() {
@@ -118,6 +87,44 @@ function dismissSuccessPopup(popup) {
   window.setTimeout(() => {
     popup.remove();
   }, 220);
+}
+
+function bindPackageRequestButtons() {
+  const buttons = document.querySelectorAll('[data-package-request]');
+
+  buttons.forEach((button) => {
+    if (button.dataset.packageBound === 'true') {
+      return;
+    }
+
+    button.dataset.packageBound = 'true';
+    button.addEventListener('click', () => {
+      const selectedPackage = button.getAttribute('data-package-request');
+      const liveContactForm = document.getElementById('contact-form');
+      const liveContactService = document.getElementById('contact-service');
+      const liveContactMessage = document.getElementById('contact-message');
+
+      if (liveContactService && selectedPackage) {
+        liveContactService.value = selectedPackage;
+        liveContactService.dispatchEvent(new Event('input', { bubbles: true }));
+        liveContactService.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+
+      liveContactForm?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+
+      window.setTimeout(() => {
+        if (liveContactService instanceof HTMLElement) {
+          liveContactService.focus();
+          liveContactService.select?.();
+        } else if (liveContactMessage instanceof HTMLElement) {
+          liveContactMessage.focus();
+        }
+      }, 320);
+    });
+  });
 }
 
 function getUiLang() {
