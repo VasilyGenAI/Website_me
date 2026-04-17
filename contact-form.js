@@ -1,4 +1,5 @@
 let successPopupTimeout = null;
+let packageRequestDelegateBound = false;
 const uiLang = getUiLang();
 const PACKAGE_STORAGE_KEY = 'schob_selected_package';
 const SUCCESS_POPUP_TEXT = {
@@ -50,7 +51,7 @@ function initializeContactAndPricing() {
 
   applyStoredPackage(contactService);
 
-  bindPackageRequestButtons();
+  bindPackageRequestDelegate();
 }
 
 function showSuccessPopup() {
@@ -93,23 +94,28 @@ function dismissSuccessPopup(popup) {
   }, 220);
 }
 
-function bindPackageRequestButtons() {
-  const buttons = document.querySelectorAll('[data-package-request]');
+function bindPackageRequestDelegate() {
+  if (packageRequestDelegateBound) {
+    return;
+  }
 
-  buttons.forEach((button) => {
-    if (button.dataset.packageBound === 'true') {
+  document.addEventListener('click', (event) => {
+    const trigger = event.target.closest('[data-package-request]');
+
+    if (!trigger) {
       return;
     }
 
-    button.dataset.packageBound = 'true';
-    button.addEventListener('click', () => {
-      const selectedPackage = button.getAttribute('data-package-request');
-      if (selectedPackage) {
-        window.sessionStorage.setItem(PACKAGE_STORAGE_KEY, selectedPackage);
-      }
-      fillAndScrollToContact(selectedPackage);
-    });
-  });
+    const selectedPackage = trigger.getAttribute('data-package-request');
+
+    if (selectedPackage) {
+      window.sessionStorage.setItem(PACKAGE_STORAGE_KEY, selectedPackage);
+    }
+
+    fillAndScrollToContact(selectedPackage);
+  }, true);
+
+  packageRequestDelegateBound = true;
 }
 
 function applyStoredPackage(contactService) {
