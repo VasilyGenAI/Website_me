@@ -1,5 +1,6 @@
 let successPopupTimeout = null;
 const uiLang = getUiLang();
+const PACKAGE_STORAGE_KEY = 'schob_selected_package';
 const SUCCESS_POPUP_TEXT = {
   de: {
     title: 'Danke!',
@@ -26,6 +27,7 @@ function initializeContactAndPricing() {
   const contactNext = document.getElementById('contact-next');
   const contactUrl = document.getElementById('contact-url');
   const contactSuccess = document.getElementById('contact-success');
+  const contactService = document.getElementById('contact-service');
 
   if (contactForm && contactNext && contactUrl) {
     const successUrl = new URL(window.location.href);
@@ -45,6 +47,8 @@ function initializeContactAndPricing() {
       window.history.replaceState({}, '', cleanUrl.toString());
     }
   }
+
+  applyStoredPackage(contactService);
 
   bindPackageRequestButtons();
 }
@@ -100,31 +104,48 @@ function bindPackageRequestButtons() {
     button.dataset.packageBound = 'true';
     button.addEventListener('click', () => {
       const selectedPackage = button.getAttribute('data-package-request');
-      const liveContactForm = document.getElementById('contact-form');
-      const liveContactService = document.getElementById('contact-service');
-      const liveContactMessage = document.getElementById('contact-message');
-
-      if (liveContactService && selectedPackage) {
-        liveContactService.value = selectedPackage;
-        liveContactService.dispatchEvent(new Event('input', { bubbles: true }));
-        liveContactService.dispatchEvent(new Event('change', { bubbles: true }));
+      if (selectedPackage) {
+        window.sessionStorage.setItem(PACKAGE_STORAGE_KEY, selectedPackage);
       }
-
-      liveContactForm?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
-
-      window.setTimeout(() => {
-        if (liveContactService instanceof HTMLElement) {
-          liveContactService.focus();
-          liveContactService.select?.();
-        } else if (liveContactMessage instanceof HTMLElement) {
-          liveContactMessage.focus();
-        }
-      }, 320);
+      fillAndScrollToContact(selectedPackage);
     });
   });
+}
+
+function applyStoredPackage(contactService) {
+  const selectedPackage = window.sessionStorage.getItem(PACKAGE_STORAGE_KEY);
+
+  if (!contactService || !selectedPackage) {
+    return;
+  }
+
+  contactService.value = selectedPackage;
+}
+
+function fillAndScrollToContact(selectedPackage) {
+  const liveContactForm = document.getElementById('contact-form');
+  const liveContactService = document.getElementById('contact-service');
+  const liveContactMessage = document.getElementById('contact-message');
+
+  if (liveContactService && selectedPackage) {
+    liveContactService.value = selectedPackage;
+    liveContactService.dispatchEvent(new Event('input', { bubbles: true }));
+    liveContactService.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  liveContactForm?.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start',
+  });
+
+  window.setTimeout(() => {
+    if (liveContactService instanceof HTMLElement) {
+      liveContactService.focus();
+      liveContactService.select?.();
+    } else if (liveContactMessage instanceof HTMLElement) {
+      liveContactMessage.focus();
+    }
+  }, 320);
 }
 
 function getUiLang() {
