@@ -2,6 +2,56 @@ let successPopupTimeout = null;
 let packageClickStorageBound = false;
 const uiLang = getUiLang();
 const PACKAGE_STORAGE_KEY = 'schob_selected_package';
+const PACKAGE_MATCHES = {
+  home: {
+    de: {
+      s: 'Paket S: Das Kickstart-Setup',
+      m: 'Paket M: Der MVP-Builder',
+      l: 'Paket L: Der Solo-Founder Companion',
+    },
+    en: {
+      s: 'Package S: The Kickstart Setup',
+      m: 'Package M: The MVP Builder',
+      l: 'Package L: The Solo-Founder Companion',
+    },
+    uk: {
+      s: 'Пакет S: Стартовий сетап',
+      m: 'Пакет M: MVP Builder',
+      l: 'Пакет L: Solo-Founder Companion',
+    },
+  },
+  website: {
+    de: {
+      s: 'Paket S: Der digitale Schnellstarter',
+      m: 'Paket M: Das Business-Fundament',
+    },
+    en: {
+      s: 'Package S: The Digital Quickstart',
+      m: 'Package M: The Business Foundation',
+    },
+    uk: {
+      s: 'Пакет S: Швидкий цифровий старт',
+      m: 'Пакет M: Бізнес-фундамент',
+    },
+  },
+  startup: {
+    de: {
+      s: 'Paket S: Der Strategie-Kompass',
+      m: 'Paket M: Das Gründungs-Intensiv',
+      l: 'Paket L: Der Startup Companion',
+    },
+    en: {
+      s: 'Package S: The Strategy Compass',
+      m: 'Package M: The Founder Intensive',
+      l: 'Package L: The Startup Companion',
+    },
+    uk: {
+      s: 'Пакет S: Стратегічний компас',
+      m: 'Пакет M: Інтенсив запуску',
+      l: 'Пакет L: Startup Companion',
+    },
+  },
+};
 const SUCCESS_POPUP_TEXT = {
   de: {
     title: 'Danke!',
@@ -104,9 +154,7 @@ function applySelectedPackage(contactService) {
     return;
   }
 
-  contactService.value = selectedPackage;
-  contactService.dispatchEvent(new Event('input', { bubbles: true }));
-  contactService.dispatchEvent(new Event('change', { bubbles: true }));
+  writeSelectedPackage(selectedPackage);
 }
 
 function bindPackageRequestStorage() {
@@ -121,12 +169,7 @@ function bindPackageRequestStorage() {
       return;
     }
 
-    const pricingCard = trigger.closest('.pricing-card');
-    const packageValueField = pricingCard?.querySelector('.pricing-card__package-value');
-    const selectedPackage =
-      packageValueField instanceof HTMLInputElement
-        ? packageValueField.value
-        : trigger.getAttribute('data-package-request');
+    const selectedPackage = resolvePackageSelection(trigger);
 
     if (selectedPackage) {
       event.preventDefault();
@@ -140,13 +183,10 @@ function bindPackageRequestStorage() {
 
 function fillAndScrollToContact(selectedPackage) {
   const liveContactForm = document.getElementById('contact-form');
-  const liveContactService = document.getElementById('contact-service');
   const liveContactMessage = document.getElementById('contact-message');
 
-  if (liveContactService && selectedPackage) {
-    liveContactService.value = selectedPackage;
-    liveContactService.dispatchEvent(new Event('input', { bubbles: true }));
-    liveContactService.dispatchEvent(new Event('change', { bubbles: true }));
+  if (selectedPackage) {
+    writeSelectedPackage(selectedPackage);
   }
 
   liveContactForm?.scrollIntoView({
@@ -155,6 +195,8 @@ function fillAndScrollToContact(selectedPackage) {
   });
 
   window.setTimeout(() => {
+    const liveContactService = document.getElementById('contact-service');
+
     if (liveContactService instanceof HTMLElement) {
       liveContactService.focus();
       liveContactService.select?.();
@@ -162,6 +204,74 @@ function fillAndScrollToContact(selectedPackage) {
       liveContactMessage.focus();
     }
   }, 320);
+}
+
+function writeSelectedPackage(selectedPackage) {
+  if (!selectedPackage) {
+    return;
+  }
+
+  const applyValue = () => {
+    const liveContactService = document.getElementById('contact-service');
+
+    if (!(liveContactService instanceof HTMLInputElement)) {
+      return;
+    }
+
+    liveContactService.value = selectedPackage;
+    liveContactService.setAttribute('value', selectedPackage);
+    liveContactService.dispatchEvent(new Event('input', { bubbles: true }));
+    liveContactService.dispatchEvent(new Event('change', { bubbles: true }));
+  };
+
+  applyValue();
+  window.requestAnimationFrame(applyValue);
+  window.setTimeout(applyValue, 80);
+  window.setTimeout(applyValue, 260);
+}
+
+function resolvePackageSelection(trigger) {
+  const pricingCard = trigger.closest('.pricing-card');
+  const cardTone = getPricingCardTone(pricingCard, trigger);
+  const pageKey = getCurrentPageKey();
+  const languagePackages = PACKAGE_MATCHES[pageKey]?.[uiLang];
+
+  if (cardTone && languagePackages?.[cardTone]) {
+    return languagePackages[cardTone];
+  }
+
+  const packageValueField = pricingCard?.querySelector('.pricing-card__package-value');
+
+  if (packageValueField instanceof HTMLInputElement && packageValueField.value) {
+    return packageValueField.value;
+  }
+
+  return trigger.getAttribute('data-package-request');
+}
+
+function getPricingCardTone(pricingCard, trigger) {
+  const classSource = [
+    pricingCard?.className || '',
+    trigger.className || '',
+  ].join(' ');
+
+  if (classSource.includes('--s')) {
+    return 's';
+  }
+
+  if (classSource.includes('--m')) {
+    return 'm';
+  }
+
+  if (classSource.includes('--l')) {
+    return 'l';
+  }
+
+  return '';
+}
+
+function getCurrentPageKey() {
+  return document.body.dataset.page || 'home';
 }
 
 function getUiLang() {
