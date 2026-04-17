@@ -894,17 +894,7 @@ function buildLocalizedUrl(path, lang, hash) {
 }
 
 function buildPackageRequestUrl(packageName) {
-  const pagePath = window.location.pathname.split('/').pop() || 'index.html';
-  const params = new URLSearchParams();
-
-  if (currentLanguage !== 'de') {
-    params.set('lang', currentLanguage);
-  }
-
-  params.set('service', packageName);
-
-  const query = params.toString();
-  return `${pagePath}?${query}#coaching`;
+  return '#coaching';
 }
 
 function applyMeta(title, description) {

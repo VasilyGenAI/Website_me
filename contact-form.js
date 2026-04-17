@@ -2,7 +2,6 @@ let successPopupTimeout = null;
 let packageClickStorageBound = false;
 const uiLang = getUiLang();
 const PACKAGE_STORAGE_KEY = 'schob_selected_package';
-const PACKAGE_QUERY_KEY = 'service';
 const SUCCESS_POPUP_TEXT = {
   de: {
     title: 'Danke!',
@@ -33,7 +32,6 @@ function initializeContactAndPricing() {
 
   if (contactForm && contactNext && contactUrl) {
     const successUrl = new URL(window.location.href);
-    successUrl.searchParams.delete(PACKAGE_QUERY_KEY);
     successUrl.searchParams.set('contact', 'success');
     successUrl.hash = 'coaching';
 
@@ -100,28 +98,15 @@ function applySelectedPackage(contactService) {
     return;
   }
 
-  const currentUrl = new URL(window.location.href);
-  const selectedFromUrl = currentUrl.searchParams.get(PACKAGE_QUERY_KEY);
-  const selectedFromStorage = window.sessionStorage.getItem(PACKAGE_STORAGE_KEY);
-  const selectedPackage = selectedFromUrl || selectedFromStorage;
+  const selectedPackage = window.sessionStorage.getItem(PACKAGE_STORAGE_KEY);
 
   if (!selectedPackage) {
     return;
   }
 
-  window.sessionStorage.setItem(PACKAGE_STORAGE_KEY, selectedPackage);
-  if (selectedFromUrl) {
-    fillAndScrollToContact(selectedPackage);
-  } else {
-    contactService.value = selectedPackage;
-    contactService.dispatchEvent(new Event('input', { bubbles: true }));
-    contactService.dispatchEvent(new Event('change', { bubbles: true }));
-  }
-
-  if (currentUrl.searchParams.has(PACKAGE_QUERY_KEY)) {
-    currentUrl.searchParams.delete(PACKAGE_QUERY_KEY);
-    window.history.replaceState({}, '', currentUrl.toString());
-  }
+  contactService.value = selectedPackage;
+  contactService.dispatchEvent(new Event('input', { bubbles: true }));
+  contactService.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
 function bindPackageRequestStorage() {
@@ -139,7 +124,9 @@ function bindPackageRequestStorage() {
     const selectedPackage = trigger.getAttribute('data-package-request');
 
     if (selectedPackage) {
+      event.preventDefault();
       window.sessionStorage.setItem(PACKAGE_STORAGE_KEY, selectedPackage);
+      fillAndScrollToContact(selectedPackage);
     }
   });
 
