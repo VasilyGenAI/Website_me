@@ -353,6 +353,11 @@ a {
   overflow: hidden;
 }
 
+.hero__portrait--product {
+  padding: 1.2rem;
+  background: rgba(17, 17, 19, 0.92);
+}
+
 .hero__image {
   width: 100%;
   min-height: 100%;
@@ -362,6 +367,14 @@ a {
   filter: none;
   transform: scale(1.5);
   transform-origin: center top;
+}
+
+.hero__image--product {
+  min-height: 0;
+  border-radius: 18px;
+  object-fit: contain;
+  object-position: center;
+  transform: none;
 }
 
 .hero__portrait::after {
@@ -466,6 +479,10 @@ a {
 .pricing-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: start;
+}
+
+.pricing-grid--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .offer-card,
@@ -721,6 +738,15 @@ a {
   background-position: center;
   opacity: 0.48;
   pointer-events: none;
+}
+
+.contact-panel--website::before {
+  background:
+    linear-gradient(180deg, rgba(10, 10, 10, 0.36), rgba(10, 10, 10, 0.42)),
+    url("Photos/Screen3.png");
+  background-size: cover;
+  background-position: center top;
+  opacity: 0.28;
 }
 
 .contact-panel--with-image > * {
