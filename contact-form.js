@@ -7,6 +7,12 @@ const contactMessage = document.getElementById('contact-message');
 const pricingToggleButtons = document.querySelectorAll('[data-pricing-toggle]');
 const pricingDetails = document.querySelectorAll('.pricing-card__details');
 const packageRequestButtons = document.querySelectorAll('[data-package-request]');
+const uiLang = getUiLang();
+const PRICING_LABELS = {
+  de: { more: 'Mehr', less: 'Weniger' },
+  en: { more: 'More', less: 'Less' },
+  uk: { more: 'Більше', less: 'Менше' },
+};
 
 if (contactForm && contactNext && contactUrl) {
   const successUrl = new URL(window.location.href);
@@ -33,7 +39,7 @@ function setPricingExpanded(expanded) {
 
   pricingToggleButtons.forEach((button) => {
     button.setAttribute('aria-expanded', String(expanded));
-    button.textContent = expanded ? 'Weniger' : 'Mehr';
+    button.textContent = expanded ? PRICING_LABELS[uiLang].less : PRICING_LABELS[uiLang].more;
   });
 }
 
@@ -68,3 +74,17 @@ packageRequestButtons.forEach((button) => {
     }, 320);
   });
 });
+
+function getUiLang() {
+  const lang = document.documentElement.lang.toLowerCase();
+
+  if (lang.startsWith('en')) {
+    return 'en';
+  }
+
+  if (lang.startsWith('uk')) {
+    return 'uk';
+  }
+
+  return 'de';
+}

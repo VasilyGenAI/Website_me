@@ -1,0 +1,165 @@
+1. Controller
+The controller responsible for data processing on this website is:
+Vasily Schob
+Straße der Jugend 18
+14974 Ludwigsfelde
+Germany
+Email: schobvasily.digital@gmail.com
+Phone: +49 156 78301732
+
+1.1. SSL or TLS encryption
+For security reasons and to protect the transmission of confidential content, such as requests you send to me, this website uses SSL or TLS encryption. You can recognize an encrypted connection by the browser address line changing from "http://" to "https://" and by the lock icon in your browser bar. When SSL or TLS encryption is enabled, the data you transmit to me cannot be read by third parties.
+
+2. Hosting and access data
+2.1. Notice for website visitors from Germany
+My website stores information on the end device of website visitors (for example cookies) or accesses information already stored on the end device (for example IP addresses). The specific information involved is explained in the following sections.
+Such storage and access are based on the following rules:
+Where such storage or access is strictly necessary to provide the service of my website expressly requested by website visitors or to ensure the IT security of my website, this is based on Section 25 para. 2 no. 2 TDDDG.
+In all other cases, such storage or access takes place on the basis of the consent of website visitors (Section 25 para. 1 TDDDG).
+Subsequent data processing is carried out in accordance with the following sections and on the basis of the GDPR.
+
+2.2. Informational use of the website
+When the website is used for informational purposes only, meaning visitors do not otherwise provide information to me, I collect the personal data that the browser transmits to my server in order to ensure the stability and security of my website. This constitutes my legitimate interest, so the legal basis is Art. 6 para. 1 sentence 1 lit. f GDPR.
+These data are:
+- IP address
+- Date and time of the request
+- Time zone difference to Greenwich Mean Time (GMT)
+- Content of the request (specific page)
+- Access status / HTTP status code
+- Amount of data transferred in each case
+- Website from which the request comes
+- Browser
+- Operating system and its interface
+- Language and version of the browser software
+These data are also stored in log files. The collection and storage of these server log files are based on Art. 6 para. 1 lit. f GDPR. I have a legitimate interest in the technically error-free display and optimization of my website; for this purpose, server log files must be recorded. They are deleted when storage is no longer necessary, at the latest after 14 days.
+
+2.3. Web hosting and website provision
+I host my website with GitHub Inc., 88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, USA.
+When you visit my website, personal data, in particular your IP address, are processed on GitHub servers. This is necessary to deliver the content of my website to your device and to ensure the secure and stable provision of the website.
+GitHub is used on the basis of Art. 6 para. 1 lit. f GDPR. I have a legitimate interest in the most reliable and secure presentation and provision of my website.
+As the data is processed in the USA, I point out that GitHub is certified under the EU-U.S. Data Privacy Framework. Where data is transferred to a third country, I also rely on the Standard Contractual Clauses of the European Commission in order to ensure an adequate level of data protection.
+Further information can be found in GitHub's privacy statement:
+https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement
+
+2.4. Contact form
+If you use the contact form on this website, I process the data you enter in order to answer your request and enable further communication.
+In particular, the following information may be processed:
+- Name
+- Email address
+- Company
+- Service
+- Content of your message
+For the technical transmission of the form, I use the FormSubmit service. The provider is FormSubmit; further information can be found at:
+https://formsubmit.co/privacy.pdf
+Depending on the context, processing is based on Art. 6 para. 1 lit. b GDPR if the request concerns pre-contractual measures or specific service inquiries, or on Art. 6 para. 1 lit. f GDPR due to my legitimate interest in efficient request handling.
+
+2.5. Cookies and web analytics
+I use cookies and similar technologies on my website. I distinguish between technically necessary cookies and those used for analytics purposes.
+
+2.5.1. Technically necessary (essential) cookies
+Certain cookies are strictly necessary for the secure and error-free operation of my website. The storage of these cookies on your device and access to them are based on Section 25 para. 2 TDDDG. The subsequent processing of personal data is based on my legitimate interest in the error-free, secure, and user-friendly provision of my website pursuant to Art. 6 para. 1 lit. f GDPR.
+This includes, in particular, cookies with which I store your cookie selection on the website.
+
+2.5.2. Analytics cookies (Google Analytics 4)
+I also use Google Analytics 4 to measure the performance of my website and analyze user behavior, for example page views, dwell time, and click paths. As a solo developer, I want to understand how visitors reach my website and which content is particularly relevant. Only on this basis can I improve the usability of my website and continue to develop and market my app in a targeted way.
+In addition to general page views, I have activated the so-called "Enhanced Measurement" features in Google Analytics. This means the following specific interactions are also recorded: scroll events, clicks on links leading away from my website (external links), searches within the website, interactions with embedded videos, file downloads, and interactions with forms (for example when filling out starts). No personal free-text content entered into forms is transmitted to Google.
+Google Analytics 4 uses automatic IP anonymization by default. This means that your IP address is shortened by Google within member states of the European Union or in other states party to the Agreement on the European Economic Area before storage.
+The provider is Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Ireland. In the course of use, processing may also be carried out by Google LLC, 1600 Amphitheatre Parkway, Mountain View, CA 94043, USA. For the transfer of data to the USA, Google is certified under the EU-U.S. Data Privacy Framework, which ensures an adequate level of protection in accordance with EU standards.
+These analytics cookies are only set if you have previously given your explicit consent via my cookie banner.
+The legal basis for storing these cookies on your device is Section 25 para. 1 TDDDG. The subsequent processing of your data is based on your consent in accordance with Art. 6 para. 1 lit. a GDPR. You can withdraw your consent at any time with effect for the future by adjusting the cookie settings on my website.
+You can reopen and change your selection at any time:
+[[COOKIE_SETTINGS_BUTTON]]
+Further information can be found in the provider's privacy policy at:
+https://policies.google.com/privacy?hl=en
+
+3. Contact by email or phone
+If you contact me by email or phone, I process the information you provide in order to answer your request and enable further communication.
+Depending on the context, processing is based on Art. 6 para. 1 lit. b GDPR if the request concerns pre-contractual measures or specific service inquiries, or on Art. 6 para. 1 lit. f GDPR due to my legitimate interest in efficient request handling.
+
+4. Legal bases of processing
+Where I process personal data, this is always done on a legal basis. In particular, the following may apply:
+- Art. 6 para. 1 lit. a GDPR if consent has been given
+- Art. 6 para. 1 lit. b GDPR for the performance of a contract or pre-contractual measures
+- Art. 6 para. 1 lit. c GDPR to comply with legal obligations
+- Art. 6 para. 1 lit. f GDPR on the basis of legitimate interests
+
+5. Storage period
+I store personal data only for as long as necessary for the respective purpose or as required by statutory retention obligations. As soon as the purpose no longer applies and no legal obligations prevent it, the data are deleted.
+
+6. Your rights
+Data subjects have the following rights vis-à-vis me regarding their personal data:
+- Right of access
+- Right to rectification or erasure
+- Right to restriction of processing
+- Right to object to processing
+- Right to data portability
+- Right to withdraw consent at any time
+Data subjects also have the right to lodge a complaint with a data protection supervisory authority regarding the processing of their personal data. Contact details of the supervisory authorities can be found at:
+https://www.bfdi.bund.de/DE/Service/Anschriften/Laender/Laender-node.html
+
+6.1. Erasure of data
+To exercise your right to erasure of your data, please send a request to my contact email address:
+schobvasily.digital@gmail.com
+
+6.2. Information about your right to object under Art. 21 GDPR
+**RIGHT TO OBJECT ON GROUNDS RELATING TO YOUR PARTICULAR SITUATION**
+YOU HAVE THE RIGHT TO OBJECT AT ANY TIME, ON GROUNDS RELATING TO YOUR PARTICULAR SITUATION, TO THE PROCESSING OF PERSONAL DATA CONCERNING YOU WHICH IS BASED ON ART. 6 PARA. 1 LIT. F GDPR (PROCESSING BASED ON A BALANCING OF INTERESTS). IF YOU OBJECT, I WILL NO LONGER PROCESS YOUR PERSONAL DATA UNLESS I CAN DEMONSTRATE COMPELLING LEGITIMATE GROUNDS FOR THE PROCESSING WHICH OVERRIDE YOUR INTERESTS, RIGHTS, AND FREEDOMS, OR THE PROCESSING SERVES THE ESTABLISHMENT, EXERCISE, OR DEFENCE OF LEGAL CLAIMS.
+**OBJECTION TO PROCESSING FOR DIRECT MARKETING PURPOSES**
+IN INDIVIDUAL CASES, I PROCESS YOUR PERSONAL DATA IN ORDER TO CARRY OUT DIRECT MARKETING (FOR EXAMPLE NEWSLETTERS). YOU HAVE THE RIGHT TO OBJECT AT ANY TIME TO THE PROCESSING OF PERSONAL DATA CONCERNING YOU FOR THE PURPOSE OF SUCH ADVERTISING. IF YOU OBJECT TO PROCESSING FOR DIRECT MARKETING PURPOSES, I WILL NO LONGER PROCESS YOUR PERSONAL DATA FOR THESE PURPOSES. THE OBJECTION CAN BE MADE INFORMALLY, PREFERABLY BY EMAIL TO:
+schobvasily.digital@gmail.com
+
+7. Data processing on social media platforms
+I maintain profiles on social media networks in order to present my business and services there. The operators of these networks regularly process user data for advertising purposes. Among other things, they create user profiles from online behavior that can be used, for example, to display advertising on the network pages and elsewhere on the internet that matches the users' interests. To do this, the operators store information about usage behavior in cookies on the users' devices. It cannot be ruled out that the operators combine this information with other data. Further information and guidance on how users can object to processing by the platform operators can be found in the privacy policies listed below. It is also possible that the operators or their servers are located in non-EU countries, so that data is processed there. This may result in risks for users, for example because enforcement of their rights is more difficult or public authorities may access the data.
+If users contact me via my profiles on the networks, I process the data provided to me in order to answer the inquiries. This constitutes my legitimate interest, so the legal basis is Art. 6 para. 1 sentence 1 lit. f GDPR.
+
+7.1. Facebook
+I maintain a profile on Facebook. The operator is Meta Platforms Ireland Ltd., 4 Grand Canal Square, Grand Canal Harbour, Dublin 2, Ireland. The privacy policy is available here:
+https://www.facebook.com/policy.php
+An option to object to data processing is available via the ad settings:
+https://www.facebook.com/settings?tab=ads
+On the basis of an agreement, I am jointly responsible with Facebook within the meaning of Art. 26 GDPR for the processing of visitor data on my profile. Facebook explains which data are processed in detail at:
+https://www.facebook.com/legal/terms/information_about_page_insights_data
+Data subjects may exercise their rights both against me and against Facebook. Under my agreement with Facebook, however, I am obliged to forward requests to Facebook. Data subjects therefore usually receive a faster response if they contact Facebook directly.
+
+7.2. Instagram
+I maintain a profile on Instagram. The operator is Meta Platforms Ireland Ltd., 4 Grand Canal Square, Grand Canal Harbour, Dublin 2, Ireland. The privacy policy is available here:
+https://help.instagram.com/519522125107875
+
+7.3. TikTok
+I maintain a profile on TikTok. The operator is TikTok Technology Limited, whose registered office is at 10 Earlsfort Terrace, Dublin, D02 T380, Ireland. The privacy policy is available here:
+https://www.tiktok.com/de/privacy-policy
+
+7.4. YouTube
+I maintain a profile on YouTube. The operator is Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Ireland. The privacy policy is available here:
+https://policies.google.com/privacy?hl=en
+
+7.5. X (formerly Twitter)
+I maintain a profile on X. The operator is X Corp., 1355 Market Street, Suite 900, San Francisco, CA 94103, USA. The privacy policy is available here:
+https://twitter.com/en/privacy
+An option to object to data processing is available via the advertising settings:
+https://twitter.com/personalization
+
+7.6. LinkedIn
+I maintain a profile on LinkedIn. The operator is LinkedIn Ireland Unlimited Company, Wilton Place, Dublin 2, Ireland. The privacy policy is available here:
+https://www.linkedin.com/legal/privacy-policy?_l=en_US
+An option to object to data processing is available via the advertising settings:
+https://www.linkedin.com/psettings/guest-controls/retargeting-opt-out
+
+7.7. Threads
+I maintain a profile on Threads. The operator is Meta Platforms Ireland Ltd., 4 Grand Canal Square, Grand Canal Harbour, Dublin 2, Ireland. The privacy policy is available here:
+https://help.instagram.com/515230437301944
+
+7.8. Skool
+I maintain a community or profile on the Skool platform. I use this platform to provide information and learning content, answer customer questions directly, and generally encourage exchange with customers and interested users. The operator is Skool.com, Inc., USA. The privacy policy and further legal guidelines are available here:
+https://www.skool.com/legal
+If users contact me via Skool or interact within the community, for example by writing posts or comments, I process the data provided to me in order to answer inquiries and provide the platform functions. This constitutes my legitimate interest, so the legal basis is Art. 6 para. 1 sentence 1 lit. f GDPR. It is possible that the operator or its servers are located in non-EU countries, such as the USA, so that data is processed there. This may result in risks for users. Options to object to processing by the platform operator or to adjust settings are available directly in the personal account settings on Skool.
+
+8. Newsletter
+I reserve the right to inform customers who have already used my services or purchased goods from time to time by email or other means about my offers, provided they have not objected. The legal basis for this processing is Art. 6 para. 1 sentence 1 lit. f GDPR. My legitimate interest lies in direct marketing (recital 47 GDPR). Customers may object to the use of their email address for advertising purposes at any time without additional cost, for example via the link at the end of each email or by email to my email address stated above.
+On the basis of recipients' consent (Art. 6 para. 1 sentence 1 lit. a GDPR), I also measure the open and click rate of my newsletter in order to understand which content is relevant for recipients.
+I send newsletters using the Brevo tool from Sendinblue GmbH, Köpenicker Str. 126, 10179 Berlin. You can find the privacy policy here:
+https://de.sendinblue.com/legal/privacypolicy/
+The provider processes content, usage, meta and communication data as well as contact data within the EU.
+
+9. Current status of this privacy policy
+This privacy policy is currently valid and has the status of 17 April 2026. Changes to this privacy policy may become necessary due to changes in legal or regulatory requirements. The current version can always be found on my website.

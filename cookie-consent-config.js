@@ -1,6 +1,91 @@
 const COOKIE_NAME = 'schob_cookie_consent';
 const COOKIE_MAX_AGE_DAYS = 180;
 const GA_MEASUREMENT_ID = document.body.dataset.gaMeasurementId || '';
+const uiLang = getUiLang();
+const COOKIE_TEXT = {
+  de: {
+    bannerEyebrow: 'Cookies & Analytics',
+    bannerTitle: 'Du entscheidest, welche Cookies aktiv sind.',
+    bannerText: 'Wir verwenden ein notwendiges Consent-Cookie und optional Google Analytics, um zu verstehen, wie Besucher die Website nutzen. Deine Auswahl kannst du jederzeit wieder ändern.',
+    acceptNecessary: 'Nur notwendige',
+    settings: 'Einstellungen',
+    acceptAll: 'Alle akzeptieren',
+    close: 'Schließen',
+    modalEyebrow: 'Cookie-Einstellungen',
+    modalTitle: 'Wähle deine Cookie-Kategorien',
+    modalIntro: 'Notwendige Cookies sichern die Grundfunktion der Website. Google Analytics wird nur aktiviert, wenn du ausdrücklich zustimmst.',
+    necessaryTitle: 'Notwendige Cookies',
+    necessaryText: 'Erforderlich, damit der Cookie-Banner deine Auswahl speichern kann.',
+    necessaryAria: 'Notwendige Cookies aktiviert',
+    moreInfo: 'Weitere Informationen',
+    analyticsTitle: 'Google Analytics',
+    analyticsText: 'Optional, um Seitenaufrufe und Nutzungsmuster auszuwerten.',
+    analyticsAria: 'Google Analytics aktivieren',
+    savePreferences: 'Auswahl speichern',
+    necessaryCookieInfo: '<strong>schob_cookie_consent</strong>, 6 Monate, speichert deine Auswahl im Cookie-Banner.',
+    analyticsCookieInfo: [
+      '<strong>_ga</strong>, 2 Jahre, unterscheidet Nutzerinnen und Nutzer.',
+      '<strong>_ga_*</strong>, 2 Jahre, speichert den Sitzungsstatus.',
+      '<strong>_gid</strong>, 24 Stunden, erkennt Nutzerinnen und Nutzer für einen Tag.',
+      '<strong>_gat_*</strong>, 1 Minute, drosselt die Anforderungsrate.',
+    ],
+  },
+  en: {
+    bannerEyebrow: 'Cookies & Analytics',
+    bannerTitle: 'You decide which cookies stay active.',
+    bannerText: 'We use one essential consent cookie and optional Google Analytics to understand how visitors use the website. You can change your choice at any time.',
+    acceptNecessary: 'Necessary only',
+    settings: 'Settings',
+    acceptAll: 'Accept all',
+    close: 'Close',
+    modalEyebrow: 'Cookie settings',
+    modalTitle: 'Choose your cookie categories',
+    modalIntro: 'Necessary cookies secure the basic functionality of the website. Google Analytics is only activated if you explicitly consent.',
+    necessaryTitle: 'Necessary cookies',
+    necessaryText: 'Required so the cookie banner can remember your selection.',
+    necessaryAria: 'Necessary cookies enabled',
+    moreInfo: 'More information',
+    analyticsTitle: 'Google Analytics',
+    analyticsText: 'Optional, used to evaluate page views and usage patterns.',
+    analyticsAria: 'Enable Google Analytics',
+    savePreferences: 'Save selection',
+    necessaryCookieInfo: '<strong>schob_cookie_consent</strong>, 6 months, stores your selection in the cookie banner.',
+    analyticsCookieInfo: [
+      '<strong>_ga</strong>, 2 years, distinguishes users.',
+      '<strong>_ga_*</strong>, 2 years, stores session status.',
+      '<strong>_gid</strong>, 24 hours, recognizes users for one day.',
+      '<strong>_gat_*</strong>, 1 minute, throttles request rates.',
+    ],
+  },
+  uk: {
+    bannerEyebrow: 'Cookies та Analytics',
+    bannerTitle: 'Ви вирішуєте, які cookies будуть активні.',
+    bannerText: 'Я використовую один обов’язковий cookie для збереження згоди та опційно Google Analytics, щоб розуміти, як відвідувачі користуються сайтом. Ви можете змінити свій вибір у будь-який момент.',
+    acceptNecessary: 'Лише необхідні',
+    settings: 'Налаштування',
+    acceptAll: 'Прийняти все',
+    close: 'Закрити',
+    modalEyebrow: 'Налаштування cookie',
+    modalTitle: 'Оберіть категорії cookie',
+    modalIntro: 'Необхідні cookies забезпечують базову роботу сайту. Google Analytics активується лише після вашої прямої згоди.',
+    necessaryTitle: 'Необхідні cookies',
+    necessaryText: 'Потрібні, щоб банер cookie міг зберегти ваш вибір.',
+    necessaryAria: 'Необхідні cookies увімкнені',
+    moreInfo: 'Детальніше',
+    analyticsTitle: 'Google Analytics',
+    analyticsText: 'Необов’язково, для аналізу переглядів сторінок і моделей використання.',
+    analyticsAria: 'Увімкнути Google Analytics',
+    savePreferences: 'Зберегти вибір',
+    necessaryCookieInfo: '<strong>schob_cookie_consent</strong>, 6 місяців, зберігає ваш вибір у банері cookie.',
+    analyticsCookieInfo: [
+      '<strong>_ga</strong>, 2 роки, розрізняє користувачів.',
+      '<strong>_ga_*</strong>, 2 роки, зберігає стан сесії.',
+      '<strong>_gid</strong>, 24 години, розпізнає користувачів протягом одного дня.',
+      '<strong>_gat_*</strong>, 1 хвилина, обмежує частоту запитів.',
+    ],
+  },
+};
+const t = COOKIE_TEXT[uiLang];
 const defaultConsent = {
   necessary: true,
   analytics: false,
@@ -85,16 +170,15 @@ function createCookieUi() {
   banner.hidden = true;
   banner.innerHTML = `
     <div class="cookie-banner__panel">
-      <p class="cookie-banner__eyebrow">Cookies & Analytics</p>
-      <h2>Du entscheidest, welche Cookies aktiv sind.</h2>
+      <p class="cookie-banner__eyebrow">${t.bannerEyebrow}</p>
+      <h2>${t.bannerTitle}</h2>
       <p>
-        Wir verwenden ein notwendiges Consent-Cookie und optional Google Analytics, um zu verstehen,
-        wie Besucher die Website nutzen. Deine Auswahl kannst du jederzeit wieder ändern.
+        ${t.bannerText}
       </p>
       <div class="cookie-banner__actions">
-        <button class="button button--ghost" type="button" data-cookie-action="accept-necessary">Nur notwendige</button>
-        <button class="button button--ghost" type="button" data-open-cookie-settings>Einstellungen</button>
-        <button class="button button--primary" type="button" data-cookie-action="accept-all">Alle akzeptieren</button>
+        <button class="button button--ghost" type="button" data-cookie-action="accept-necessary">${t.acceptNecessary}</button>
+        <button class="button button--ghost" type="button" data-open-cookie-settings>${t.settings}</button>
+        <button class="button button--primary" type="button" data-cookie-action="accept-all">${t.acceptAll}</button>
       </div>
     </div>
   `;
@@ -105,29 +189,28 @@ function createCookieUi() {
   modal.innerHTML = `
     <div class="cookie-modal__backdrop" data-cookie-action="close-modal"></div>
     <div class="cookie-modal__dialog card-glass" role="dialog" aria-modal="true" aria-labelledby="cookie-settings-title">
-      <button class="cookie-modal__close" type="button" data-cookie-action="close-modal">Schließen</button>
-      <p class="eyebrow eyebrow--dark">Cookie-Einstellungen</p>
-      <h2 id="cookie-settings-title">Wähle deine Cookie-Kategorien</h2>
+      <button class="cookie-modal__close" type="button" data-cookie-action="close-modal">${t.close}</button>
+      <p class="eyebrow eyebrow--dark">${t.modalEyebrow}</p>
+      <h2 id="cookie-settings-title">${t.modalTitle}</h2>
       <p class="cookie-modal__intro">
-        Notwendige Cookies sichern die Grundfunktion der Website. Google Analytics wird nur aktiviert,
-        wenn du ausdrücklich zustimmst.
+        ${t.modalIntro}
       </p>
 
       <section class="cookie-category">
         <div class="cookie-category__header">
           <div>
-            <p class="cookie-category__title">Notwendige Cookies</p>
-            <p>Erforderlich, damit der Cookie-Banner deine Auswahl speichern kann.</p>
+            <p class="cookie-category__title">${t.necessaryTitle}</p>
+            <p>${t.necessaryText}</p>
           </div>
-          <label class="cookie-toggle" aria-label="Notwendige Cookies aktiviert">
+          <label class="cookie-toggle" aria-label="${t.necessaryAria}">
             <input type="checkbox" checked disabled>
             <span aria-hidden="true"></span>
           </label>
         </div>
         <details>
-          <summary>Weitere Informationen</summary>
+          <summary>${t.moreInfo}</summary>
           <ul>
-            <li><strong>schob_cookie_consent</strong>, 6 Monate, speichert deine Auswahl im Cookie-Banner.</li>
+            <li>${t.necessaryCookieInfo}</li>
           </ul>
         </details>
       </section>
@@ -135,29 +218,26 @@ function createCookieUi() {
       <section class="cookie-category">
         <div class="cookie-category__header">
           <div>
-            <p class="cookie-category__title">Google Analytics</p>
-            <p>Optional, um Seitenaufrufe und Nutzungsmuster auszuwerten.</p>
+            <p class="cookie-category__title">${t.analyticsTitle}</p>
+            <p>${t.analyticsText}</p>
           </div>
-          <label class="cookie-toggle" aria-label="Google Analytics aktivieren">
+          <label class="cookie-toggle" aria-label="${t.analyticsAria}">
             <input id="cookie-analytics-toggle" type="checkbox">
             <span aria-hidden="true"></span>
           </label>
         </div>
         <details>
-          <summary>Weitere Informationen</summary>
+          <summary>${t.moreInfo}</summary>
           <ul>
-            <li><strong>_ga</strong>, 2 Jahre, unterscheidet Nutzerinnen und Nutzer.</li>
-            <li><strong>_ga_*</strong>, 2 Jahre, speichert den Sitzungsstatus.</li>
-            <li><strong>_gid</strong>, 24 Stunden, erkennt Nutzerinnen und Nutzer für einen Tag.</li>
-            <li><strong>_gat_*</strong>, 1 Minute, drosselt die Anforderungsrate.</li>
+            ${t.analyticsCookieInfo.map((item) => `<li>${item}</li>`).join('')}
           </ul>
         </details>
       </section>
 
       <div class="cookie-modal__actions">
-        <button class="button button--ghost" type="button" data-cookie-action="accept-necessary">Nur notwendige</button>
-        <button class="button button--ghost" type="button" data-cookie-action="save-preferences">Auswahl speichern</button>
-        <button class="button button--primary" type="button" data-cookie-action="accept-all">Alle akzeptieren</button>
+        <button class="button button--ghost" type="button" data-cookie-action="accept-necessary">${t.acceptNecessary}</button>
+        <button class="button button--ghost" type="button" data-cookie-action="save-preferences">${t.savePreferences}</button>
+        <button class="button button--primary" type="button" data-cookie-action="accept-all">${t.acceptAll}</button>
       </div>
     </div>
   `;
@@ -292,4 +372,18 @@ function expireCookie(name) {
     const rootDomain = location.hostname.split('.').slice(-2).join('.');
     document.cookie = `${name}=; Max-Age=0; path=/; domain=.${rootDomain}`;
   }
+}
+
+function getUiLang() {
+  const lang = document.documentElement.lang.toLowerCase();
+
+  if (lang.startsWith('en')) {
+    return 'en';
+  }
+
+  if (lang.startsWith('uk')) {
+    return 'uk';
+  }
+
+  return 'de';
 }

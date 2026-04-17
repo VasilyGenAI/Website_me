@@ -7,7 +7,7 @@
   <meta name="description" content="Datenschutzhinweise für die Website von Schob Digital.">
   <link rel="stylesheet" href="styles.css">
 </head>
-<body class="legal-page" data-ga-measurement-id="G-25M84HMJPP">
+<body class="legal-page" data-page="privacy" data-ga-measurement-id="G-25M84HMJPP">
   <header class="site-header site-header--overlay">
     <a class="brand" href="index.html">Schob <span class="brand__accent">Digital</span></a>
     <nav class="site-nav" aria-label="Hauptnavigation">
@@ -17,6 +17,11 @@
       <a href="impressum.html">Impressum</a>
       <a href="datenschutz.html" aria-current="page">Datenschutz</a>
     </nav>
+    <div class="language-switcher" aria-label="Sprachauswahl">
+      <a class="language-switcher__link" href="?lang=de" data-lang-switch="de" lang="de" aria-label="Deutsch">🇩🇪</a>
+      <a class="language-switcher__link" href="?lang=en" data-lang-switch="en" lang="en" aria-label="English">🇬🇧</a>
+      <a class="language-switcher__link" href="?lang=uk" data-lang-switch="uk" lang="uk" aria-label="Українська">🇺🇦</a>
+    </div>
     <a class="button button--ghost site-header__cta" href="index.html#coaching">Kontakt</a>
   </header>
 
@@ -30,12 +35,12 @@
     </section>
 
     <nav class="legal-jump-nav" aria-label="Sprunglinks Datenschutz">
-      <a href="#1-verantwortlicher">Verantwortlicher</a>
-      <a href="#1-1-ssl-bzw-tls-verschlusselung">SSL / TLS</a>
-      <a href="#2-4-kontaktformular">Kontaktformular</a>
-      <a href="#2-5-2-analyse-cookies-google-analytics-4">Google Analytics</a>
-      <a href="#6-ihre-rechte">Ihre Rechte</a>
-      <a href="#6-2-information-uber-ihr-widerspruchsrecht-nach-art-21-dsgvo">Widerspruchsrecht</a>
+      <a href="#section-1">Verantwortlicher</a>
+      <a href="#section-1-1">SSL / TLS</a>
+      <a href="#section-2-4">Kontaktformular</a>
+      <a href="#section-2-5-2">Google Analytics</a>
+      <a href="#section-6">Ihre Rechte</a>
+      <a href="#section-6-2">Widerspruchsrecht</a>
     </nav>
 
     <section class="legal-content card-glass" data-legal-source="Datenschutz.txt"></section>
@@ -83,6 +88,7 @@
     </div>
   </footer>
 
+  <script defer src="i18n.js"></script>
   <script defer src="cookie-consent-config.js"></script>
   <script defer src="script.js"></script>
 </body>

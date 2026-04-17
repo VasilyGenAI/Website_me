@@ -1,4 +1,19 @@
 const legalContainer = document.querySelector("[data-legal-source]");
+const uiLang = getUiLang();
+const LEGAL_UI = {
+  de: {
+    loadError: "Der Rechtstext konnte nicht geladen werden. Bitte pruefe, ob die zugehoerige TXT-Datei vorhanden ist.",
+    cookieSettings: "Cookie-Einstellungen öffnen",
+  },
+  en: {
+    loadError: "The legal text could not be loaded. Please check whether the corresponding TXT file is available.",
+    cookieSettings: "Open cookie settings",
+  },
+  uk: {
+    loadError: "Не вдалося завантажити юридичний текст. Будь ласка, перевірте, чи доступний відповідний TXT-файл.",
+    cookieSettings: "Відкрити налаштування cookie",
+  },
+};
 
 if (legalContainer) {
   const source = legalContainer.getAttribute("data-legal-source");
@@ -16,8 +31,7 @@ if (legalContainer) {
         legalContainer.appendChild(formatLegalText(text, source));
       })
       .catch(() => {
-        legalContainer.innerHTML =
-          '<p class="legal-error">Der Rechtstext konnte nicht geladen werden. Bitte pruefe, ob die zugehoerige TXT-Datei vorhanden ist.</p>';
+        legalContainer.innerHTML = `<p class="legal-error">${LEGAL_UI[uiLang].loadError}</p>`;
       });
   }
 }
@@ -32,6 +46,23 @@ const IMPRESSUM_HEADINGS = new Set([
   "Verbraucherstreitbeilegung / Universalschlichtungsstelle",
   "Haftung für Inhalte",
   "Haftung für Links",
+  "Legal notice pursuant to Section 5 DDG",
+  "Provider of this website",
+  "Professional indemnity insurance",
+  "Name and address of the insurer",
+  "EU dispute resolution",
+  "Consumer dispute resolution / universal arbitration board",
+  "Liability for content",
+  "Liability for links",
+  "Відомості відповідно до § 5 DDG",
+  "Постачальник цього вебсайту",
+  "Контакт",
+  "Відомості про страхування професійної відповідальності",
+  "Назва та адреса страховика",
+  "Врегулювання спорів у ЄС",
+  "Врегулювання споживчих спорів / універсальна арбітражна установа",
+  "Відповідальність за вміст",
+  "Відповідальність за посилання",
 ]);
 
 const META_PATTERNS = [
@@ -41,10 +72,17 @@ const META_PATTERNS = [
   /^Deutschland$/,
   /^E-Mail:/,
   /^Telefon:/,
+  /^Email:/,
+  /^Phone:/,
+  /^Німеччина$/,
+  /^Електронна пошта:/,
+  /^Телефон:/,
   /^Hiscox SA, Niederlassung für Deutschland$/,
   /^Bernhard-Wicki-Str\. 3$/,
   /^80636 München$/,
   /^Geltungsraum der Versicherung:/,
+  /^Scope of insurance:/,
+  /^Територія дії страхування:/,
 ];
 
 function formatLegalText(text, source) {
@@ -107,20 +145,22 @@ function formatLegalText(text, source) {
 }
 
 function createStructuredNode(line) {
+  const sectionId = extractSectionId(line);
+
   if (/^Teil\s+\d+:/i.test(line)) {
     return buildHeading("h2", line);
   }
 
   if (/^\d+\.\d+\.\d+\.\s+/.test(line)) {
-    return buildHeading("h4", line);
+    return buildHeading("h4", line, sectionId);
   }
 
   if (/^\d+\.\d+\.\s+/.test(line)) {
-    return buildHeading("h3", line);
+    return buildHeading("h3", line, sectionId);
   }
 
   if (/^\d+\.\s+/.test(line)) {
-    return buildHeading("h2", line);
+    return buildHeading("h2", line, sectionId);
   }
 
   return null;
@@ -138,10 +178,10 @@ function createImpressumNode(line) {
   return buildHeading("h2", line);
 }
 
-function buildHeading(tagName, text) {
+function buildHeading(tagName, text, forcedId) {
   const heading = document.createElement(tagName);
   heading.textContent = text;
-  heading.id = createHeadingId(text);
+  heading.id = forcedId || createHeadingId(text);
   return heading;
 }
 
@@ -208,11 +248,35 @@ function createCookieSettingsButton() {
   wrapper.className = "legal-action";
   button.className = "button button--ghost legal-action__button";
   button.type = "button";
-  button.textContent = "Cookie-Einstellungen öffnen";
+  button.textContent = LEGAL_UI[uiLang].cookieSettings;
   button.setAttribute("data-open-cookie-settings", "");
   wrapper.appendChild(button);
 
   return wrapper;
+}
+
+function extractSectionId(text) {
+  const match = text.match(/^(\d+(?:\.\d+){0,2})\.\s+/);
+
+  if (!match) {
+    return "";
+  }
+
+  return `section-${match[1].replace(/\./g, "-")}`;
+}
+
+function getUiLang() {
+  const lang = document.documentElement.lang.toLowerCase();
+
+  if (lang.startsWith("en")) {
+    return "en";
+  }
+
+  if (lang.startsWith("uk")) {
+    return "uk";
+  }
+
+  return "de";
 }
 
 function createHeadingId(text) {
