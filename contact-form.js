@@ -1,7 +1,7 @@
 let successPopupTimeout = null;
-let packageRequestDelegateBound = false;
 const uiLang = getUiLang();
 const PACKAGE_STORAGE_KEY = 'schob_selected_package';
+const PACKAGE_QUERY_KEY = 'service';
 const SUCCESS_POPUP_TEXT = {
   de: {
     title: 'Danke!',
@@ -32,6 +32,7 @@ function initializeContactAndPricing() {
 
   if (contactForm && contactNext && contactUrl) {
     const successUrl = new URL(window.location.href);
+    successUrl.searchParams.delete(PACKAGE_QUERY_KEY);
     successUrl.searchParams.set('contact', 'success');
     successUrl.hash = 'coaching';
 
@@ -49,9 +50,7 @@ function initializeContactAndPricing() {
     }
   }
 
-  applyStoredPackage(contactService);
-
-  bindPackageRequestDelegate();
+  applySelectedPackage(contactService);
 }
 
 function showSuccessPopup() {
@@ -94,38 +93,33 @@ function dismissSuccessPopup(popup) {
   }, 220);
 }
 
-function bindPackageRequestDelegate() {
-  if (packageRequestDelegateBound) {
+function applySelectedPackage(contactService) {
+  if (!contactService) {
     return;
   }
 
-  document.addEventListener('click', (event) => {
-    const trigger = event.target.closest('[data-package-request]');
+  const currentUrl = new URL(window.location.href);
+  const selectedFromUrl = currentUrl.searchParams.get(PACKAGE_QUERY_KEY);
+  const selectedFromStorage = window.sessionStorage.getItem(PACKAGE_STORAGE_KEY);
+  const selectedPackage = selectedFromUrl || selectedFromStorage;
 
-    if (!trigger) {
-      return;
-    }
+  if (!selectedPackage) {
+    return;
+  }
 
-    const selectedPackage = trigger.getAttribute('data-package-request');
-
-    if (selectedPackage) {
-      window.sessionStorage.setItem(PACKAGE_STORAGE_KEY, selectedPackage);
-    }
-
+  window.sessionStorage.setItem(PACKAGE_STORAGE_KEY, selectedPackage);
+  if (selectedFromUrl) {
     fillAndScrollToContact(selectedPackage);
-  }, true);
-
-  packageRequestDelegateBound = true;
-}
-
-function applyStoredPackage(contactService) {
-  const selectedPackage = window.sessionStorage.getItem(PACKAGE_STORAGE_KEY);
-
-  if (!contactService || !selectedPackage) {
-    return;
+  } else {
+    contactService.value = selectedPackage;
+    contactService.dispatchEvent(new Event('input', { bubbles: true }));
+    contactService.dispatchEvent(new Event('change', { bubbles: true }));
   }
 
-  contactService.value = selectedPackage;
+  if (currentUrl.searchParams.has(PACKAGE_QUERY_KEY)) {
+    currentUrl.searchParams.delete(PACKAGE_QUERY_KEY);
+    window.history.replaceState({}, '', currentUrl.toString());
+  }
 }
 
 function fillAndScrollToContact(selectedPackage) {

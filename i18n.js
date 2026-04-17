@@ -13,6 +13,8 @@ if (currentLanguage !== 'de') {
   applyPageLanguageUi();
 }
 upgradePricingDetails();
+decoratePackageRequestLinks();
+rewriteInternalLinks();
 document.dispatchEvent(new CustomEvent('schob:content-updated', {
   detail: {
     page: currentPage,
@@ -115,7 +117,7 @@ function applyHomeTranslations() {
           <p class="offer-card__index">02</p>
           <img class="offer-card__image" src="Photos/falle.JPG" alt="Kostenfalle">
           <h3>Die 80.000 € Falle</h3>
-          <p>Vermeide Cloud-Kostenfallen. Wir bauen dein Tech-Fundament als MVP sicher und offline-first. Keine geleakten API-Keys, keine Hackerangriffe über Nacht.</p>
+          <p>Vermeide Cloud-Kostenfallen. Ich baue dein Tech-Fundament als MVP sicher und offline-first. Keine geleakten API-Keys, keine Hackerangriffe über Nacht.</p>
         </article>
         <article class="surface-card offer-card">
           <p class="offer-card__index">03</p>
@@ -230,7 +232,7 @@ function applyHomeTranslations() {
           <p class="offer-card__index">02</p>
           <img class="offer-card__image" src="Photos/falle.JPG" alt="Cost trap">
           <h3>The €80,000 trap</h3>
-          <p>Avoid cloud cost disasters. We build your tech foundation as a secure, offline-first MVP. No leaked API keys, no overnight security panic.</p>
+          <p>Avoid cloud cost disasters. I build your tech foundation as a secure, offline-first MVP. No leaked API keys, no overnight security panic.</p>
         </article>
         <article class="surface-card offer-card">
           <p class="offer-card__index">03</p>
@@ -310,7 +312,7 @@ function applyHomeTranslations() {
       `,
       pillarsGrid: `
         <article class="surface-card offer-card"><p class="offer-card__index">01</p><a class="offer-card__image-link" href="startup-unterstuetzung.html" aria-label="До сторінки підтримки стартапу"><img class="offer-card__image" src="Photos/amt.JPG" alt="Право та бюрократія"></a><h3>Право &amp; бюрократія</h3><p>Одна помилка у формі для податкової може коштувати тисячі. На реальних прикладах я покажу, як упевнено пройти реєстрацію та типові податкові бар’єри.</p></article>
-        <article class="surface-card offer-card"><p class="offer-card__index">02</p><img class="offer-card__image" src="Photos/falle.JPG" alt="Пастка витрат"><h3>Пастка на 80 000 €</h3><p>Уникайте дорогих cloud-помилок. Ми будуємо технічний фундамент MVP безпечно та з фокусом на контроль витрат.</p></article>
+        <article class="surface-card offer-card"><p class="offer-card__index">02</p><img class="offer-card__image" src="Photos/falle.JPG" alt="Пастка витрат"><h3>Пастка на 80 000 €</h3><p>Уникайте дорогих cloud-помилок. Я будую технічний фундамент MVP безпечно та з фокусом на контроль витрат.</p></article>
         <article class="surface-card offer-card"><p class="offer-card__index">03</p><img class="offer-card__image" src="Photos/design.JPG" alt="Дизайн і запуск"><h3>Дизайн &amp; запуск</h3><p>Не витрачайте зайві гроші на зовнішніх дизайнерів. Я покажу вам базу Figma та допоможу вийти в реліз професійно й без хаосу.</p></article>
       `,
       portfolioHeading: `
@@ -855,10 +857,53 @@ function upgradePricingDetails() {
   });
 }
 
+function decoratePackageRequestLinks() {
+  const packageTriggers = document.querySelectorAll('button[data-package-request]');
+
+  packageTriggers.forEach((button) => {
+    const selectedPackage = button.getAttribute('data-package-request');
+
+    if (!selectedPackage) {
+      return;
+    }
+
+    const link = document.createElement('a');
+
+    link.className = button.className;
+    link.href = buildPackageRequestUrl(selectedPackage);
+    link.innerHTML = button.innerHTML;
+
+    const ariaLabel = button.getAttribute('aria-label');
+    if (ariaLabel) {
+      link.setAttribute('aria-label', ariaLabel);
+    }
+
+    if (button.classList.contains('pricing-card__image-button')) {
+      link.setAttribute('role', 'button');
+    }
+
+    button.replaceWith(link);
+  });
+}
+
 function buildLocalizedUrl(path, lang, hash) {
   const normalizedPath = path || window.location.pathname.split('/').pop() || 'index.html';
   const suffix = lang ? `?lang=${lang}` : '';
   return `${normalizedPath}${suffix}${hash || ''}`;
+}
+
+function buildPackageRequestUrl(packageName) {
+  const pagePath = window.location.pathname.split('/').pop() || 'index.html';
+  const params = new URLSearchParams();
+
+  if (currentLanguage !== 'de') {
+    params.set('lang', currentLanguage);
+  }
+
+  params.set('service', packageName);
+
+  const query = params.toString();
+  return `${pagePath}?${query}#coaching`;
 }
 
 function applyMeta(title, description) {
