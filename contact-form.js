@@ -163,7 +163,11 @@ function bindPackageRequestStorage() {
   }
 
   document.addEventListener('click', (event) => {
-    const trigger = event.target.closest('[data-package-request]');
+    const clickTarget =
+      event.target instanceof Element
+        ? event.target
+        : event.target?.parentElement;
+    const trigger = clickTarget?.closest('[data-package-request]');
 
     if (!trigger) {
       return;
@@ -176,7 +180,7 @@ function bindPackageRequestStorage() {
       window.sessionStorage.setItem(PACKAGE_STORAGE_KEY, selectedPackage);
       fillAndScrollToContact(selectedPackage);
     }
-  });
+  }, true);
 
   packageClickStorageBound = true;
 }
