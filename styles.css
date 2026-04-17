@@ -6,6 +6,10 @@
   --bg-panel-strong: rgba(255, 255, 255, 0.07);
   --bg-accent: #ff5a1f;
   --bg-accent-soft: rgba(255, 90, 31, 0.14);
+  --bg-blue: #6fb7ff;
+  --bg-blue-soft: rgba(111, 183, 255, 0.14);
+  --bg-petrol: #2bb2a3;
+  --bg-petrol-soft: rgba(43, 178, 163, 0.14);
   --text-main: #ffffff;
   --text-muted: #d1d5db;
   --text-soft: rgba(255, 255, 255, 0.82);
@@ -534,6 +538,24 @@ a {
   height: 300px;
 }
 
+.pricing-card__image-button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.pricing-card__image-button:focus-visible {
+  outline: none;
+}
+
+.pricing-card__image-button:hover .pricing-card__image,
+.pricing-card__image-button:focus-visible .pricing-card__image {
+  transform: translateY(-1px);
+}
+
 .pricing-card__intro {
   margin-top: 0;
   font-size: 1.02rem;
@@ -541,10 +563,100 @@ a {
   color: var(--text-main);
 }
 
+.pricing-card__toggle,
+.pricing-card__cta {
+  min-height: 44px;
+  border-radius: 10px;
+}
+
+.pricing-card__toggle {
+  justify-self: start;
+  margin-top: 0.35rem;
+  padding-inline: 1rem;
+}
+
+.pricing-card__details {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.2rem;
+}
+
+.pricing-card__details p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.pricing-card__toggle--s {
+  background: var(--bg-accent-soft);
+  color: #ffb08f;
+}
+
+.pricing-card__toggle--m {
+  background: var(--bg-blue-soft);
+  color: #b9daff;
+}
+
+.pricing-card__toggle--l {
+  background: var(--bg-petrol-soft);
+  color: #9de8df;
+}
+
+.pricing-card__toggle--s:hover,
+.pricing-card__cta--s:hover {
+  background: rgba(255, 90, 31, 0.2);
+}
+
+.pricing-card__toggle--m:hover,
+.pricing-card__cta--m:hover {
+  background: rgba(111, 183, 255, 0.2);
+}
+
+.pricing-card__toggle--l:hover,
+.pricing-card__cta--l:hover {
+  background: rgba(43, 178, 163, 0.2);
+}
+
+.pricing-card__jump--s .pricing-card__image,
+.pricing-card__cta--s {
+  border-color: rgba(255, 90, 31, 0.28);
+}
+
+.pricing-card__jump--m .pricing-card__image,
+.pricing-card__cta--m {
+  border-color: rgba(111, 183, 255, 0.3);
+}
+
+.pricing-card__jump--l .pricing-card__image,
+.pricing-card__cta--l {
+  border-color: rgba(43, 178, 163, 0.3);
+}
+
+.pricing-card__cta {
+  justify-self: start;
+}
+
+.pricing-card__cta--s {
+  background: var(--bg-accent);
+  color: #ffffff;
+  box-shadow: 0 16px 30px rgba(255, 90, 31, 0.2);
+}
+
+.pricing-card__cta--m {
+  background: var(--bg-blue);
+  color: #0a1220;
+  box-shadow: 0 16px 30px rgba(111, 183, 255, 0.18);
+}
+
+.pricing-card__cta--l {
+  background: var(--bg-petrol);
+  color: #081513;
+  box-shadow: 0 16px 30px rgba(43, 178, 163, 0.18);
+}
+
 .pricing-meta {
   display: grid;
   gap: 0.75rem;
-  margin-top: 1.2rem;
+  margin-top: 0;
   padding-top: 1rem;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
