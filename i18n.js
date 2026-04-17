@@ -13,6 +13,7 @@ if (currentLanguage !== 'de') {
   applyPageLanguageUi();
 }
 upgradePricingDetails();
+ensurePricingPackageValues();
 decoratePackageRequestLinks();
 rewriteInternalLinks();
 document.dispatchEvent(new CustomEvent('schob:content-updated', {
@@ -884,6 +885,31 @@ function decoratePackageRequestLinks() {
     }
 
     button.replaceWith(link);
+  });
+}
+
+function ensurePricingPackageValues() {
+  const pricingCards = document.querySelectorAll('.pricing-card');
+
+  pricingCards.forEach((card) => {
+    const existingValue = card.querySelector('.pricing-card__package-value');
+    const trigger = card.querySelector('[data-package-request]');
+    const selectedPackage = trigger?.getAttribute('data-package-request');
+
+    if (!selectedPackage) {
+      return;
+    }
+
+    if (existingValue instanceof HTMLInputElement) {
+      existingValue.value = selectedPackage;
+      return;
+    }
+
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    hiddenInput.className = 'pricing-card__package-value';
+    hiddenInput.value = selectedPackage;
+    card.prepend(hiddenInput);
   });
 }
 

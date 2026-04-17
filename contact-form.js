@@ -121,7 +121,12 @@ function bindPackageRequestStorage() {
       return;
     }
 
-    const selectedPackage = trigger.getAttribute('data-package-request');
+    const pricingCard = trigger.closest('.pricing-card');
+    const packageValueField = pricingCard?.querySelector('.pricing-card__package-value');
+    const selectedPackage =
+      packageValueField instanceof HTMLInputElement
+        ? packageValueField.value
+        : trigger.getAttribute('data-package-request');
 
     if (selectedPackage) {
       event.preventDefault();
