@@ -354,7 +354,7 @@ a {
 }
 
 .hero__portrait--product {
-  padding: 1.2rem;
+  padding: 0.6rem;
   background: rgba(17, 17, 19, 0.92);
 }
 
@@ -370,11 +370,13 @@ a {
 }
 
 .hero__image--product {
+  width: 100%;
   min-height: 0;
   border-radius: 18px;
-  object-fit: contain;
+  object-fit: cover;
   object-position: center;
-  transform: none;
+  transform: scale(1.14);
+  transform-origin: center center;
 }
 
 .hero__portrait::after {
