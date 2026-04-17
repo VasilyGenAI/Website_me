@@ -229,7 +229,7 @@ a {
 }
 
 .hero::after {
-  content: "BUY BACK";
+  content: none;
   position: absolute;
   left: 50%;
   bottom: -3rem;
