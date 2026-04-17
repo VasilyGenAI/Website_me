@@ -6,10 +6,12 @@ document.documentElement.lang = currentLanguage;
 document.documentElement.dataset.lang = currentLanguage;
 window.localStorage.setItem('schob_site_language', currentLanguage);
 
-applyCommonLanguageUi();
-applyPageLanguageUi();
 rewriteInternalLinks();
 updateLanguageSwitcher();
+if (currentLanguage !== 'de') {
+  applyCommonLanguageUi();
+  applyPageLanguageUi();
+}
 document.dispatchEvent(new CustomEvent('schob:content-updated', {
   detail: {
     page: currentPage,
