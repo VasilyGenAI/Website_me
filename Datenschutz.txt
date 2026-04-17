@@ -40,16 +40,16 @@ Rechtsgrundlage für dieses notwendige Cookie ist § 25 Abs. 2 Nr. 2 TDDDG. Die 
 Sie können Ihre Auswahl jederzeit erneut öffnen und anpassen:
 [[COOKIE_SETTINGS_BUTTON]]
 
-2.4. Google Analytics
-Sofern Sie im Cookie-Banner ausdrücklich einwilligen, setze ich Google Analytics ein, um die Nutzung meiner Website besser zu verstehen und Inhalte sowie Marketingmaßnahmen gezielt weiterzuentwickeln.
-Anbieter ist die Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland. Im Rahmen der Nutzung kann eine Verarbeitung auch durch die Google LLC, 1600 Amphitheatre Parkway, Mountain View, CA 94043, USA, erfolgen.
-Diese Cookies können insbesondere gesetzt werden:
-- _ga, 2 Jahre, Unterscheidung von Nutzerinnen und Nutzern
-- _ga_*, 2 Jahre, Speichert den Sitzungsstatus
-- _gid, 24 Stunden, Erkennung von Nutzerinnen und Nutzern für einen Tag
-- _gat_*, 1 Minute, Drosselung der Anforderungsrate
-Die Rechtsgrundlage für das Speichern dieser Cookies ist § 25 Abs. 1 TDDDG. Die anschließende Datenverarbeitung erfolgt ausschließlich auf Grundlage Ihrer Einwilligung gemäß Art. 6 Abs. 1 lit. a DSGVO.
-Weitere Informationen finden Sie unter:
+2.4. Analyse-Cookies (Google Analytics 4)
+Zusätzlich verwende ich Google Analytics 4, um die Performance meiner Website zu messen und das Nutzerverhalten zu analysieren, etwa Seitenaufrufe, Verweildauer und Klickwege. Als alleiniger Entwickler möchte ich verstehen, wie Besucher auf meine Website gelangen und welche Inhalte besonders relevant sind. Nur auf dieser Grundlage kann ich die Benutzerfreundlichkeit meiner Website verbessern und meine App gezielt weiterentwickeln und vermarkten.
+Neben allgemeinen Seitenaufrufen habe ich in Google Analytics die sogenannten „Optimierten Analysen“ aktiviert. Dadurch werden zusätzlich folgende spezifische Nutzerinteraktionen erfasst: Scrollvorgänge, Klicks auf Links, die von meiner Website wegführen (externe Links), Suchanfragen innerhalb der Website, Interaktionen mit eingebetteten Videos, Dateidownloads sowie Interaktionen mit Formularen (zum Beispiel der Start des Ausfüllens). Es werden hierbei keine in Formulare eingegebenen persönlichen Texte an Google gesendet.
+Google Analytics 4 nutzt standardmäßig eine automatische IP-Anonymisierung. Das bedeutet, dass Ihre IP-Adresse von Google innerhalb von Mitgliedstaaten der Europäischen Union oder in anderen Vertragsstaaten des Abkommens über den Europäischen Wirtschaftsraum vor der Speicherung gekürzt wird.
+Anbieter ist die Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland. Im Rahmen der Nutzung kann eine Verarbeitung auch durch die Google LLC, 1600 Amphitheatre Parkway, Mountain View, CA 94043, USA, erfolgen. Für die Datenübermittlung in die USA hat sich Google unter dem EU-U.S. Data Privacy Framework zertifiziert, wodurch ein nach EU-Standards angemessenes Datenschutzniveau für die Verarbeitung in den USA gewährleistet wird.
+Diese Analyse-Cookies werden nur dann gesetzt, wenn Sie mir hierzu zuvor über mein Cookie-Banner Ihre ausdrückliche Einwilligung erteilt haben.
+Die Rechtsgrundlage für das Speichern dieser Cookies auf Ihrem Endgerät ist § 25 Abs. 1 TDDDG. Die anschließende Verarbeitung Ihrer Daten erfolgt auf Grundlage Ihrer Einwilligung gemäß Art. 6 Abs. 1 lit. a DSGVO. Sie können Ihre Einwilligung jederzeit mit Wirkung für die Zukunft widerrufen, indem Sie die Cookie-Einstellungen auf meiner Website anpassen.
+Cookie-Einstellungen ändern
+[[COOKIE_SETTINGS_BUTTON]]
+Weitere Informationen finden Sie in der Datenschutzerklärung des Anbieters unter:
 https://policies.google.com/privacy?hl=de
 
 3. Kontaktaufnahme per E-Mail oder Telefon
