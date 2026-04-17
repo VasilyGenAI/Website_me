@@ -5,6 +5,7 @@ const contactSuccess = document.getElementById('contact-success');
 const contactService = document.getElementById('contact-service');
 const contactMessage = document.getElementById('contact-message');
 const pricingToggleButtons = document.querySelectorAll('[data-pricing-toggle]');
+const pricingDetails = document.querySelectorAll('.pricing-card__details');
 const packageRequestButtons = document.querySelectorAll('[data-package-request]');
 
 if (contactForm && contactNext && contactUrl) {
@@ -25,19 +26,23 @@ if (contactForm && contactNext && contactUrl) {
   }
 }
 
+function setPricingExpanded(expanded) {
+  pricingDetails.forEach((details) => {
+    details.hidden = !expanded;
+  });
+
+  pricingToggleButtons.forEach((button) => {
+    button.setAttribute('aria-expanded', String(expanded));
+    button.textContent = expanded ? 'Weniger' : 'Mehr';
+  });
+}
+
+setPricingExpanded(false);
+
 pricingToggleButtons.forEach((button) => {
-  const detailsId = button.getAttribute('aria-controls');
-  const details = detailsId ? document.getElementById(detailsId) : null;
-
-  if (!details) {
-    return;
-  }
-
   button.addEventListener('click', () => {
     const isExpanded = button.getAttribute('aria-expanded') === 'true';
-    button.setAttribute('aria-expanded', String(!isExpanded));
-    button.textContent = isExpanded ? 'Mehr' : 'Weniger';
-    details.hidden = isExpanded;
+    setPricingExpanded(!isExpanded);
   });
 });
 
