@@ -10,6 +10,12 @@ applyCommonLanguageUi();
 applyPageLanguageUi();
 rewriteInternalLinks();
 updateLanguageSwitcher();
+document.dispatchEvent(new CustomEvent('schob:content-updated', {
+  detail: {
+    page: currentPage,
+    language: currentLanguage,
+  },
+}));
 
 function applyCommonLanguageUi() {
   const navLabels = {

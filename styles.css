@@ -104,7 +104,7 @@ a {
   display: grid;
   grid-template-columns: auto 1fr auto auto;
   align-items: center;
-  gap: 1rem;
+  gap: 0.8rem;
   width: 100%;
   min-height: 80px;
   padding: 0.9rem max(1rem, calc((100vw - var(--shell)) / 2));
@@ -119,7 +119,7 @@ a {
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.8rem;
+  gap: 0.55rem;
   font-family: var(--font-display);
   font-size: 1.35rem;
   font-weight: 800;
@@ -131,18 +131,7 @@ a {
 }
 
 .brand::before {
-  content: "S";
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background: rgba(255, 90, 31, 0.14);
-  color: var(--bg-accent);
-  font-size: 1.45rem;
-  font-weight: 800;
-  line-height: 1;
+  content: none;
 }
 
 .brand__accent {
@@ -173,6 +162,11 @@ a {
 
 .site-header__cta {
   justify-self: end;
+  min-height: 40px;
+  padding: 0.68rem 0.95rem;
+  font-size: 0.92rem;
+  border-radius: 12px;
+  white-space: nowrap;
 }
 
 .language-switcher {

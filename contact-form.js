@@ -1,38 +1,98 @@
-const contactForm = document.getElementById('contact-form');
-const contactNext = document.getElementById('contact-next');
-const contactUrl = document.getElementById('contact-url');
-const contactSuccess = document.getElementById('contact-success');
-const contactService = document.getElementById('contact-service');
-const contactMessage = document.getElementById('contact-message');
-const pricingToggleButtons = document.querySelectorAll('[data-pricing-toggle]');
-const pricingDetails = document.querySelectorAll('.pricing-card__details');
-const packageRequestButtons = document.querySelectorAll('[data-package-request]');
 const uiLang = getUiLang();
 const PRICING_LABELS = {
   de: { more: 'Mehr', less: 'Weniger' },
   en: { more: 'More', less: 'Less' },
   uk: { more: 'Більше', less: 'Менше' },
 };
+let pricingBound = false;
+let packageButtonsBound = false;
 
-if (contactForm && contactNext && contactUrl) {
-  const successUrl = new URL(window.location.href);
-  successUrl.searchParams.set('contact', 'success');
-  successUrl.hash = 'coaching';
+initializeContactAndPricing();
+document.addEventListener('schob:content-updated', initializeContactAndPricing);
 
-  contactNext.value = successUrl.toString();
-  contactUrl.value = window.location.href;
+function initializeContactAndPricing() {
+  const contactForm = document.getElementById('contact-form');
+  const contactNext = document.getElementById('contact-next');
+  const contactUrl = document.getElementById('contact-url');
+  const contactSuccess = document.getElementById('contact-success');
+  const contactService = document.getElementById('contact-service');
+  const contactMessage = document.getElementById('contact-message');
+  const pricingToggleButtons = Array.from(document.querySelectorAll('[data-pricing-toggle]'));
+  const pricingDetails = Array.from(document.querySelectorAll('.pricing-card__details'));
+  const packageRequestButtons = Array.from(document.querySelectorAll('[data-package-request]'));
 
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('contact') === 'success' && contactSuccess) {
-    contactSuccess.hidden = false;
+  if (contactForm && contactNext && contactUrl) {
+    const successUrl = new URL(window.location.href);
+    successUrl.searchParams.set('contact', 'success');
+    successUrl.hash = 'coaching';
 
-    const cleanUrl = new URL(window.location.href);
-    cleanUrl.searchParams.delete('contact');
-    window.history.replaceState({}, '', cleanUrl.toString());
+    contactNext.value = successUrl.toString();
+    contactUrl.value = window.location.href;
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('contact') === 'success' && contactSuccess) {
+      contactSuccess.hidden = false;
+
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete('contact');
+      window.history.replaceState({}, '', cleanUrl.toString());
+    }
+  }
+
+  if (pricingToggleButtons.length) {
+    setPricingExpanded(false, pricingDetails, pricingToggleButtons);
+
+    if (!pricingBound) {
+      document.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-pricing-toggle]');
+        if (!button) {
+          return;
+        }
+
+        const liveButtons = Array.from(document.querySelectorAll('[data-pricing-toggle]'));
+        const liveDetails = Array.from(document.querySelectorAll('.pricing-card__details'));
+        const isExpanded = button.getAttribute('aria-expanded') === 'true';
+
+        setPricingExpanded(!isExpanded, liveDetails, liveButtons);
+      });
+      pricingBound = true;
+    }
+  }
+
+  if (!packageButtonsBound) {
+    document.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-package-request]');
+      if (!button) {
+        return;
+      }
+
+      const liveContactForm = document.getElementById('contact-form');
+      const liveContactService = document.getElementById('contact-service');
+      const liveContactMessage = document.getElementById('contact-message');
+      const selectedPackage = button.getAttribute('data-package-request');
+
+      if (liveContactService && selectedPackage) {
+        liveContactService.value = selectedPackage;
+      }
+
+      liveContactForm?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+
+      window.setTimeout(() => {
+        if (liveContactService instanceof HTMLElement) {
+          liveContactService.focus();
+        } else if (liveContactMessage instanceof HTMLElement) {
+          liveContactMessage.focus();
+        }
+      }, 320);
+    });
+    packageButtonsBound = true;
   }
 }
 
-function setPricingExpanded(expanded) {
+function setPricingExpanded(expanded, pricingDetails, pricingToggleButtons) {
   pricingDetails.forEach((details) => {
     details.hidden = !expanded;
   });
@@ -42,38 +102,6 @@ function setPricingExpanded(expanded) {
     button.textContent = expanded ? PRICING_LABELS[uiLang].less : PRICING_LABELS[uiLang].more;
   });
 }
-
-setPricingExpanded(false);
-
-pricingToggleButtons.forEach((button) => {
-  button.addEventListener('click', () => {
-    const isExpanded = button.getAttribute('aria-expanded') === 'true';
-    setPricingExpanded(!isExpanded);
-  });
-});
-
-packageRequestButtons.forEach((button) => {
-  button.addEventListener('click', () => {
-    const selectedPackage = button.getAttribute('data-package-request');
-
-    if (contactService && selectedPackage) {
-      contactService.value = selectedPackage;
-    }
-
-    contactForm?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
-    });
-
-    window.setTimeout(() => {
-      if (contactService instanceof HTMLElement) {
-        contactService.focus();
-      } else if (contactMessage instanceof HTMLElement) {
-        contactMessage.focus();
-      }
-    }, 320);
-  });
-});
 
 function getUiLang() {
   const lang = document.documentElement.lang.toLowerCase();
