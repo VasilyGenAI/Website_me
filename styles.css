@@ -743,7 +743,7 @@ a {
 .contact-panel--website::before {
   background:
     linear-gradient(180deg, rgba(10, 10, 10, 0.36), rgba(10, 10, 10, 0.42)),
-    url("Photos/Screen3.png");
+    url("Photos/laptop.JPG");
   background-size: cover;
   background-position: center top;
   opacity: 0.28;
