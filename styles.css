@@ -461,15 +461,16 @@ a {
 
 .offer-card__image {
   width: 100%;
-  height: auto;
-  max-height: none;
+  height: 340px;
   object-fit: contain;
+  object-position: center center;
   margin-bottom: 1rem;
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.06);
-  background: var(--bg-offset);
+  background: rgba(255, 255, 255, 0.03);
   opacity: 1;
   filter: none;
+  padding: 0.35rem;
 }
 
 .offer-card:hover,
