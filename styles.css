@@ -288,6 +288,15 @@ a {
   color: var(--bg-accent);
 }
 
+.hero__copy .eyebrow,
+.section-heading .eyebrow,
+.method-intro .eyebrow,
+.contact-panel__intro .eyebrow,
+.social-proof__label {
+  background: rgba(255, 90, 31, 0.1);
+  color: var(--bg-accent);
+}
+
 .hero__copy h1,
 .section-heading h2,
 .method-intro h2,
