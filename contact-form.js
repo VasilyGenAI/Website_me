@@ -1,57 +1,5 @@
 let successPopupTimeout = null;
-let packageClickStorageBound = false;
 const uiLang = getUiLang();
-const PACKAGE_STORAGE_KEY = 'schob_selected_package';
-const PACKAGE_MATCHES = {
-  home: {
-    de: {
-      s: 'Paket S: Das Kickstart-Setup',
-      m: 'Paket M: Der MVP-Builder',
-      l: 'Paket L: Der Solo-Founder Companion',
-    },
-    en: {
-      s: 'Package S: The Kickstart Setup',
-      m: 'Package M: The MVP Builder',
-      l: 'Package L: The Solo-Founder Companion',
-    },
-    uk: {
-      s: 'Пакет S: Стартовий сетап',
-      m: 'Пакет M: MVP Builder',
-      l: 'Пакет L: Solo-Founder Companion',
-    },
-  },
-  website: {
-    de: {
-      s: 'Paket S: Der digitale Schnellstarter',
-      m: 'Paket M: Das Business-Fundament',
-    },
-    en: {
-      s: 'Package S: The Digital Quickstart',
-      m: 'Package M: The Business Foundation',
-    },
-    uk: {
-      s: 'Пакет S: Швидкий цифровий старт',
-      m: 'Пакет M: Бізнес-фундамент',
-    },
-  },
-  startup: {
-    de: {
-      s: 'Paket S: Der Strategie-Kompass',
-      m: 'Paket M: Das Gründungs-Intensiv',
-      l: 'Paket L: Der Startup Companion',
-    },
-    en: {
-      s: 'Package S: The Strategy Compass',
-      m: 'Package M: The Founder Intensive',
-      l: 'Package L: The Startup Companion',
-    },
-    uk: {
-      s: 'Пакет S: Стратегічний компас',
-      m: 'Пакет M: Інтенсив запуску',
-      l: 'Пакет L: Startup Companion',
-    },
-  },
-};
 const SUCCESS_POPUP_TEXT = {
   de: {
     title: 'Danke!',
@@ -79,14 +27,18 @@ function initializeContactAndPricing() {
   const contactUrl = document.getElementById('contact-url');
   const contactSuccess = document.getElementById('contact-success');
   const contactService = document.getElementById('contact-service');
+  const pageUrl = new URL(window.location.href);
 
   if (contactForm && contactNext && contactUrl) {
-    const successUrl = new URL(window.location.href);
+    const successUrl = new URL(pageUrl.toString());
+    successUrl.searchParams.delete('service');
     successUrl.searchParams.set('contact', 'success');
     successUrl.hash = 'coaching';
 
     contactNext.value = successUrl.toString();
-    contactUrl.value = window.location.href;
+    pageUrl.searchParams.delete('service');
+    pageUrl.searchParams.delete('contact');
+    contactUrl.value = pageUrl.toString();
 
     const params = new URLSearchParams(window.location.search);
     if (params.get('contact') === 'success' && contactSuccess) {
@@ -100,7 +52,6 @@ function initializeContactAndPricing() {
   }
 
   applySelectedPackage(contactService);
-  bindPackageRequestStorage();
 }
 
 function showSuccessPopup() {
@@ -148,66 +99,20 @@ function applySelectedPackage(contactService) {
     return;
   }
 
-  const selectedPackage = window.sessionStorage.getItem(PACKAGE_STORAGE_KEY);
+  const selectedPackage = getSelectedPackageFromUrl();
 
   if (!selectedPackage) {
     return;
   }
 
   writeSelectedPackage(selectedPackage);
-}
-
-function bindPackageRequestStorage() {
-  if (packageClickStorageBound) {
-    return;
-  }
-
-  document.addEventListener('click', (event) => {
-    const clickTarget =
-      event.target instanceof Element
-        ? event.target
-        : event.target?.parentElement;
-    const trigger = clickTarget?.closest('[data-package-request]');
-
-    if (!trigger) {
-      return;
-    }
-
-    const selectedPackage = resolvePackageSelection(trigger);
-
-    if (selectedPackage) {
-      event.preventDefault();
-      window.sessionStorage.setItem(PACKAGE_STORAGE_KEY, selectedPackage);
-      fillAndScrollToContact(selectedPackage);
-    }
-  }, true);
-
-  packageClickStorageBound = true;
-}
-
-function fillAndScrollToContact(selectedPackage) {
-  const liveContactForm = document.getElementById('contact-form');
-  const liveContactMessage = document.getElementById('contact-message');
-
-  if (selectedPackage) {
-    writeSelectedPackage(selectedPackage);
-  }
-
-  liveContactForm?.scrollIntoView({
-    behavior: 'smooth',
-    block: 'start',
-  });
+  cleanupSelectedPackageInUrl();
 
   window.setTimeout(() => {
     const liveContactService = document.getElementById('contact-service');
-
-    if (liveContactService instanceof HTMLElement) {
-      liveContactService.focus();
-      liveContactService.select?.();
-    } else if (liveContactMessage instanceof HTMLElement) {
-      liveContactMessage.focus();
-    }
-  }, 320);
+    liveContactService?.dispatchEvent(new Event('input', { bubbles: true }));
+    liveContactService?.dispatchEvent(new Event('change', { bubbles: true }));
+  }, 30);
 }
 
 function writeSelectedPackage(selectedPackage) {
@@ -234,48 +139,20 @@ function writeSelectedPackage(selectedPackage) {
   window.setTimeout(applyValue, 260);
 }
 
-function resolvePackageSelection(trigger) {
-  const pricingCard = trigger.closest('.pricing-card');
-  const cardTone = getPricingCardTone(pricingCard, trigger);
-  const pageKey = getCurrentPageKey();
-  const languagePackages = PACKAGE_MATCHES[pageKey]?.[uiLang];
-
-  if (cardTone && languagePackages?.[cardTone]) {
-    return languagePackages[cardTone];
-  }
-
-  const packageValueField = pricingCard?.querySelector('.pricing-card__package-value');
-
-  if (packageValueField instanceof HTMLInputElement && packageValueField.value) {
-    return packageValueField.value;
-  }
-
-  return trigger.getAttribute('data-package-request');
+function getSelectedPackageFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('service') || '';
 }
 
-function getPricingCardTone(pricingCard, trigger) {
-  const classSource = [
-    pricingCard?.className || '',
-    trigger.className || '',
-  ].join(' ');
+function cleanupSelectedPackageInUrl() {
+  const currentUrl = new URL(window.location.href);
 
-  if (classSource.includes('--s')) {
-    return 's';
+  if (!currentUrl.searchParams.has('service')) {
+    return;
   }
 
-  if (classSource.includes('--m')) {
-    return 'm';
-  }
-
-  if (classSource.includes('--l')) {
-    return 'l';
-  }
-
-  return '';
-}
-
-function getCurrentPageKey() {
-  return document.body.dataset.page || 'home';
+  currentUrl.searchParams.delete('service');
+  window.history.replaceState({}, '', currentUrl.toString());
 }
 
 function getUiLang() {

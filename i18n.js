@@ -920,7 +920,21 @@ function buildLocalizedUrl(path, lang, hash) {
 }
 
 function buildPackageRequestUrl(packageName) {
-  return '#coaching';
+  const currentUrl = new URL(window.location.href);
+  const currentFile = currentUrl.pathname.split('/').pop() || 'index.html';
+
+  currentUrl.searchParams.delete('contact');
+  currentUrl.searchParams.set('service', packageName);
+
+  if (currentLanguage === 'de') {
+    currentUrl.searchParams.delete('lang');
+  } else {
+    currentUrl.searchParams.set('lang', currentLanguage);
+  }
+
+  currentUrl.hash = 'coaching';
+
+  return `${currentFile}${currentUrl.search}${currentUrl.hash}`;
 }
 
 function applyMeta(title, description) {
