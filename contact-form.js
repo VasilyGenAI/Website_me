@@ -1,47 +1,5 @@
 let successPopupTimeout = null;
 const uiLang = getUiLang();
-const SERVICE_VALUE_MAP = {
-  'home-s': {
-    de: 'Paket S: Das Kickstart-Setup',
-    en: 'Package S: The Kickstart Setup',
-    uk: 'Пакет S: Стартовий сетап',
-  },
-  'home-m': {
-    de: 'Paket M: Der MVP-Builder',
-    en: 'Package M: The MVP Builder',
-    uk: 'Пакет M: MVP Builder',
-  },
-  'home-l': {
-    de: 'Paket L: Der Solo-Founder Companion',
-    en: 'Package L: The Solo-Founder Companion',
-    uk: 'Пакет L: Solo-Founder Companion',
-  },
-  'website-s': {
-    de: 'Paket S: Der digitale Schnellstarter',
-    en: 'Package S: The Digital Quickstart',
-    uk: 'Пакет S: Швидкий цифровий старт',
-  },
-  'website-m': {
-    de: 'Paket M: Das Business-Fundament',
-    en: 'Package M: The Business Foundation',
-    uk: 'Пакет M: Бізнес-фундамент',
-  },
-  'startup-s': {
-    de: 'Paket S: Der Strategie-Kompass',
-    en: 'Package S: The Strategy Compass',
-    uk: 'Пакет S: Стратегічний компас',
-  },
-  'startup-m': {
-    de: 'Paket M: Das Gründungs-Intensiv',
-    en: 'Package M: The Founder Intensive',
-    uk: 'Пакет M: Інтенсив запуску',
-  },
-  'startup-l': {
-    de: 'Paket L: Der Startup Companion',
-    en: 'Package L: The Startup Companion',
-    uk: 'Пакет L: Startup Companion',
-  },
-};
 const SUCCESS_POPUP_TEXT = {
   de: {
     title: 'Danke!',
@@ -62,6 +20,8 @@ const SUCCESS_POPUP_TEXT = {
 
 initializeContactAndPricing();
 document.addEventListener('schob:content-updated', initializeContactAndPricing);
+window.prefillService = prefillService;
+window.prefillServiceFromTrigger = prefillServiceFromTrigger;
 
 function initializeContactAndPricing() {
   const contactForm = document.getElementById('contact-form');
@@ -90,7 +50,6 @@ function initializeContactAndPricing() {
     }
   }
 
-  bindPackageRequestTriggers();
 }
 
 function showSuccessPopup() {
@@ -133,32 +92,6 @@ function dismissSuccessPopup(popup) {
   }, 220);
 }
 
-function bindPackageRequestTriggers() {
-  const packageTriggers = document.querySelectorAll('[data-service-key]');
-
-  packageTriggers.forEach((trigger) => {
-    if (trigger.dataset.serviceBound === 'true') {
-      return;
-    }
-
-    trigger.addEventListener('click', (event) => {
-      event.preventDefault();
-
-      const serviceKey = trigger.getAttribute('data-service-key') || '';
-      const selectedPackage = getPackageValueForKey(serviceKey, trigger);
-
-      if (!selectedPackage) {
-        return;
-      }
-
-      writeSelectedPackage(selectedPackage);
-      scrollToContactForm();
-    });
-
-    trigger.dataset.serviceBound = 'true';
-  });
-}
-
 function writeSelectedPackage(selectedPackage) {
   if (!selectedPackage) {
     return;
@@ -183,14 +116,22 @@ function writeSelectedPackage(selectedPackage) {
   window.setTimeout(applyValue, 260);
 }
 
-function getPackageValueForKey(serviceKey, trigger) {
-  const serviceValues = SERVICE_VALUE_MAP[serviceKey];
-
-  if (serviceValues?.[uiLang]) {
-    return serviceValues[uiLang];
+function prefillService(selectedPackage) {
+  if (!selectedPackage) {
+    return false;
   }
 
-  return trigger.getAttribute('data-package-request') || '';
+  writeSelectedPackage(selectedPackage);
+  scrollToContactForm();
+  return false;
+}
+
+function prefillServiceFromTrigger(trigger) {
+  if (!(trigger instanceof Element)) {
+    return false;
+  }
+
+  return prefillService(trigger.getAttribute('data-package-request') || '');
 }
 
 function scrollToContactForm() {

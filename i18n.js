@@ -14,8 +14,7 @@ if (currentLanguage !== 'de') {
 }
 upgradePricingDetails();
 ensurePricingPackageValues();
-decoratePackageRequestLinks();
-assignServiceKeys();
+assignInlinePrefillHandlers();
 rewriteInternalLinks();
 document.dispatchEvent(new CustomEvent('schob:content-updated', {
   detail: {
@@ -859,36 +858,6 @@ function upgradePricingDetails() {
   });
 }
 
-function decoratePackageRequestLinks() {
-  const packageTriggers = document.querySelectorAll('button[data-package-request]');
-
-  packageTriggers.forEach((button) => {
-    const selectedPackage = button.getAttribute('data-package-request');
-
-    if (!selectedPackage) {
-      return;
-    }
-
-    const link = document.createElement('a');
-
-    link.className = button.className;
-    link.href = buildPackageRequestUrl(selectedPackage);
-    link.innerHTML = button.innerHTML;
-    link.setAttribute('data-package-request', selectedPackage);
-
-    const ariaLabel = button.getAttribute('aria-label');
-    if (ariaLabel) {
-      link.setAttribute('aria-label', ariaLabel);
-    }
-
-    if (button.classList.contains('pricing-card__image-button')) {
-      link.setAttribute('role', 'button');
-    }
-
-    button.replaceWith(link);
-  });
-}
-
 function ensurePricingPackageValues() {
   const pricingCards = document.querySelectorAll('.pricing-card');
 
@@ -914,16 +883,21 @@ function ensurePricingPackageValues() {
   });
 }
 
-function assignServiceKeys() {
-  const pageKey = currentPage;
-  const tones = ['s', 'm', 'l'];
+function assignInlinePrefillHandlers() {
+  const packageTriggers = document.querySelectorAll('[data-package-request]');
 
-  tones.forEach((tone) => {
-    const cardTriggers = document.querySelectorAll(`.pricing-card--${tone} [data-package-request]`);
+  packageTriggers.forEach((trigger) => {
+    const selectedPackage = trigger.getAttribute('data-package-request');
 
-    cardTriggers.forEach((trigger) => {
-      trigger.setAttribute('data-service-key', `${pageKey}-${tone}`);
-    });
+    if (!selectedPackage) {
+      return;
+    }
+
+    if (trigger instanceof HTMLAnchorElement) {
+      trigger.setAttribute('href', '#coaching');
+    }
+
+    trigger.setAttribute('onclick', `return window.prefillService(${JSON.stringify(selectedPackage)});`);
   });
 }
 
@@ -931,10 +905,6 @@ function buildLocalizedUrl(path, lang, hash) {
   const normalizedPath = path || window.location.pathname.split('/').pop() || 'index.html';
   const suffix = lang ? `?lang=${lang}` : '';
   return `${normalizedPath}${suffix}${hash || ''}`;
-}
-
-function buildPackageRequestUrl(packageName) {
-  return '#coaching';
 }
 
 function applyMeta(title, description) {
