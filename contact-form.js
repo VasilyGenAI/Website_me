@@ -21,7 +21,6 @@ const SUCCESS_POPUP_TEXT = {
 initializeContactAndPricing();
 document.addEventListener('schob:content-updated', initializeContactAndPricing);
 window.prefillService = prefillService;
-window.prefillServiceFromTrigger = prefillServiceFromTrigger;
 
 function initializeContactAndPricing() {
   const contactForm = document.getElementById('contact-form');
@@ -50,7 +49,6 @@ function initializeContactAndPricing() {
     }
   }
 
-  bindDirectPackageTriggers();
 }
 
 function showSuccessPopup() {
@@ -125,39 +123,6 @@ function prefillService(selectedPackage) {
   writeSelectedPackage(selectedPackage);
   scrollToContactForm();
   return false;
-}
-
-function prefillServiceFromTrigger(trigger) {
-  if (!(trigger instanceof Element)) {
-    return false;
-  }
-
-  return prefillService(trigger.getAttribute('data-package-request') || '');
-}
-
-function bindDirectPackageTriggers() {
-  const packageTriggers = document.querySelectorAll('[data-package-request]');
-
-  packageTriggers.forEach((trigger) => {
-    if (!(trigger instanceof HTMLElement)) {
-      return;
-    }
-
-    if (trigger.dataset.prefillBound === 'true') {
-      return;
-    }
-
-    if (trigger instanceof HTMLAnchorElement && !trigger.getAttribute('href')) {
-      trigger.setAttribute('href', '#coaching');
-    }
-
-    trigger.addEventListener('click', (event) => {
-      event.preventDefault();
-      prefillServiceFromTrigger(trigger);
-    });
-
-    trigger.dataset.prefillBound = 'true';
-  });
 }
 
 function scrollToContactForm() {
