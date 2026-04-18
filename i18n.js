@@ -15,6 +15,7 @@ if (currentLanguage !== 'de') {
 upgradePricingDetails();
 ensurePricingPackageValues();
 decoratePackageRequestLinks();
+assignServiceKeys();
 rewriteInternalLinks();
 document.dispatchEvent(new CustomEvent('schob:content-updated', {
   detail: {
@@ -913,6 +914,19 @@ function ensurePricingPackageValues() {
   });
 }
 
+function assignServiceKeys() {
+  const pageKey = currentPage;
+  const tones = ['s', 'm', 'l'];
+
+  tones.forEach((tone) => {
+    const cardTriggers = document.querySelectorAll(`.pricing-card--${tone} [data-package-request]`);
+
+    cardTriggers.forEach((trigger) => {
+      trigger.setAttribute('data-service-key', `${pageKey}-${tone}`);
+    });
+  });
+}
+
 function buildLocalizedUrl(path, lang, hash) {
   const normalizedPath = path || window.location.pathname.split('/').pop() || 'index.html';
   const suffix = lang ? `?lang=${lang}` : '';
@@ -920,21 +934,7 @@ function buildLocalizedUrl(path, lang, hash) {
 }
 
 function buildPackageRequestUrl(packageName) {
-  const currentUrl = new URL(window.location.href);
-  const currentFile = currentUrl.pathname.split('/').pop() || 'index.html';
-
-  currentUrl.searchParams.delete('contact');
-  currentUrl.searchParams.set('service', packageName);
-
-  if (currentLanguage === 'de') {
-    currentUrl.searchParams.delete('lang');
-  } else {
-    currentUrl.searchParams.set('lang', currentLanguage);
-  }
-
-  currentUrl.hash = 'coaching';
-
-  return `${currentFile}${currentUrl.search}${currentUrl.hash}`;
+  return '#coaching';
 }
 
 function applyMeta(title, description) {

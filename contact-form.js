@@ -1,5 +1,47 @@
 let successPopupTimeout = null;
 const uiLang = getUiLang();
+const SERVICE_VALUE_MAP = {
+  'home-s': {
+    de: 'Paket S: Das Kickstart-Setup',
+    en: 'Package S: The Kickstart Setup',
+    uk: 'Пакет S: Стартовий сетап',
+  },
+  'home-m': {
+    de: 'Paket M: Der MVP-Builder',
+    en: 'Package M: The MVP Builder',
+    uk: 'Пакет M: MVP Builder',
+  },
+  'home-l': {
+    de: 'Paket L: Der Solo-Founder Companion',
+    en: 'Package L: The Solo-Founder Companion',
+    uk: 'Пакет L: Solo-Founder Companion',
+  },
+  'website-s': {
+    de: 'Paket S: Der digitale Schnellstarter',
+    en: 'Package S: The Digital Quickstart',
+    uk: 'Пакет S: Швидкий цифровий старт',
+  },
+  'website-m': {
+    de: 'Paket M: Das Business-Fundament',
+    en: 'Package M: The Business Foundation',
+    uk: 'Пакет M: Бізнес-фундамент',
+  },
+  'startup-s': {
+    de: 'Paket S: Der Strategie-Kompass',
+    en: 'Package S: The Strategy Compass',
+    uk: 'Пакет S: Стратегічний компас',
+  },
+  'startup-m': {
+    de: 'Paket M: Das Gründungs-Intensiv',
+    en: 'Package M: The Founder Intensive',
+    uk: 'Пакет M: Інтенсив запуску',
+  },
+  'startup-l': {
+    de: 'Paket L: Der Startup Companion',
+    en: 'Package L: The Startup Companion',
+    uk: 'Пакет L: Startup Companion',
+  },
+};
 const SUCCESS_POPUP_TEXT = {
   de: {
     title: 'Danke!',
@@ -26,19 +68,16 @@ function initializeContactAndPricing() {
   const contactNext = document.getElementById('contact-next');
   const contactUrl = document.getElementById('contact-url');
   const contactSuccess = document.getElementById('contact-success');
-  const contactService = document.getElementById('contact-service');
-  const pageUrl = new URL(window.location.href);
+  const cleanPageUrl = new URL(window.location.href);
 
   if (contactForm && contactNext && contactUrl) {
-    const successUrl = new URL(pageUrl.toString());
-    successUrl.searchParams.delete('service');
+    const successUrl = new URL(cleanPageUrl.toString());
     successUrl.searchParams.set('contact', 'success');
     successUrl.hash = 'coaching';
 
     contactNext.value = successUrl.toString();
-    pageUrl.searchParams.delete('service');
-    pageUrl.searchParams.delete('contact');
-    contactUrl.value = pageUrl.toString();
+    cleanPageUrl.searchParams.delete('contact');
+    contactUrl.value = cleanPageUrl.toString();
 
     const params = new URLSearchParams(window.location.search);
     if (params.get('contact') === 'success' && contactSuccess) {
@@ -51,7 +90,7 @@ function initializeContactAndPricing() {
     }
   }
 
-  applySelectedPackage(contactService);
+  bindPackageRequestTriggers();
 }
 
 function showSuccessPopup() {
@@ -94,25 +133,30 @@ function dismissSuccessPopup(popup) {
   }, 220);
 }
 
-function applySelectedPackage(contactService) {
-  if (!contactService) {
-    return;
-  }
+function bindPackageRequestTriggers() {
+  const packageTriggers = document.querySelectorAll('[data-service-key]');
 
-  const selectedPackage = getSelectedPackageFromUrl();
+  packageTriggers.forEach((trigger) => {
+    if (trigger.dataset.serviceBound === 'true') {
+      return;
+    }
 
-  if (!selectedPackage) {
-    return;
-  }
+    trigger.addEventListener('click', (event) => {
+      event.preventDefault();
 
-  writeSelectedPackage(selectedPackage);
-  cleanupSelectedPackageInUrl();
+      const serviceKey = trigger.getAttribute('data-service-key') || '';
+      const selectedPackage = getPackageValueForKey(serviceKey, trigger);
 
-  window.setTimeout(() => {
-    const liveContactService = document.getElementById('contact-service');
-    liveContactService?.dispatchEvent(new Event('input', { bubbles: true }));
-    liveContactService?.dispatchEvent(new Event('change', { bubbles: true }));
-  }, 30);
+      if (!selectedPackage) {
+        return;
+      }
+
+      writeSelectedPackage(selectedPackage);
+      scrollToContactForm();
+    });
+
+    trigger.dataset.serviceBound = 'true';
+  });
 }
 
 function writeSelectedPackage(selectedPackage) {
@@ -139,20 +183,35 @@ function writeSelectedPackage(selectedPackage) {
   window.setTimeout(applyValue, 260);
 }
 
-function getSelectedPackageFromUrl() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get('service') || '';
-}
+function getPackageValueForKey(serviceKey, trigger) {
+  const serviceValues = SERVICE_VALUE_MAP[serviceKey];
 
-function cleanupSelectedPackageInUrl() {
-  const currentUrl = new URL(window.location.href);
-
-  if (!currentUrl.searchParams.has('service')) {
-    return;
+  if (serviceValues?.[uiLang]) {
+    return serviceValues[uiLang];
   }
 
-  currentUrl.searchParams.delete('service');
-  window.history.replaceState({}, '', currentUrl.toString());
+  return trigger.getAttribute('data-package-request') || '';
+}
+
+function scrollToContactForm() {
+  const liveContactForm = document.getElementById('contact-form');
+  const liveContactMessage = document.getElementById('contact-message');
+
+  liveContactForm?.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start',
+  });
+
+  window.setTimeout(() => {
+    const liveContactService = document.getElementById('contact-service');
+
+    if (liveContactService instanceof HTMLElement) {
+      liveContactService.focus();
+      liveContactService.select?.();
+    } else if (liveContactMessage instanceof HTMLElement) {
+      liveContactMessage.focus();
+    }
+  }, 320);
 }
 
 function getUiLang() {
