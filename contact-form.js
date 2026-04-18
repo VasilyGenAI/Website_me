@@ -50,6 +50,7 @@ function initializeContactAndPricing() {
     }
   }
 
+  bindDirectPackageTriggers();
 }
 
 function showSuccessPopup() {
@@ -132,6 +133,31 @@ function prefillServiceFromTrigger(trigger) {
   }
 
   return prefillService(trigger.getAttribute('data-package-request') || '');
+}
+
+function bindDirectPackageTriggers() {
+  const packageTriggers = document.querySelectorAll('[data-package-request]');
+
+  packageTriggers.forEach((trigger) => {
+    if (!(trigger instanceof HTMLElement)) {
+      return;
+    }
+
+    if (trigger.dataset.prefillBound === 'true') {
+      return;
+    }
+
+    if (trigger instanceof HTMLAnchorElement && !trigger.getAttribute('href')) {
+      trigger.setAttribute('href', '#coaching');
+    }
+
+    trigger.addEventListener('click', (event) => {
+      event.preventDefault();
+      prefillServiceFromTrigger(trigger);
+    });
+
+    trigger.dataset.prefillBound = 'true';
+  });
 }
 
 function scrollToContactForm() {
