@@ -97,13 +97,22 @@ function prefillService() {
 }
 
 function scrollToContactForm() {
+  const coachingSection = document.getElementById('coaching');
   const liveContactForm = document.getElementById('contact-form');
   const liveContactMessage = document.getElementById('contact-message');
 
-  liveContactForm?.scrollIntoView({
+  const scrollTarget = coachingSection || liveContactForm;
+
+  scrollTarget?.scrollIntoView({
     behavior: 'smooth',
     block: 'start',
   });
+
+  if (coachingSection) {
+    const nextUrl = new URL(window.location.href);
+    nextUrl.hash = 'coaching';
+    window.history.replaceState({}, '', nextUrl.toString());
+  }
 
   window.setTimeout(() => {
     const liveContactService = document.getElementById('contact-service');
