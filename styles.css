@@ -901,6 +901,7 @@ a {
 }
 
 .contact-form__field input,
+.contact-form__field select,
 .contact-form__field textarea {
   width: 100%;
   padding: 0.95rem 1rem;
@@ -917,6 +918,7 @@ a {
 }
 
 .contact-form__field input:focus,
+.contact-form__field select:focus,
 .contact-form__field textarea:focus {
   outline: 2px solid rgba(255, 90, 31, 0.16);
   border-color: rgba(255, 90, 31, 0.6);

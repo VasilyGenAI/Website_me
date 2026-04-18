@@ -380,7 +380,13 @@
 
               <div class="contact-form__field">
                 <label for="contact-service">Service</label>
-                <input id="contact-service" name="service" type="text" autocomplete="off" placeholder="Welches Paket interessiert dich?">
+                <select id="contact-service" name="service" required>
+                  <option value="" selected disabled>Bitte auswählen</option>
+                  <option value="Paket S: Das Kickstart-Setup">Paket S: Das Kickstart-Setup</option>
+                  <option value="Paket M: Der MVP-Builder">Paket M: Der MVP-Builder</option>
+                  <option value="Paket L: Der Solo-Founder Companion">Paket L: Der Solo-Founder Companion</option>
+                  <option value="Individuell">Individuell</option>
+                </select>
               </div>
 
               <div class="contact-form__field">

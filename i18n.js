@@ -192,7 +192,7 @@ function applyHomeTranslations() {
       form: {
         subject: 'Neue Anfrage über Schob Digital',
         labels: ['Name', 'E-Mail', 'Unternehmen', 'Service', 'Wobei brauchst du gerade konkret Unterstützung?'],
-        placeholder: 'Welches Paket interessiert dich?',
+        placeholder: 'Bitte auswählen',
         consent: 'Ich stimme zu, dass meine Angaben zur Bearbeitung meiner Anfrage verarbeitet werden. Weitere Informationen stehen in der <a href="datenschutz.html">Datenschutzerklärung</a>.',
         submit: 'Starten',
         success: 'Danke, deine Nachricht wurde erfolgreich versendet.',
@@ -283,7 +283,7 @@ function applyHomeTranslations() {
       form: {
         subject: 'New request via Schob Digital',
         labels: ['Name', 'Email', 'Company', 'Service', 'What do you currently need support with?'],
-        placeholder: 'Which package are you interested in?',
+        placeholder: 'Please choose',
         consent: 'I agree that my information may be processed to handle my request. More details are available in the <a href="datenschutz.html">privacy policy</a>.',
         submit: 'Get started',
         success: 'Thanks, your message was sent successfully.',
@@ -357,7 +357,7 @@ function applyHomeTranslations() {
       form: {
         subject: 'Новий запит через Schob Digital',
         labels: ['Ім’я', 'Email', 'Компанія', 'Сервіс', 'У чому саме вам зараз потрібна допомога?'],
-        placeholder: 'Який пакет вас цікавить?',
+        placeholder: 'Будь ласка, виберіть',
         consent: 'Я погоджуюся, що мої дані можуть оброблятися для відповіді на мій запит. Детальніше в <a href="datenschutz.html">політиці конфіденційності</a>.',
         submit: 'Почати',
         success: 'Дякую, ваше повідомлення успішно надіслано.',
@@ -434,7 +434,7 @@ function applyWebsiteTranslations() {
       form: {
         subject: 'Neue Website-Anfrage über Schob Digital',
         labels: ['Name', 'E-Mail', 'Unternehmen', 'Service', 'Welche Art von Website brauchst du gerade konkret?'],
-        placeholder: 'Welches Paket oder Projekt interessiert dich?',
+        placeholder: 'Bitte auswählen',
         consent: 'Ich stimme zu, dass meine Angaben zur Bearbeitung meiner Anfrage verarbeitet werden. Weitere Informationen stehen in der <a href="datenschutz.html">Datenschutzerklärung</a>.',
         submit: 'Projekt anfragen',
         success: 'Danke, deine Nachricht wurde erfolgreich versendet.',
@@ -483,7 +483,7 @@ function applyWebsiteTranslations() {
       form: {
         subject: 'New website request via Schob Digital',
         labels: ['Name', 'Email', 'Company', 'Service', 'What kind of website do you currently need?'],
-        placeholder: 'Which package or project are you interested in?',
+        placeholder: 'Please choose',
         consent: 'I agree that my information may be processed to handle my request. More details are available in the <a href="datenschutz.html">privacy policy</a>.',
         submit: 'Request project',
         success: 'Thanks, your message was sent successfully.',
@@ -532,7 +532,7 @@ function applyWebsiteTranslations() {
       form: {
         subject: 'Новий запит на сайт через Schob Digital',
         labels: ['Ім’я', 'Email', 'Компанія', 'Сервіс', 'Який саме сайт вам зараз потрібен?'],
-        placeholder: 'Який пакет або проєкт вас цікавить?',
+        placeholder: 'Будь ласка, виберіть',
         consent: 'Я погоджуюся, що мої дані можуть оброблятися для відповіді на мій запит. Детальніше в <a href="datenschutz.html">політиці конфіденційності</a>.',
         submit: 'Запитати про проєкт',
         success: 'Дякую, ваше повідомлення успішно надіслано.',
@@ -597,7 +597,7 @@ function applyStartupTranslations() {
       form: {
         subject: 'Neue Startup-Anfrage über Schob Digital',
         labels: ['Name', 'E-Mail', 'Unternehmen', 'Service', 'Wo stehst du gerade und wobei brauchst du Unterstützung?'],
-        placeholder: 'Welches Paket interessiert dich?',
+        placeholder: 'Bitte auswählen',
         consent: 'Ich stimme zu, dass meine Angaben zur Bearbeitung meiner Anfrage verarbeitet werden. Weitere Informationen stehen in der <a href="datenschutz.html">Datenschutzerklärung</a>.',
         submit: 'Beratung anfragen',
         success: 'Danke, deine Nachricht wurde erfolgreich versendet.',
@@ -637,7 +637,7 @@ function applyStartupTranslations() {
       form: {
         subject: 'New startup request via Schob Digital',
         labels: ['Name', 'Email', 'Company', 'Service', 'Where are you right now and what kind of support do you need?'],
-        placeholder: 'Which package are you interested in?',
+        placeholder: 'Please choose',
         consent: 'I agree that my information may be processed to handle my request. More details are available in the <a href="datenschutz.html">privacy policy</a>.',
         submit: 'Request advice',
         success: 'Thanks, your message was sent successfully.',
@@ -677,7 +677,7 @@ function applyStartupTranslations() {
       form: {
         subject: 'Новий startup-запит через Schob Digital',
         labels: ['Ім’я', 'Email', 'Компанія', 'Сервіс', 'На якому етапі ви зараз і яка підтримка вам потрібна?'],
-        placeholder: 'Який пакет вас цікавить?',
+        placeholder: 'Будь ласка, виберіть',
         consent: 'Я погоджуюся, що мої дані можуть оброблятися для відповіді на мій запит. Детальніше в <a href="datenschutz.html">політиці конфіденційності</a>.',
         submit: 'Запитати консультацію',
         success: 'Дякую, ваше повідомлення успішно надіслано.',
@@ -797,10 +797,57 @@ function applyImprintTranslations() {
 function applyFormTranslations(form) {
   setAttr('input[name="_subject"]', 'value', form.subject);
   setNodeText('.contact-form__field label', form.labels);
-  setAttr('#contact-service', 'placeholder', form.placeholder);
+  updateServiceOptions(form.placeholder);
   setHTML('.contact-form__check span', form.consent);
   setText('.contact-form__submit', form.submit);
   setText('#contact-success', form.success);
+}
+
+function updateServiceOptions(promptLabel) {
+  const serviceSelect = document.getElementById('contact-service');
+
+  if (!(serviceSelect instanceof HTMLSelectElement)) {
+    return;
+  }
+
+  const serviceOptions = getServiceOptions(currentPage, currentLanguage);
+  const placeholderOption = document.createElement('option');
+  placeholderOption.value = '';
+  placeholderOption.disabled = true;
+  placeholderOption.selected = true;
+  placeholderOption.textContent = promptLabel;
+
+  serviceSelect.innerHTML = '';
+  serviceSelect.appendChild(placeholderOption);
+
+  serviceOptions.forEach((option) => {
+    const optionNode = document.createElement('option');
+    optionNode.value = option;
+    optionNode.textContent = option;
+    serviceSelect.appendChild(optionNode);
+  });
+}
+
+function getServiceOptions(page, lang) {
+  const options = {
+    home: {
+      de: ['Paket S: Das Kickstart-Setup', 'Paket M: Der MVP-Builder', 'Paket L: Der Solo-Founder Companion', 'Individuell'],
+      en: ['Package S: The Kickstart Setup', 'Package M: The MVP Builder', 'Package L: The Solo-Founder Companion', 'Individuell'],
+      uk: ['Пакет S: Стартовий сетап', 'Пакет M: MVP Builder', 'Пакет L: Solo-Founder Companion', 'Individuell'],
+    },
+    website: {
+      de: ['Paket S: Der digitale Schnellstarter', 'Paket M: Das Business-Fundament', 'Individuell'],
+      en: ['Package S: The Digital Quickstart', 'Package M: The Business Foundation', 'Individuell'],
+      uk: ['Пакет S: Швидкий цифровий старт', 'Пакет M: Бізнес-фундамент', 'Individuell'],
+    },
+    startup: {
+      de: ['Paket S: Der Strategie-Kompass', 'Paket M: Das Gründungs-Intensiv', 'Paket L: Der Startup Companion', 'Individuell'],
+      en: ['Package S: The Strategy Compass', 'Package M: The Founder Intensive', 'Package L: The Startup Companion', 'Individuell'],
+      uk: ['Пакет S: Стратегічний компас', 'Пакет M: Інтенсив запуску', 'Пакет L: Startup Companion', 'Individuell'],
+    },
+  };
+
+  return options[page]?.[lang] || options.home.de;
 }
 
 function updateLanguageSwitcher() {

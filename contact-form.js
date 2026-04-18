@@ -91,36 +91,7 @@ function dismissSuccessPopup(popup) {
   }, 220);
 }
 
-function writeSelectedPackage(selectedPackage) {
-  if (!selectedPackage) {
-    return;
-  }
-
-  const applyValue = () => {
-    const liveContactService = document.getElementById('contact-service');
-
-    if (!(liveContactService instanceof HTMLInputElement)) {
-      return;
-    }
-
-    liveContactService.value = selectedPackage;
-    liveContactService.setAttribute('value', selectedPackage);
-    liveContactService.dispatchEvent(new Event('input', { bubbles: true }));
-    liveContactService.dispatchEvent(new Event('change', { bubbles: true }));
-  };
-
-  applyValue();
-  window.requestAnimationFrame(applyValue);
-  window.setTimeout(applyValue, 80);
-  window.setTimeout(applyValue, 260);
-}
-
-function prefillService(selectedPackage) {
-  if (!selectedPackage) {
-    return false;
-  }
-
-  writeSelectedPackage(selectedPackage);
+function prefillService() {
   scrollToContactForm();
   return false;
 }

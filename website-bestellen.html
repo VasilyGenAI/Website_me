@@ -378,7 +378,12 @@
 
               <div class="contact-form__field">
                 <label for="contact-service">Service</label>
-                <input id="contact-service" name="service" type="text" autocomplete="off" placeholder="Welches Paket oder Projekt interessiert dich?">
+                <select id="contact-service" name="service" required>
+                  <option value="" selected disabled>Bitte auswählen</option>
+                  <option value="Paket S: Der digitale Schnellstarter">Paket S: Der digitale Schnellstarter</option>
+                  <option value="Paket M: Das Business-Fundament">Paket M: Das Business-Fundament</option>
+                  <option value="Individuell">Individuell</option>
+                </select>
               </div>
 
               <div class="contact-form__field">
