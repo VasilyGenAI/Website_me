@@ -1135,6 +1135,22 @@ a {
   padding: 2.5rem 0 4.6rem;
 }
 
+.thanks-page .site-header {
+  position: static;
+}
+
+.thanks-card {
+  max-width: 760px;
+  margin: 4rem auto 0;
+}
+
+.thanks-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin-top: 1.75rem;
+}
+
 .legal-hero {
   margin-bottom: 1rem;
   padding: clamp(1.4rem, 3vw, 2.3rem);

@@ -30,24 +30,16 @@ function initializeContactAndPricing() {
 
   if (contactForm && contactNext && contactUrl) {
     const returnUrl = getReturnPageUrl();
-    const successUrl = new URL(returnUrl.toString());
-    successUrl.searchParams.set('contact', 'success');
-    successUrl.hash = 'coaching';
+    const successUrl = new URL(`${getProjectBasePath()}thank-you.html`, window.location.origin);
+    successUrl.searchParams.set('from', returnUrl.pathname.split('/').pop() || 'index.html');
+
+    if (uiLang !== 'de') {
+      successUrl.searchParams.set('lang', uiLang);
+    }
 
     contactNext.value = successUrl.toString();
     contactUrl.value = returnUrl.toString();
-
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('contact') === 'success' && contactSuccess) {
-      contactSuccess.hidden = true;
-      showSuccessPopup();
-
-      const cleanUrl = new URL(window.location.href);
-      cleanUrl.searchParams.delete('contact');
-      window.history.replaceState({}, '', cleanUrl.toString());
-    }
   }
-
 }
 
 function getReturnPageUrl() {
