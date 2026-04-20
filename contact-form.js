@@ -27,16 +27,15 @@ function initializeContactAndPricing() {
   const contactNext = document.getElementById('contact-next');
   const contactUrl = document.getElementById('contact-url');
   const contactSuccess = document.getElementById('contact-success');
-  const cleanPageUrl = new URL(window.location.href);
 
   if (contactForm && contactNext && contactUrl) {
-    const successUrl = new URL(cleanPageUrl.toString());
+    const returnUrl = getReturnPageUrl();
+    const successUrl = new URL(returnUrl.toString());
     successUrl.searchParams.set('contact', 'success');
     successUrl.hash = 'coaching';
 
     contactNext.value = successUrl.toString();
-    cleanPageUrl.searchParams.delete('contact');
-    contactUrl.value = cleanPageUrl.toString();
+    contactUrl.value = returnUrl.toString();
 
     const params = new URLSearchParams(window.location.search);
     if (params.get('contact') === 'success' && contactSuccess) {
@@ -49,6 +48,38 @@ function initializeContactAndPricing() {
     }
   }
 
+}
+
+function getReturnPageUrl() {
+  const pageMap = {
+    home: 'index.html',
+    website: 'website-bestellen.html',
+    startup: 'startup-unterstuetzung.html',
+  };
+  const page = document.body?.dataset.page || 'home';
+  const fileName = pageMap[page] || 'index.html';
+  const projectBasePath = getProjectBasePath();
+  const returnUrl = new URL(`${projectBasePath}${fileName}`, window.location.origin);
+
+  if (uiLang !== 'de') {
+    returnUrl.searchParams.set('lang', uiLang);
+  }
+
+  return returnUrl;
+}
+
+function getProjectBasePath() {
+  const segments = window.location.pathname.split('/').filter(Boolean);
+
+  if (segments.length === 0) {
+    return '/';
+  }
+
+  if (segments[0].endsWith('.html')) {
+    return '/';
+  }
+
+  return `/${segments[0]}/`;
 }
 
 function showSuccessPopup() {
