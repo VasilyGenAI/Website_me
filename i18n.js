@@ -801,7 +801,11 @@ function renderLegalTranslation(source, page) {
     return;
   }
 
-  fetch(new URL(source, window.location.href))
+  const sourceUrl = new URL(source, window.location.href);
+  sourceUrl.searchParams.set('v', '20260421-legal-text-cache-bust');
+  legalContent.innerHTML = `<p class="legal-loading">${currentLanguage === 'en' ? 'Loading legal text...' : currentLanguage === 'uk' ? 'Юридичний текст завантажується...' : 'Rechtstext wird geladen...'}</p>`;
+
+  fetch(sourceUrl, { cache: 'no-store' })
     .then((response) => {
       if (!response.ok) {
         throw new Error(`Legal source not found: ${source}`);
