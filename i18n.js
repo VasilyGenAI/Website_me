@@ -748,7 +748,7 @@ function applyPrivacyTranslations() {
   setText('.legal-hero p:last-child', t.heroText);
   setNodeText('.legal-jump-nav a', t.jumps);
   setText('.footer-copy', t.footerCopy);
-  setAttr('.legal-content', 'data-legal-source', t.source);
+  renderLegalTranslation(t.source, currentPage);
 }
 
 function applyImprintTranslations() {
@@ -791,7 +791,216 @@ function applyImprintTranslations() {
   setText('.legal-hero h1', t.heroTitle);
   setText('.legal-hero p:last-child', t.heroText);
   setText('.footer-copy', t.footerCopy);
-  setAttr('.legal-content', 'data-legal-source', t.source);
+  renderLegalTranslation(t.source, currentPage);
+}
+
+function renderLegalTranslation(source, page) {
+  const legalContent = document.querySelector('.legal-content');
+
+  if (!legalContent || !source) {
+    return;
+  }
+
+  fetch(new URL(source, window.location.href))
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`Legal source not found: ${source}`);
+      }
+
+      return response.text();
+    })
+    .then((text) => {
+      legalContent.replaceChildren(buildLegalArticle(text, page === 'imprint'));
+    })
+    .catch(() => {
+      legalContent.innerHTML = '<p class="legal-error">Der Rechtstext konnte nicht geladen werden.</p>';
+    });
+}
+
+function buildLegalArticle(text, isImprint) {
+  const article = document.createElement('article');
+  let list = null;
+  let listMode = null;
+
+  article.className = 'legal-text';
+
+  text.replace(/\r/g, '').split('\n').forEach((rawLine) => {
+    const line = rawLine.trim();
+
+    if (!line) {
+      list = null;
+      listMode = null;
+      return;
+    }
+
+    if (line === '[[COOKIE_SETTINGS_BUTTON]]') {
+      article.appendChild(buildLegalCookieButton());
+      list = null;
+      listMode = null;
+      return;
+    }
+
+    const heading = isImprint ? buildImprintHeading(line) : buildPrivacyHeading(line);
+    if (heading) {
+      article.appendChild(heading);
+      list = null;
+      listMode = null;
+      return;
+    }
+
+    if (/^- /.test(line) || (listMode && isLegalListItem(line))) {
+      if (!list) {
+        list = document.createElement('ul');
+        article.appendChild(list);
+      }
+
+      const item = document.createElement('li');
+      appendLegalRichText(item, line.replace(/^- /, '').replace(/[;,]$/, ''));
+      list.appendChild(item);
+      return;
+    }
+
+    list = null;
+    listMode = /(Diese Daten sind:|Sie haben folgende Rechte:|Folgende Rechte:|These data are:|Data subjects have the following rights:|Цими даними є:|Суб’єкти даних мають такі права:)/i.test(line);
+
+    const paragraph = document.createElement('p');
+    if (isImprint && /^(Vasily Schob|Straße der Jugend 18|14974 Ludwigsfelde|Deutschland|E-Mail:|Telefon:|Email:|Phone:|Німеччина|Електронна пошта:|Телефон:|Hiscox SA|Bernhard-Wicki-Str\.|80636 München|Geltungsraum der Versicherung:|Scope of insurance:|Територія дії страхування:)/.test(line)) {
+      paragraph.className = 'legal-meta';
+    }
+    appendLegalRichText(paragraph, line);
+    article.appendChild(paragraph);
+  });
+
+  return article;
+}
+
+function buildPrivacyHeading(line) {
+  const sectionId = getLegalSectionId(line);
+
+  if (isLegalObjectionHeading(line)) {
+    return makeLegalHeading('h4', line);
+  }
+
+  if (/^\d+\.\d+\.\d+\.\s+/.test(line)) {
+    return makeLegalHeading('h4', line, sectionId);
+  }
+
+  if (/^\d+\.\d+\.\s+/.test(line)) {
+    return makeLegalHeading('h3', line, sectionId);
+  }
+
+  if (/^\d+\.\s+/.test(line)) {
+    return makeLegalHeading('h2', line, sectionId);
+  }
+
+  return null;
+}
+
+function buildImprintHeading(line) {
+  const headings = new Set([
+    'Angaben gemäß § 5 DDG',
+    'Anbieter dieser Website',
+    'Kontakt',
+    'Angaben zur Berufshaftpflichtversicherung',
+    'Name und Anschrift des Versicherers',
+    'EU-Streitbeilegung',
+    'Verbraucherstreitbeilegung / Universalschlichtungsstelle',
+    'Haftung für Inhalte',
+    'Haftung für Links',
+    'Legal notice pursuant to Section 5 DDG',
+    'Provider of this website',
+    'Contact',
+    'Professional indemnity insurance',
+    'Name and address of the insurer',
+    'EU dispute resolution',
+    'Consumer dispute resolution / universal arbitration board',
+    'Liability for content',
+    'Liability for links',
+    'Відомості відповідно до § 5 DDG',
+    'Постачальник цього вебсайту',
+    'Контакт',
+    'Відомості про страхування професійної відповідальності',
+    'Назва та адреса страховика',
+    'Врегулювання спорів у ЄС',
+    'Врегулювання споживчих спорів / універсальна арбітражна установа',
+    'Відповідальність за вміст',
+    'Відповідальність за посилання',
+  ]);
+
+  if (!headings.has(line)) {
+    return null;
+  }
+
+  if (line === 'Anbieter dieser Website' || line === 'Name und Anschrift des Versicherers' || line === 'Provider of this website' || line === 'Name and address of the insurer' || line === 'Постачальник цього вебсайту' || line === 'Назва та адреса страховика') {
+    return makeLegalHeading('h3', line);
+  }
+
+  return makeLegalHeading('h2', line);
+}
+
+function makeLegalHeading(tagName, text, id) {
+  const heading = document.createElement(tagName);
+  heading.textContent = text;
+  if (id) {
+    heading.id = id;
+  }
+  return heading;
+}
+
+function getLegalSectionId(line) {
+  const match = line.match(/^(\d+(?:\.\d+){0,2})\.\s+/);
+  return match ? `section-${match[1].replace(/\./g, '-')}` : '';
+}
+
+function isLegalListItem(line) {
+  return line.length <= 90 && !/^https?:\/\//.test(line) && !/^\d+(\.\d+)*\.\s+/.test(line) && !/:\s/.test(line);
+}
+
+function isLegalObjectionHeading(line) {
+  return [
+    'EINZELFALLBEZOGENES WIDERSPRUCHSRECHT',
+    'WIDERSPRUCH GEGEN DATENVERARBEITUNG ZU ZWECKEN DER DIREKTWERBUNG',
+    'RIGHT TO OBJECT ON GROUNDS RELATING TO YOUR PARTICULAR SITUATION',
+    'OBJECTION TO PROCESSING FOR DIRECT MARKETING PURPOSES',
+    'ПРАВО НА ЗАПЕРЕЧЕННЯ З ОГЛЯДУ НА ВАШУ ОСОБЛИВУ СИТУАЦІЮ',
+    'ЗАПЕРЕЧЕННЯ ПРОТИ ОБРОБКИ ДЛЯ ЦІЛЕЙ ПРЯМОГО МАРКЕТИНГУ',
+  ].includes(line);
+}
+
+function appendLegalRichText(element, text) {
+  const urlPattern = /(https?:\/\/[^\s]+)/g;
+
+  text.split(urlPattern).forEach((part) => {
+    if (!part) {
+      return;
+    }
+
+    if (/^https?:\/\/[^\s]+$/.test(part)) {
+      const link = document.createElement('a');
+      link.href = part;
+      link.textContent = part;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      element.appendChild(link);
+      return;
+    }
+
+    element.appendChild(document.createTextNode(part));
+  });
+}
+
+function buildLegalCookieButton() {
+  const wrapper = document.createElement('div');
+  const button = document.createElement('button');
+
+  wrapper.className = 'legal-action';
+  button.className = 'button button--ghost legal-action__button';
+  button.type = 'button';
+  button.textContent = currentLanguage === 'uk' ? 'Відкрити налаштування cookie' : currentLanguage === 'en' ? 'Open cookie settings' : 'Cookie-Einstellungen öffnen';
+  button.setAttribute('data-open-cookie-settings', '');
+  wrapper.appendChild(button);
+
+  return wrapper;
 }
 
 function applyFormTranslations(form) {
