@@ -1,7 +1,7 @@
 const uiLang = getUiLang();
 const LEGAL_UI = {
   de: {
-    loadError: "Der Rechtstext konnte nicht geladen werden. Bitte pruefe, ob die zugehoerige TXT-Datei vorhanden ist.",
+    loadError: "Der Rechtstext konnte nicht geladen werden. Bitte prüfe, ob die zugehörige TXT-Datei vorhanden ist.",
     cookieSettings: "Cookie-Einstellungen öffnen",
   },
   en: {
@@ -162,6 +162,10 @@ function formatLegalText(text, source) {
 function createStructuredNode(line) {
   const sectionId = extractSectionId(line);
 
+  if (isObjectionHeading(line)) {
+    return buildHeading("h4", line);
+  }
+
   if (/^Teil\s+\d+:/i.test(line)) {
     return buildHeading("h2", line);
   }
@@ -179,6 +183,17 @@ function createStructuredNode(line) {
   }
 
   return null;
+}
+
+function isObjectionHeading(line) {
+  return [
+    "EINZELFALLBEZOGENES WIDERSPRUCHSRECHT",
+    "WIDERSPRUCH GEGEN DATENVERARBEITUNG ZU ZWECKEN DER DIREKTWERBUNG",
+    "RIGHT TO OBJECT ON GROUNDS RELATING TO YOUR PARTICULAR SITUATION",
+    "OBJECTION TO PROCESSING FOR DIRECT MARKETING PURPOSES",
+    "ПРАВО НА ЗАПЕРЕЧЕННЯ З ОГЛЯДУ НА ВАШУ ОСОБЛИВУ СИТУАЦІЮ",
+    "ЗАПЕРЕЧЕННЯ ПРОТИ ОБРОБКИ ДЛЯ ЦІЛЕЙ ПРЯМОГО МАРКЕТИНГУ",
+  ].includes(line);
 }
 
 function createImpressumNode(line) {

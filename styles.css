@@ -1160,16 +1160,6 @@ a {
   padding: clamp(1.35rem, 3vw, 2.6rem);
 }
 
-.legal-fallback {
-  display: block;
-  width: 100%;
-  min-height: 60vh;
-  border: 0;
-  color-scheme: dark;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 14px;
-}
-
 .legal-jump-nav {
   display: flex;
   flex-wrap: wrap;
@@ -1285,6 +1275,7 @@ a {
   width: auto;
 }
 
+.legal-loading,
 .legal-error {
   margin: 0;
   color: #ff9b7a;
