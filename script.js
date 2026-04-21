@@ -1,4 +1,3 @@
-const legalContainer = document.querySelector("[data-legal-source]");
 const uiLang = getUiLang();
 const LEGAL_UI = {
   de: {
@@ -15,25 +14,41 @@ const LEGAL_UI = {
   },
 };
 
-if (legalContainer) {
+loadLegalText();
+document.addEventListener("schob:content-updated", loadLegalText);
+
+function loadLegalText() {
+  const legalContainer = document.querySelector("[data-legal-source]");
+
+  if (!legalContainer) {
+    return;
+  }
+
   const source = legalContainer.getAttribute("data-legal-source");
 
-  if (source) {
-    fetch(source)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`Datei konnte nicht geladen werden: ${source}`);
-        }
-
-        return response.text();
-      })
-      .then((text) => {
-        legalContainer.appendChild(formatLegalText(text, source));
-      })
-      .catch(() => {
-        legalContainer.innerHTML = `<p class="legal-error">${LEGAL_UI[uiLang].loadError}</p>`;
-      });
+  if (!source || legalContainer.dataset.loadedSource === source) {
+    return;
   }
+
+  legalContainer.setAttribute("aria-busy", "true");
+
+  fetch(new URL(source, window.location.href))
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`Datei konnte nicht geladen werden: ${source}`);
+      }
+
+      return response.text();
+    })
+    .then((text) => {
+      legalContainer.dataset.loadedSource = source;
+      legalContainer.removeAttribute("aria-busy");
+      legalContainer.replaceChildren(formatLegalText(text, source));
+    })
+    .catch(() => {
+      legalContainer.removeAttribute("aria-busy");
+      legalContainer.innerHTML = `<p class="legal-error">${LEGAL_UI[uiLang].loadError}</p>`;
+    });
 }
 
 const IMPRESSUM_HEADINGS = new Set([
