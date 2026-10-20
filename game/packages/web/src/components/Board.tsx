@@ -66,6 +66,7 @@ export function Board(props: BoardProps) {
     return `${minX} ${minY} ${Math.max(...xs) + pad - minX} ${Math.max(...ys) + pad - minY}`;
   }, [map, props.ghostCells]);
 
+  const vb = viewBox.split(' ').map(Number);
   const hintV = new Set(props.hintVertices ?? []);
   const hintE = new Set(props.hintEdges ?? []);
   const hintT = new Set(props.hintTiles ?? []);
@@ -76,7 +77,38 @@ export function Board(props: BoardProps) {
         <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
           <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" floodOpacity="0.45" />
         </filter>
+        {/* Wooden number discs */}
+        <radialGradient id="wood" cx="40%" cy="35%" r="70%">
+          <stop offset="0" stopColor="#fff7df" />
+          <stop offset=".6" stopColor="#f0d7a2" />
+          <stop offset="1" stopColor="#cfa465" />
+        </radialGradient>
+        <linearGradient id="sand" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#f7e4ad" />
+          <stop offset="1" stopColor="#dcbc76" />
+        </linearGradient>
+        {/* Sunlight from the top left over every tile */}
+        <radialGradient id="tileLight" cx="28%" cy="22%" r="90%">
+          <stop offset="0" stopColor="#fff" stopOpacity=".32" />
+          <stop offset=".45" stopColor="#fff" stopOpacity="0" />
+          <stop offset="1" stopColor="#000" stopOpacity=".22" />
+        </radialGradient>
+        <radialGradient id="pawn" cx="35%" cy="30%" r="80%">
+          <stop offset="0" stopColor="#7a7a7a" />
+          <stop offset="1" stopColor="#1c1c1c" />
+        </radialGradient>
+        <pattern id="waves" width="90" height="44" patternUnits="userSpaceOnUse">
+          <path d="M0 22 q11 -9 22 0 t22 0 M45 44 q11 -9 22 0 t22 0 M-45 44 q11 -9 22 0 t22 0" fill="none" stroke="#fff" strokeOpacity=".1" strokeWidth="2" strokeLinecap="round" />
+        </pattern>
+        {map.tiles.map((t) => (
+          <clipPath key={`k${t.q},${t.r}`} id={`hex${t.q}_${t.r}`}>
+            <polygon points={polygon(t.q, t.r, 0.97)} />
+          </clipPath>
+        ))}
       </defs>
+
+      {/* Waves reach far past the board so no edge shows on wide or tall screens. */}
+      <rect className="sea" x={vb[0] - vb[2] * 2} y={vb[1] - vb[3] * 2} width={vb[2] * 5} height={vb[3] * 5} fill="url(#waves)" />
 
       {props.ghostCells?.map((c) => (
         <polygon
@@ -87,9 +119,12 @@ export function Board(props: BoardProps) {
         />
       ))}
 
-      {/* Sandy shore under the land so the coastline reads at a glance. */}
+      {/* Surf, then a sandy shore under the land, so the coastline reads at a glance. */}
       {map.tiles.map((t) => (
-        <polygon key={`s${t.q},${t.r}`} points={polygon(t.q, t.r, 1.12)} fill={SHORE} />
+        <polygon key={`f${t.q},${t.r}`} points={polygon(t.q, t.r, 1.2)} className="surf" />
+      ))}
+      {map.tiles.map((t) => (
+        <polygon key={`s${t.q},${t.r}`} points={polygon(t.q, t.r, 1.12)} fill="url(#sand)" stroke={SHORE} strokeWidth={1} />
       ))}
 
       {map.ports.map((p, i) => {
@@ -125,17 +160,28 @@ export function Board(props: BoardProps) {
         const red = shown.number === 6 || shown.number === 8;
         return (
           <g key={id} className="tile" onClick={() => (props.onCell ? props.onCell(t.q, t.r) : props.onTile?.(id))}>
-            <polygon points={polygon(t.q, t.r, 0.97)} fill={style.fill} stroke="rgba(0,0,0,.25)" strokeWidth={1.5} />
+            <polygon points={polygon(t.q, t.r, 0.97)} fill={style.fill} />
             {style.image ? (
-              <image href={style.image} x={c.x - S * 0.8} y={c.y - S * 0.8} width={S * 1.6} height={S * 1.6} />
+              // Square artwork, cropped to the hexagon.
+              <image
+                href={style.image}
+                x={c.x - (S * Math.sqrt(3)) / 2}
+                y={c.y - S}
+                width={S * Math.sqrt(3)}
+                height={S * 2}
+                preserveAspectRatio="xMidYMid slice"
+                clipPath={`url(#hex${t.q}_${t.r})`}
+              />
             ) : (
               <text x={c.x} y={c.y - S * 0.38} textAnchor="middle" fontSize={S * 0.42}>
                 {style.icon}
               </text>
             )}
+            <polygon className="tile-light" points={polygon(t.q, t.r, 0.97)} />
             {shown.number !== null && (
               <g filter="url(#shadow)">
-                <circle cx={c.x} cy={c.y + S * 0.12} r={S * 0.34} fill="#fbf6e6" />
+                <circle cx={c.x} cy={c.y + S * 0.12} r={S * 0.34} fill="url(#wood)" stroke="#9c7a45" strokeWidth={1.5} />
+                <circle cx={c.x} cy={c.y + S * 0.12} r={S * 0.29} fill="none" stroke="#000" strokeOpacity=".07" strokeWidth={1} />
                 <text x={c.x} y={c.y + S * 0.2} textAnchor="middle" className={red ? 'num red' : 'num'} fontSize={S * 0.36}>
                   {shown.number}
                 </text>
@@ -157,10 +203,11 @@ export function Board(props: BoardProps) {
               </text>
             )}
             {robber === id && (
-              <g className="robber" filter="url(#shadow)">
-                <ellipse cx={c.x + S * 0.42} cy={c.y + S * 0.3} rx={S * 0.15} ry={S * 0.07} fill="#222" />
-                <rect x={c.x + S * 0.31} y={c.y - S * 0.12} width={S * 0.22} height={S * 0.42} rx={S * 0.1} fill="#3a3a3a" />
-                <circle cx={c.x + S * 0.42} cy={c.y - S * 0.16} r={S * 0.12} fill="#3a3a3a" />
+              <g className="robber" filter="url(#shadow)" transform={`translate(${c.x + S * 0.44} ${c.y + S * 0.08})`}>
+                <ellipse cx={0} cy={S * 0.24} rx={S * 0.17} ry={S * 0.07} fill="#151515" />
+                <path d={`M${-S * 0.13},${S * 0.24} C${-S * 0.13},${S * 0.02} ${-S * 0.06},${-S * 0.06} ${-S * 0.05},${-S * 0.12} L${S * 0.05},${-S * 0.12} C${S * 0.06},${-S * 0.06} ${S * 0.13},${S * 0.02} ${S * 0.13},${S * 0.24} Z`} fill="url(#pawn)" />
+                <circle cx={0} cy={-S * 0.2} r={S * 0.12} fill="url(#pawn)" />
+                <circle cx={-S * 0.04} cy={-S * 0.24} r={S * 0.035} fill="#fff" fillOpacity=".35" />
               </g>
             )}
             {hintT.has(id) && <polygon className="hint-tile" points={polygon(t.q, t.r, 0.9)} />}
@@ -187,9 +234,10 @@ export function Board(props: BoardProps) {
       {Object.entries(roads).map(([e, owner]) => {
         const [a, b] = topo.edgeVertices[e].map(pt);
         return (
-          <g key={`r${e}`}>
-            <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#222" strokeWidth={10} strokeLinecap="round" />
-            <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={colors[owner]} strokeWidth={7} strokeLinecap="round" />
+          <g key={`r${e}`} filter="url(#shadow)">
+            <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#1d1d1d" strokeWidth={11} strokeLinecap="round" />
+            <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={colors[owner]} strokeWidth={7.5} strokeLinecap="round" />
+            <line x1={a.x} y1={a.y - 1.5} x2={b.x} y2={b.y - 1.5} stroke="#fff" strokeOpacity=".35" strokeWidth={2} strokeLinecap="round" />
           </g>
         );
       })}
@@ -208,21 +256,16 @@ export function Board(props: BoardProps) {
       {Object.entries(buildings).map(([v, b]) => {
         const p = pt(v);
         const isHint = hintV.has(v);
-        const d =
-          b.type === 'settlement'
-            ? `M${p.x - 9},${p.y + 8} v-10 l9,-8 l9,8 v10 z`
-            : `M${p.x - 13},${p.y + 9} v-11 l7,-6 l7,6 v-1 h6 v12 z`;
         return (
-          <path
+          <g
             key={`b${v}`}
-            d={d}
-            fill={colors[b.owner]}
-            stroke="#222"
-            strokeWidth={2}
+            transform={`translate(${p.x} ${p.y})`}
             filter="url(#shadow)"
-            className={isHint ? 'hint-building' : undefined}
+            className={isHint ? 'hint-building piece' : 'piece'}
             onClick={isHint ? () => props.onVertex?.(v) : undefined}
-          />
+          >
+            {b.type === 'settlement' ? <House color={colors[b.owner]} /> : <City color={colors[b.owner]} />}
+          </g>
         );
       })}
 
@@ -236,3 +279,29 @@ export function Board(props: BoardProps) {
   );
 }
 
+/** Settlement: walls in the player's colour, a darker roof and a door. */
+function House({ color }: { color: string }) {
+  return (
+    <>
+      <path d="M-8,-1 h16 v10 h-16 z" fill={color} stroke="#1d1d1d" strokeWidth={1.8} strokeLinejoin="round" />
+      <path d="M-10.5,0 L0,-10 L10.5,0 z" fill={color} stroke="#1d1d1d" strokeWidth={1.8} strokeLinejoin="round" />
+      <path d="M-10.5,0 L0,-10 L10.5,0 z" fill="#000" fillOpacity=".28" />
+      <path d="M-2,9 v-5 h4 v5" fill="#1d1d1d" fillOpacity=".6" />
+    </>
+  );
+}
+
+/** City: a hall and a tower, both in the player's colour with darker roofs. */
+function City({ color }: { color: string }) {
+  return (
+    <>
+      <path d="M-15,0 h13 v10 h-13 z" fill={color} stroke="#1d1d1d" strokeWidth={1.8} strokeLinejoin="round" />
+      <path d="M-16.5,1 L-8.5,-7 L-0.5,1 z" fill={color} stroke="#1d1d1d" strokeWidth={1.8} strokeLinejoin="round" />
+      <path d="M-16.5,1 L-8.5,-7 L-0.5,1 z" fill="#000" fillOpacity=".28" />
+      <path d="M-2,-9 h12 v19 h-12 z" fill={color} stroke="#1d1d1d" strokeWidth={1.8} strokeLinejoin="round" />
+      <path d="M-3.5,-8 L4,-17 L11.5,-8 z" fill={color} stroke="#1d1d1d" strokeWidth={1.8} strokeLinejoin="round" />
+      <path d="M-3.5,-8 L4,-17 L11.5,-8 z" fill="#000" fillOpacity=".28" />
+      <path d="M2,-3 h4 v4 h-4 z M-10.5,10 v-5 h4 v5" fill="#1d1d1d" fillOpacity=".6" />
+    </>
+  );
+}
