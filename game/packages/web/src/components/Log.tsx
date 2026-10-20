@@ -81,8 +81,11 @@ function line(ev: GameEvent, P: (i: number | null) => ReactNode) {
 }
 
 export function Log({ events, players }: { events: GameEvent[]; players: PublicPlayer[] }) {
-  const end = useRef<HTMLDivElement>(null);
-  useEffect(() => end.current?.scrollIntoView({ block: 'end' }), [events.length]);
+  const box = useRef<HTMLDivElement>(null);
+  // Scroll only the log box itself; scrollIntoView would also try to move the host page.
+  useEffect(() => {
+    if (box.current) box.current.scrollTop = box.current.scrollHeight;
+  }, [events.length]);
   const P = (i: number | null) =>
     i === null ? <b>?</b> : (
       <b className="pname" style={{ color: players[i].color === '#e8e8e8' ? '#777' : players[i].color }}>
@@ -90,12 +93,11 @@ export function Log({ events, players }: { events: GameEvent[]; players: PublicP
       </b>
     );
   return (
-    <div className="log">
+    <div className="log" ref={box}>
       {events.map((ev, i) => {
         const content = line(ev, P);
         return content ? <div key={i} className="log-line">{content}</div> : <hr key={i} />;
       })}
-      <div ref={end} />
     </div>
   );
 }
