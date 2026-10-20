@@ -33,6 +33,10 @@ export interface BoardProps {
   onVertex?: (v: VertexId) => void;
   onEdge?: (e: EdgeId) => void;
   onTile?: (t: TileId) => void;
+  /** Editor: show what lies under fog (with a veil) instead of plain clouds. */
+  revealHidden?: boolean;
+  /** Editor: tiles to outline in red, e.g. missing a number. */
+  warnTiles?: TileId[];
   /** Editor: empty water cells that can be painted. */
   ghostCells?: { q: number; r: number }[];
   onCell?: (q: number, r: number) => void;
@@ -113,7 +117,9 @@ export function Board(props: BoardProps) {
 
       {map.tiles.map((t) => {
         const id = tileId(t.q, t.r);
-        const shown = revealed[id] ?? t;
+        // Fog hides the tile unless it was revealed in play, or this is the map maker's view.
+        const covered = t.hidden && !revealed[id];
+        const shown = revealed[id] ?? (covered && !props.revealHidden ? { terrain: 'fog' as const, number: null } : t);
         const style = TERRAIN_STYLE[shown.terrain];
         const c = center(t.q, t.r);
         const red = shown.number === 6 || shown.number === 8;
@@ -138,7 +144,14 @@ export function Board(props: BoardProps) {
                 </text>
               </g>
             )}
-            {t.label && (
+            {covered && props.revealHidden && (
+              <g className="fog-veil">
+                <polygon points={polygon(t.q, t.r, 0.97)} />
+                <text x={c.x + S * 0.42} y={c.y - S * 0.4} textAnchor="middle" fontSize={S * 0.38}>☁️</text>
+              </g>
+            )}
+            {props.warnTiles?.includes(id) && <polygon className="warn-tile" points={polygon(t.q, t.r, 0.86)} />}
+            {t.label && !(covered && !props.revealHidden) && (
               <text x={c.x} y={c.y + S * 0.66} textAnchor="middle" className="tile-label" fontSize={S * 0.19}>
                 {t.label}
               </text>

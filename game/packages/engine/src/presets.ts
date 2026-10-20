@@ -1,7 +1,7 @@
 import { AXIAL_NEIGHBORS, tileId, topology } from './geometry';
 import { STANDARD_NUMBERS, STANDARD_PORTS, hexagonCoords, redNumbersAdjacent } from './mapgen';
 import { shuffle } from './rng';
-import type { FogTile, MapDef, MapPort, MapTile, PortType, Terrain } from './types';
+import type { MapDef, MapPort, MapTile, PortType, Terrain } from './types';
 
 const ring = (q: number, r: number) => (Math.abs(q) + Math.abs(r) + Math.abs(q + r)) / 2;
 
@@ -14,35 +14,43 @@ export function fogForestMap(): MapDef {
     ['forest', 5], ['forest', 9], ['hills', 10], ['forest', 6], ['forest', 3], ['pasture', 8],
     ['forest', 4], ['forest', 11], ['fields', 9], ['forest', 10], ['forest', 4], ['mountains', 5],
   ];
+  // Under the fog: no forest at all, so the outer ring is where brick, wool, grain and ore come from.
+  const underFog: [Terrain, number][] = [
+    ['hills', 2], ['pasture', 3], ['fields', 4], ['mountains', 5], ['hills', 6], ['pasture', 8],
+    ['fields', 9], ['mountains', 10], ['hills', 11], ['pasture', 12], ['fields', 3], ['mountains', 4],
+    ['hills', 5], ['pasture', 6], ['fields', 8], ['mountains', 9], ['hills', 10], ['pasture', 11],
+  ];
   const tiles: MapTile[] = [{ q: 0, r: 0, terrain: 'desert', number: null }];
   let i = 0;
+  let j = 0;
   for (const c of hexagonCoords(3)) {
     if (ring(c.q, c.r) === 2) {
       const [terrain, number] = forestRing[i++];
       tiles.push({ ...c, terrain, number });
     } else if (ring(c.q, c.r) === 3) {
-      tiles.push({ ...c, terrain: 'fog', number: null });
+      const [terrain, number] = underFog[j++];
+      tiles.push({ ...c, terrain, number, hidden: true });
     }
   }
 
-  // Harbours on the lake shore: every other lake-facing side of the forest ring.
-  const ports: MapPort[] = [];
+  // Harbours on the lake shore: six, spread evenly around the lake, alternating lumber and 3:1.
   const land = new Set(tiles.map((t) => tileId(t.q, t.r)));
-  let k = 0;
+  const shore: { q: number; r: number; side: number; angle: number }[] = [];
   for (const t of tiles) {
     if (ring(t.q, t.r) !== 2) continue;
     AXIAL_NEIGHBORS.forEach(([dq, dr], side) => {
       const n = { q: t.q + dq, r: t.r + dr };
       if (ring(n.q, n.r) !== 1 || land.has(tileId(n.q, n.r))) return;
-      if (k++ % 3 === 0) ports.push({ q: t.q, r: t.r, side, type: k % 2 ? 'lumber' : 'any' });
+      shore.push({ q: t.q, r: t.r, side, angle: Math.atan2(1.5 * n.r, Math.sqrt(3) * (n.q + n.r / 2)) });
     });
   }
+  shore.sort((a, b) => a.angle - b.angle);
+  const ports: MapPort[] = [0, 1, 2, 3, 4, 5].map((i) => {
+    const s = shore[Math.floor((i * shore.length) / 6)];
+    return { q: s.q, r: s.r, side: s.side, type: i % 2 ? 'any' : 'lumber' };
+  });
 
-  const numbers = [2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 3, 4, 5, 6, 8, 9, 10, 11];
-  const kinds: FogTile['terrain'][] = ['hills', 'pasture', 'fields', 'mountains'];
-  const fogPool: FogTile[] = numbers.map((number, j) => ({ terrain: kinds[j % kinds.length], number }));
-
-  return { name: 'Nebelwald', tiles, ports, fogPool, fogReward: true };
+  return { name: 'Nebelwald', tiles, ports, fogReward: true };
 }
 
 type Land = Exclude<Terrain, 'fog'>;

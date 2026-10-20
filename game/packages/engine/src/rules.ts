@@ -1,6 +1,6 @@
 import { topology, tileId } from './geometry';
 import { RESOURCES, TERRAIN_RESOURCE } from './types';
-import type { EdgeId, GameState, PortType, Resource, ResourceCounts, Terrain, TileId, VertexId } from './types';
+import type { EdgeId, GameState, MapTile, PortType, Resource, ResourceCounts, Terrain, TileId, VertexId } from './types';
 
 export const COSTS = {
   road: { lumber: 1, brick: 1 },
@@ -25,12 +25,17 @@ export function topo(state: GameState) {
   return topology(state.map);
 }
 
-/** Current terrain and number of a tile, taking revealed fog into account. */
+export function mapTile(state: GameState, tile: TileId): MapTile | undefined {
+  return state.map.tiles.find((x) => tileId(x.q, x.r) === tile);
+}
+
+/** Terrain and number as the players currently know them: fogged tiles read as fog until revealed. */
 export function tileInfo(state: GameState, tile: TileId): { terrain: Terrain; number: number | null } | null {
   const revealed = state.revealed[tile];
   if (revealed) return revealed;
-  const t = state.map.tiles.find((x) => tileId(x.q, x.r) === tile);
-  return t ? { terrain: t.terrain, number: t.number } : null;
+  const t = mapTile(state, tile);
+  if (!t) return null;
+  return t.hidden ? { terrain: 'fog', number: null } : { terrain: t.terrain, number: t.number };
 }
 
 export function tileResource(state: GameState, tile: TileId): Resource | null {

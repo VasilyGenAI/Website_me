@@ -342,3 +342,12 @@ details p { margin: 0 0 8px; }
   .cmp-label { width: 84px; }
   .cmp-hint { display: none; }
 }
+
+/* Editor: fog drawn as a veil over the real tile, red outline for tiles that still need a number */
+.fog-veil polygon { fill: rgba(225, 232, 238, .62); stroke: rgba(255,255,255,.9); stroke-width: 2; stroke-dasharray: 6 4; pointer-events: none; }
+.fog-veil text { pointer-events: none; }
+.warn-tile { fill: none; stroke: #ff3b30; stroke-width: 4; stroke-dasharray: 7 5; pointer-events: none; animation: pulse 1s ease-in-out infinite alternate; }
+.history-btns { display: flex; gap: 2px; }
+.history-btns button { font-size: 1.5rem; min-width: 44px; padding: 2px 8px; }
+.history-btns button:disabled { opacity: .35; }
+.editor-empty { position: absolute; left: 50%; top: 16px; transform: translateX(-50%); background: rgba(0,0,0,.45); color: #fff; padding: 8px 16px; border-radius: 99px; font-weight: 700; pointer-events: none; text-align: center; max-width: calc(100% - 32px); }

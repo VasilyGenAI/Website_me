@@ -1,3 +1,4 @@
+import { tileId } from './geometry';
 import {
   legalCityVertices,
   legalRoadEdges,
@@ -40,6 +41,7 @@ export interface GameView {
   roads: Record<EdgeId, number>;
   robber: TileId | null;
   revealed: Record<TileId, FogTile>;
+  /** Fog tiles still covered (plus any old-style random pool). */
   fogPoolSize: number;
   bank: ResourceCounts;
   devDeckSize: number;
@@ -103,8 +105,12 @@ export function viewFor(state: GameState, me: number | null): GameView {
     }
   }
 
-  // The fog pool says what hides under the clouds, so only its size is shared.
-  const { fogPool: _secret, ...publicMap } = state.map;
+  // What lies under the fog is secret: hidden tiles go out as plain fog, and the pool only as a count.
+  const { fogPool: _secret, ...rest } = state.map;
+  const publicMap = {
+    ...rest,
+    tiles: rest.tiles.map((t) => (t.hidden ? { q: t.q, r: t.r, terrain: 'fog' as const, number: null } : t)),
+  };
   return {
     map: publicMap,
     victoryPoints: state.victoryPoints,
@@ -130,7 +136,7 @@ export function viewFor(state: GameState, me: number | null): GameView {
     roads: state.roads,
     robber: state.robber,
     revealed: state.revealed,
-    fogPoolSize: state.fogPool.length,
+    fogPoolSize: state.fogPool.length + state.map.tiles.filter((t) => t.hidden && !state.revealed[tileId(t.q, t.r)]).length,
     bank: state.bank,
     devDeckSize: state.devDeck.length,
     devPlayedThisTurn: state.devPlayedThisTurn,

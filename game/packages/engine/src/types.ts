@@ -32,6 +32,11 @@ export interface MapTile {
   number: number | null;
   /** Optional place name shown on the tile, e.g. a city on a country board. */
   label?: string;
+  /**
+   * Covered by fog: players see only clouds until a road is built along the tile, which then
+   * reveals exactly this terrain and number. (Older maps used terrain 'fog' plus a random pool.)
+   */
+  hidden?: boolean;
 }
 
 export interface MapPort {

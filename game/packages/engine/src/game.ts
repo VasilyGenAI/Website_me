@@ -11,6 +11,7 @@ import {
   longestRoadLength,
   robberCandidates,
   robberTiles,
+  mapTile,
   tileInfo,
   tileNumber,
   tileResource,
@@ -49,7 +50,7 @@ export function createGame(config: GameConfig): GameState {
   const n = config.players.length;
   if (n < 2 || n > 4) throw new Error('The standard game supports 2-4 players');
   const map = config.map ?? generateStandardMap(config.seed);
-  const desert = map.tiles.find((t) => t.terrain === 'desert');
+  const desert = map.tiles.find((t) => t.terrain === 'desert' && !t.hidden);
   const rng = { rng: config.seed ^ 0x5bd1e995 };
   const fogPool = shuffle(rng, map.fogPool ?? []);
   return {
@@ -280,7 +281,12 @@ function revealFog(state: GameState, player: number, edge: string) {
     const cs = t.tileVertices[tile];
     const [a, b] = t.edgeVertices[edge];
     if (!cs.includes(a) || !cs.includes(b)) continue;
-    const found = state.fogPool.pop() ?? { terrain: 'desert' as const, number: null };
+    // A fogged tile shows what the map maker put under it; old-style fog tiles draw from the pool.
+    const under = mapTile(state, tile);
+    const found =
+      under?.hidden && under.terrain !== 'fog'
+        ? { terrain: under.terrain, number: under.number }
+        : (state.fogPool.pop() ?? { terrain: 'desert' as const, number: null });
     state.revealed[tile] = found;
     const resource = TERRAIN_RESOURCE[found.terrain];
     const reward = resource && state.map.fogReward !== false && state.bank[resource] > 0 ? resource : null;
