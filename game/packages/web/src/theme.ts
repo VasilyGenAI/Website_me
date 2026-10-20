@@ -1,11 +1,12 @@
 import type { PortType, Resource, Terrain } from '@kontinentalist/engine';
+import wald from './art/wald.webp';
 
 /**
  * Placeholder look. Every visual is looked up here, so swapping in real artwork later means
  * filling `image` with an SVG/PNG path (e.g. '/art/terrain/forest.svg') and nothing else.
  */
 export const TERRAIN_STYLE: Record<Terrain, { fill: string; icon: string; image?: string }> = {
-  forest: { fill: '#2e8b3d', icon: '🌲' },
+  forest: { fill: '#2e8b3d', icon: '🌲', image: wald },
   hills: { fill: '#d9673a', icon: '🧱' },
   pasture: { fill: '#8cc63f', icon: '🐑' },
   fields: { fill: '#f2c230', icon: '🌾' },
