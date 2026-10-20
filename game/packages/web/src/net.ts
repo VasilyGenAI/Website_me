@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ClientMessage, Role, RoomView, ServerMessage } from '@kontinentalist/engine';
+import type { ClientMessage, OpenRoom, Role, RoomView, ServerMessage } from '@kontinentalist/engine';
 import { translateError } from './i18n';
 
 function storage(key: string, fallback: () => string): string {
@@ -48,6 +48,7 @@ export interface Connection {
   notice: string | null;
   codes: { codes: string[]; days: number } | null;
   stats: { rooms: number; playing: number; connections: number } | null;
+  rooms: OpenRoom[] | null;
   send(msg: ClientMessage): void;
   clearError(): void;
   /** Offline test build only: switch roles to see what each one can do. */
@@ -65,6 +66,7 @@ export function useConnection(name: string): Connection {
   const [notice, setNotice] = useState<string | null>(null);
   const [codes, setCodes] = useState<Connection['codes']>(null);
   const [stats, setStats] = useState<Connection['stats']>(null);
+  const [rooms, setRooms] = useState<OpenRoom[] | null>(null);
   const nameRef = useRef(name);
   nameRef.current = name;
 
@@ -92,6 +94,7 @@ export function useConnection(name: string): Connection {
           setRole(msg.role);
           setNotice(msg.role === 'admin' ? 'Als Admin angemeldet' : 'Pro freigeschaltet!');
         } else if (msg.t === 'codes') setCodes({ codes: msg.codes, days: msg.days });
+        else if (msg.t === 'rooms') setRooms(msg.rooms);
         else if (msg.t === 'stats') setStats({ rooms: msg.rooms, playing: msg.playing, connections: msg.connections });
         else if (msg.t === 'room') {
           roomId.current = msg.room.id;
@@ -130,6 +133,7 @@ export function useConnection(name: string): Connection {
     notice,
     codes,
     stats,
+    rooms,
     send,
     clearError: () => {
       setError(null);

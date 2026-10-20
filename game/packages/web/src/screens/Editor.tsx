@@ -1,14 +1,15 @@
 import { useMemo, useState } from 'react';
-import { STANDARD_NUMBERS, fogForestMap, generateStandardMap, hexagonCoords, tileId, validateMap } from '@kontinentalist/engine';
+import { STANDARD_NUMBERS, hexagonCoords, tileId, validateMap } from '@kontinentalist/engine';
 import type { FogTile, MapDef, MapTile, PortType, Terrain } from '@kontinentalist/engine';
 import { Board } from '../components/Board';
 import { navigate } from '../nav';
 import { TERRAIN_NAME } from '../i18n';
-import { deleteMap, loadMaps, saveMap } from '../maps';
+import { PRESET_CHOICES } from '../boards';
+import { STAGE_LABEL, getMap, mapHash, saveMap, stage, startingGameWith, useLibrary } from '../library';
 import { TERRAIN_STYLE, portLabel } from '../theme';
 import type { Connection } from '../net';
 
-const GRID_RADIUS = 5;
+const GRID_RADIUS = 6;
 const TERRAINS: Terrain[] = ['forest', 'hills', 'pasture', 'fields', 'mountains', 'desert', 'fog'];
 const FOG_TERRAINS: FogTile['terrain'][] = ['forest', 'hills', 'pasture', 'fields', 'mountains', 'desert'];
 const PORT_CYCLE: (PortType | null)[] = [null, 'any', 'lumber', 'brick', 'wool', 'grain', 'ore'];
@@ -17,11 +18,28 @@ const hasNumber = (t: Terrain) => t !== 'desert' && t !== 'fog';
 
 type Tool = { kind: 'terrain'; terrain: Terrain } | { kind: 'number'; n: number } | { kind: 'water' } | { kind: 'port' };
 
-export function Editor({ conn }: { conn: Connection }) {
-  const [map, setMap] = useState<MapDef>(() => ({ ...generateStandardMap(Date.now() & 0xffff), name: 'Meine Karte' }));
+function copyOf(map: MapDef, name: string): MapDef {
+  return { ...structuredClone(map), name };
+}
+
+export function Editor({ conn, mapId }: { conn: Connection; mapId?: string }) {
+  useLibrary(); // re-render when the saved copy changes (e.g. after testing)
+  const [id, setId] = useState<string | undefined>(() => (mapId && getMap(mapId) ? mapId : undefined));
+  const [map, setMap] = useState<MapDef>(() => {
+    const existing = mapId ? getMap(mapId) : undefined;
+    return existing ? structuredClone(existing.map) : copyOf(PRESET_CHOICES[0].map, 'Meine Karte');
+  });
   const [tool, setTool] = useState<Tool>({ kind: 'terrain', terrain: 'forest' });
-  const [saved, setSaved] = useState(loadMaps);
   const errors = useMemo(() => validateMap(map), [map]);
+  const saved = id ? getMap(id) : undefined;
+  const dirty = !saved || saved.map.name !== map.name || mapHash(saved.map) !== mapHash(map);
+
+  const save = () => setId(saveMap(map, id));
+  const test = () => {
+    save();
+    startingGameWith(map);
+    conn.send({ t: 'createRoom', map, bots: 3, start: true });
+  };
 
   const ghosts = useMemo(() => {
     const land = new Set(map.tiles.map((t) => tileId(t.q, t.r)));
@@ -76,9 +94,11 @@ export function Editor({ conn }: { conn: Connection }) {
   return (
     <div className="editor">
       <header className="topbar">
-        <button className="brand ghost-btn" onClick={() => navigate('#/')}>⬅ Kontinentalist</button>
-        <input className="map-name" value={map.name} maxLength={40} onChange={(e) => setMap({ ...map, name: e.target.value })} />
-        <span className={errors.length ? 'status bad' : 'status mine'}>{errors.length ? `${errors.length} Problem(e)` : 'Karte gültig'}</span>
+        <button className="brand ghost-btn" onClick={() => navigate('#/maps')}>⬅ Meine Karten</button>
+        <input className="map-name" value={map.name} maxLength={40} onChange={(e) => setMap({ ...map, name: e.target.value })} aria-label="Name der Karte" />
+        <span className={errors.length ? 'status bad' : 'status mine'}>
+          {errors.length ? `${errors.length} Problem(e)` : dirty ? 'Gültig · nicht gespeichert' : `Gespeichert · ${STAGE_LABEL[stage(saved!)]}`}
+        </span>
       </header>
 
       <main className="board-wrap">
@@ -162,26 +182,20 @@ export function Editor({ conn }: { conn: Connection }) {
         )}
 
         <div className="row-btns">
-          <button className="primary" disabled={errors.length > 0} onClick={() => conn.send({ t: 'createRoom', map, bots: 3, start: true })}>
-            ▶ Gegen Bots testen
+          <button disabled={errors.length > 0 || !map.name.trim() || !dirty} onClick={save}>💾 Speichern</button>
+          <button className="primary" disabled={errors.length > 0 || !map.name.trim()} onClick={test}>
+            ▶ Speichern und gegen Bots testen
           </button>
-          <button disabled={errors.length > 0 || !map.name.trim()} onClick={() => setSaved(saveMap(map))}>💾 Speichern</button>
         </div>
+        <p className="muted small">Nach einer zu Ende gespielten Bot-Partie gilt die Karte als getestet und kann veröffentlicht werden. Jede Änderung am Brett setzt das zurück.</p>
 
-        <h4>Vorlagen und gespeicherte Karten</h4>
+        <h4>Vorlage laden</h4>
         <div className="row-btns">
-          <button onClick={() => setMap({ ...generateStandardMap(Date.now() & 0xffff), name: 'Meine Karte' })}>Standard</button>
-          <button onClick={() => setMap({ ...fogForestMap(), name: 'Nebelwald (Kopie)' })}>Nebelwald</button>
-          <button onClick={() => setMap({ name: 'Leere Karte', tiles: [], ports: [] })}>Leer</button>
-        </div>
-        <ul className="saved">
-          {saved.map((m) => (
-            <li key={m.name}>
-              <button className="link" onClick={() => setMap(structuredClone(m))}>{m.name}</button>
-              <button className="mini" onClick={() => setSaved(deleteMap(m.name))}>✕</button>
-            </li>
+          {PRESET_CHOICES.map((c) => (
+            <button key={c.key} onClick={() => setMap(copyOf(c.map, map.name))}>{c.title}</button>
           ))}
-        </ul>
+          <button onClick={() => setMap({ name: map.name, tiles: [], ports: [] })}>Leer</button>
+        </div>
       </aside>
     </div>
   );

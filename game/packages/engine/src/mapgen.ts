@@ -33,7 +33,7 @@ export function hexagonCoords(radius: number): { q: number; r: number }[] {
   return out;
 }
 
-function redNumbersAdjacent(tiles: MapTile[]): boolean {
+export function redNumbersAdjacent(tiles: MapTile[]): boolean {
   const byId = new Map(tiles.map((t) => [tileId(t.q, t.r), t]));
   return tiles.some(
     (t) =>

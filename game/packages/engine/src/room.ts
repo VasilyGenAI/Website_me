@@ -2,7 +2,7 @@ import { botAction } from './bot';
 import { applyAction, createGame } from './game';
 import { generateStandardMap, validateMap } from './mapgen';
 import { PLAYER_COLORS } from './protocol';
-import type { ChatMessage, RoomView } from './protocol';
+import type { ChatMessage, OpenRoom, RoomView } from './protocol';
 import { actingPlayers } from './rules';
 import type { Action, GameState, MapDef } from './types';
 import { viewFor } from './view';
@@ -125,7 +125,7 @@ export class Room {
       id: this.id,
       hostId: this.hostId,
       status: this.status,
-      mapName: this.map?.name ?? 'Standard',
+      mapName: this.map?.name ?? 'Klassisch',
       seats: this.seats.map((s) => ({
         ...s,
         connected: s.isBot || [...this.listeners].some((l) => l.userId === s.id),
@@ -194,6 +194,12 @@ export class RoomRegistry {
 
   get(id: string): Room | undefined {
     return this.rooms.get(id);
+  }
+
+  openRooms(): OpenRoom[] {
+    return [...this.rooms.values()]
+      .filter((r) => r.status === 'lobby' && r.seats.length < MAX_SEATS)
+      .map((r) => ({ id: r.id, mapName: r.map?.name ?? 'Klassisch', seats: r.seats.length }));
   }
 
   stats(): { rooms: number; playing: number } {

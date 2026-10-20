@@ -3,7 +3,7 @@ import type { GameView } from './view';
 
 export type Role = 'admin' | 'pro' | 'basic';
 
-export type PresetId = 'standard' | 'nebelwald';
+export type PresetId = 'standard' | 'deutschland' | 'ukraine' | 'nebelwald';
 
 export const CAN_CREATE_MAPS: Record<Role, boolean> = { admin: true, pro: true, basic: false };
 
@@ -13,6 +13,13 @@ export interface SeatView {
   color: string;
   isBot: boolean;
   connected: boolean;
+}
+
+/** A lobby anyone can join, as listed on the rooms screen. */
+export interface OpenRoom {
+  id: string;
+  mapName: string;
+  seats: number;
 }
 
 export interface ChatMessage {
@@ -40,6 +47,7 @@ export type ClientMessage =
   | { t: 'adminLogin'; key: string }
   | { t: 'adminCreateCodes'; count: number; days: number }
   | { t: 'adminStats' }
+  | { t: 'listRooms' }
   /** `preset` boards are open to everyone; a custom `map` needs the pro or admin role. */
   | { t: 'createRoom'; preset?: PresetId; map?: MapDef; bots?: number; start?: boolean }
   | { t: 'joinRoom'; roomId: string }
@@ -56,6 +64,7 @@ export type ServerMessage =
   | { t: 'token'; token: string; role: Role }
   | { t: 'codes'; codes: string[]; days: number }
   | { t: 'stats'; rooms: number; playing: number; connections: number }
+  | { t: 'rooms'; rooms: OpenRoom[] }
   | { t: 'room'; room: RoomView }
   | { t: 'left' }
   | { t: 'error'; message: string };

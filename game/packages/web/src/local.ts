@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { RoomError, RoomRegistry, fogForestMap } from '@kontinentalist/engine';
+import { PRESET_MAPS, RoomError, RoomRegistry } from '@kontinentalist/engine';
 import type { ClientMessage, Listener, MapDef, Role, Room, RoomView } from '@kontinentalist/engine';
 import { translateError } from './i18n';
 import { userId } from './net';
@@ -39,7 +39,7 @@ export function useLocalConnection(name: string): Connection {
         case 'createRoom': {
           if (msg.map && roleRef.current === 'basic') throw new RoomError('Custom boards need a Pro account');
           leave();
-          const map: MapDef | null = msg.map ?? (msg.preset === 'nebelwald' ? fogForestMap() : null);
+          const map: MapDef | null = msg.map ?? (msg.preset && msg.preset !== 'standard' ? PRESET_MAPS[msg.preset]() : null);
           const r = registry.current.create(userId, map);
           r.addHuman(userId, nameRef.current);
           for (let i = 0; i < Math.min(msg.bots ?? 0, 3); i++) r.addBot(userId);
@@ -51,6 +51,8 @@ export function useLocalConnection(name: string): Connection {
         }
         case 'leave':
           return leave();
+        case 'listRooms':
+          return;
         case 'joinRoom':
         case 'redeemCode':
         case 'adminLogin':
@@ -93,6 +95,7 @@ export function useLocalConnection(name: string): Connection {
     notice: null,
     codes: null,
     stats: null,
+    rooms: null,
     send,
     clearError: () => setError(null),
   };

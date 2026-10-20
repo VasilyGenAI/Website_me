@@ -5,7 +5,7 @@ import { extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
 import type { WebSocket } from 'ws';
-import { CAN_CREATE_MAPS, RoomError, RoomRegistry, fogForestMap } from '@kontinentalist/engine';
+import { CAN_CREATE_MAPS, PRESET_MAPS, RoomError, RoomRegistry } from '@kontinentalist/engine';
 import type { ClientMessage, Listener, MapDef, Role, Room, RoomView, ServerMessage } from '@kontinentalist/engine';
 import { Auth, AuthError } from './auth';
 
@@ -108,8 +108,8 @@ wss.on('connection', (ws: WebSocket) => {
           if (msg.map) {
             if (!CAN_CREATE_MAPS[role]) throw new RoomError('Custom boards need a Pro account');
             map = msg.map;
-          } else if (msg.preset === 'nebelwald') {
-            map = fogForestMap();
+          } else if (msg.preset && msg.preset !== 'standard' && msg.preset in PRESET_MAPS) {
+            map = PRESET_MAPS[msg.preset]();
           }
           const r = registry.create(userId, map);
           r.addHuman(userId, name);
@@ -123,6 +123,8 @@ wss.on('connection', (ws: WebSocket) => {
           if (r.status === 'lobby') r.addHuman(userId, name);
           return enter(r);
         }
+        case 'listRooms':
+          return send({ t: 'rooms', rooms: registry.openRooms() });
         case 'leave':
           room?.listeners.delete(listener);
           room?.touch();
