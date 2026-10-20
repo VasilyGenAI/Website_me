@@ -1,6 +1,6 @@
 import { topology, tileId } from './geometry';
 import { RESOURCES, TERRAIN_RESOURCE } from './types';
-import type { EdgeId, GameState, PortType, Resource, ResourceCounts, TileId, VertexId } from './types';
+import type { EdgeId, GameState, PortType, Resource, ResourceCounts, Terrain, TileId, VertexId } from './types';
 
 export const COSTS = {
   road: { lumber: 1, brick: 1 },
@@ -25,13 +25,26 @@ export function topo(state: GameState) {
   return topology(state.map);
 }
 
-export function tileResource(state: GameState, tile: TileId): Resource | null {
+/** Current terrain and number of a tile, taking revealed fog into account. */
+export function tileInfo(state: GameState, tile: TileId): { terrain: Terrain; number: number | null } | null {
+  const revealed = state.revealed[tile];
+  if (revealed) return revealed;
   const t = state.map.tiles.find((x) => tileId(x.q, x.r) === tile);
+  return t ? { terrain: t.terrain, number: t.number } : null;
+}
+
+export function tileResource(state: GameState, tile: TileId): Resource | null {
+  const t = tileInfo(state, tile);
   return t ? TERRAIN_RESOURCE[t.terrain] : null;
 }
 
 export function tileNumber(state: GameState, tile: TileId): number | null {
-  return state.map.tiles.find((x) => tileId(x.q, x.r) === tile)?.number ?? null;
+  return tileInfo(state, tile)?.number ?? null;
+}
+
+/** Tiles the robber may move to: anything already visible, except where it stands. */
+export function robberTiles(state: GameState): TileId[] {
+  return topo(state).tiles.filter((x) => x !== state.robber && tileInfo(state, x)?.terrain !== 'fog');
 }
 
 /** Distance rule: the vertex and all its neighbours must be free. */

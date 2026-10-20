@@ -5,3 +5,4 @@ export * from './rules';
 export * from './game';
 export * from './bot';
 export { rand, randInt, shuffle } from './rng';
+export * from './presets';

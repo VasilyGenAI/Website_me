@@ -192,7 +192,7 @@ describe('turns', () => {
     s = act(s, 1, { type: 'discard', resources: { lumber: 2, ore: 2 } });
     expect(totalCards(s.players[1].resources)).toBe(5);
     expect(s.phase).toEqual({ type: 'robber', then: 'main' });
-    expect(rejects(s, 0, { type: 'moveRobber', tile: s.robber })).toMatch(/different/);
+    expect(rejects(s, 0, { type: 'moveRobber', tile: s.robber! })).toMatch(/different/);
 
     // Put the robber next to player 1 so there is someone to steal from.
     const t = topology(s.map);

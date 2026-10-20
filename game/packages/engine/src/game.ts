@@ -10,6 +10,8 @@ import {
   legalSettlementVertices,
   longestRoadLength,
   robberCandidates,
+  robberTiles,
+  tileInfo,
   tileNumber,
   tileResource,
   topo,
@@ -17,7 +19,7 @@ import {
   tradeRatio,
   victoryPoints,
 } from './rules';
-import { RESOURCES } from './types';
+import { RESOURCES, TERRAIN_RESOURCE } from './types';
 import type {
   Action,
   ActionResult,
@@ -47,8 +49,9 @@ export function createGame(config: GameConfig): GameState {
   const n = config.players.length;
   if (n < 2 || n > 4) throw new Error('The standard game supports 2-4 players');
   const map = config.map ?? generateStandardMap(config.seed);
-  const desert = map.tiles.find((t) => t.terrain === 'desert') ?? map.tiles[0];
+  const desert = map.tiles.find((t) => t.terrain === 'desert');
   const rng = { rng: config.seed ^ 0x5bd1e995 };
+  const fogPool = shuffle(rng, map.fogPool ?? []);
   return {
     map,
     victoryPoints: config.victoryPoints ?? 10,
@@ -71,7 +74,9 @@ export function createGame(config: GameConfig): GameState {
     setupIndex: 0,
     buildings: {},
     roads: {},
-    robber: tileId(desert.q, desert.r),
+    robber: desert ? tileId(desert.q, desert.r) : null,
+    revealed: {},
+    fogPool,
     bank: { lumber: BANK_SIZE, brick: BANK_SIZE, wool: BANK_SIZE, grain: BANK_SIZE, ore: BANK_SIZE },
     devDeck: shuffle(rng, DEV_DECK),
     devPlayedThisTurn: false,
@@ -241,6 +246,7 @@ function placeRoad(state: GameState, player: number, edge: string) {
   state.roads[edge] = player;
   p.roadsLeft--;
   emit(state, { type: 'roadPlaced', player, edge });
+  revealFog(state, player, edge);
 
   if (phase.type === 'setup') {
     state.setupIndex++;
@@ -263,6 +269,23 @@ function placeRoad(state: GameState, player: number, edge: string) {
     } else {
       state.phase = { type: phase.then };
     }
+  }
+}
+
+/** A road along the side of a fog tile reveals it; the explorer may get one card of what was found. */
+function revealFog(state: GameState, player: number, edge: string) {
+  const t = topo(state);
+  for (const tile of t.tiles) {
+    if (tileInfo(state, tile)?.terrain !== 'fog') continue;
+    const cs = t.tileVertices[tile];
+    const [a, b] = t.edgeVertices[edge];
+    if (!cs.includes(a) || !cs.includes(b)) continue;
+    const found = state.fogPool.pop() ?? { terrain: 'desert' as const, number: null };
+    state.revealed[tile] = found;
+    const resource = TERRAIN_RESOURCE[found.terrain];
+    const reward = resource && state.map.fogReward !== false && state.bank[resource] > 0 ? resource : null;
+    if (reward) giveFromBank(state, player, { [reward]: 1 });
+    emit(state, { type: 'fogRevealed', player, tile, revealed: found, reward });
   }
 }
 
@@ -352,6 +375,7 @@ function moveRobber(state: GameState, player: number, tile: string) {
   check(phase.type === 'robber', 'You cannot move the robber now');
   check(topo(state).tileVertices[tile], 'Unknown tile');
   check(tile !== state.robber, 'The robber must move to a different tile');
+  check(robberTiles(state).includes(tile), 'The robber cannot go into the fog');
   state.robber = tile;
   emit(state, { type: 'robberMoved', player, tile });
   const candidates = robberCandidates(state, tile, player);

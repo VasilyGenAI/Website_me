@@ -5,6 +5,7 @@ import {
   legalCityVertices,
   legalRoadEdges,
   legalSettlementVertices,
+  robberTiles,
   tileNumber,
   tileResource,
   topo,
@@ -125,14 +126,18 @@ function hasPlayable(state: GameState, me: number, type: string): boolean {
   return !state.devPlayedThisTurn && state.players[me].devCards.some((c) => c.type === type && c.boughtOnTurn < state.turn);
 }
 
+function robberOnMe(state: GameState, me: number): boolean {
+  return state.robber !== null && myTiles(state, me).has(state.robber);
+}
+
 function shouldPlayKnight(state: GameState, me: number): boolean {
-  return hasPlayable(state, me, 'knight') && myTiles(state, me).has(state.robber);
+  return hasPlayable(state, me, 'knight') && robberOnMe(state, me);
 }
 
 function chooseRobberTile(state: GameState, me: number): TileId {
   const t = topo(state);
   const mine = myTiles(state, me);
-  const options = t.tiles.filter((x) => x !== state.robber);
+  const options = robberTiles(state);
   return best(options, (tile) => {
     let s = mine.has(tile) ? -100 : 0;
     const p = pips(tileNumber(state, tile));
@@ -182,7 +187,7 @@ function mainAction(state: GameState, me: number): Action {
   const p = state.players[me];
   const res = p.resources;
 
-  if (hasPlayable(state, me, 'knight') && myTiles(state, me).has(state.robber)) return { type: 'playKnight' };
+  if (shouldPlayKnight(state, me)) return { type: 'playKnight' };
   if (hasPlayable(state, me, 'roadBuilding') && p.roadsLeft >= 2 && legalRoadEdges(state, me).length > 0) return { type: 'playRoadBuilding' };
 
   const cities = legalCityVertices(state, me);

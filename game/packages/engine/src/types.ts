@@ -2,7 +2,8 @@ export const RESOURCES = ['lumber', 'brick', 'wool', 'grain', 'ore'] as const;
 export type Resource = (typeof RESOURCES)[number];
 export type ResourceCounts = Record<Resource, number>;
 
-export type Terrain = 'forest' | 'hills' | 'pasture' | 'fields' | 'mountains' | 'desert';
+/** 'fog' is a hidden tile that turns into an entry of the map's fog pool once a road is built along it. */
+export type Terrain = 'forest' | 'hills' | 'pasture' | 'fields' | 'mountains' | 'desert' | 'fog';
 
 export const TERRAIN_RESOURCE: Record<Terrain, Resource | null> = {
   forest: 'lumber',
@@ -11,6 +12,7 @@ export const TERRAIN_RESOURCE: Record<Terrain, Resource | null> = {
   fields: 'grain',
   mountains: 'ore',
   desert: null,
+  fog: null,
 };
 
 export type PortType = Resource | 'any';
@@ -26,7 +28,7 @@ export interface MapTile {
   q: number;
   r: number;
   terrain: Terrain;
-  /** Dice number 2..12 (never 7); null for desert. */
+  /** Dice number 2..12 (never 7); null for desert and fog. */
   number: number | null;
 }
 
@@ -39,10 +41,24 @@ export interface MapPort {
   type: PortType;
 }
 
+/** What a fog tile can turn into. */
+export interface FogTile {
+  terrain: Exclude<Terrain, 'fog'>;
+  number: number | null;
+}
+
+/**
+ * A board. Only land tiles are listed; any hex not listed is water, so lakes and separate
+ * islands are simply gaps in the list. Ports can sit on any coastal edge, inner lakes included.
+ */
 export interface MapDef {
   name: string;
   tiles: MapTile[];
   ports: MapPort[];
+  /** Tiles drawn (in random order) when fog is revealed. Needs at least one entry per fog tile. */
+  fogPool?: FogTile[];
+  /** Whether revealing a fog tile pays one card of its resource to the revealing player (default true). */
+  fogReward?: boolean;
 }
 
 export type DevCardType = 'knight' | 'roadBuilding' | 'yearOfPlenty' | 'monopoly' | 'victoryPoint';
@@ -116,6 +132,7 @@ export type GameEvent =
   | { type: 'productionBlocked'; resource: Resource }
   | { type: 'discarded'; player: number; resources: Partial<ResourceCounts> }
   | { type: 'robberMoved'; player: number; tile: TileId }
+  | { type: 'fogRevealed'; player: number; tile: TileId; revealed: FogTile; reward: Resource | null }
   | { type: 'stolen'; thief: number; victim: number; resource: Resource }
   | { type: 'devCardBought'; player: number }
   | { type: 'devCardPlayed'; player: number; card: DevCardType }
@@ -142,7 +159,12 @@ export interface GameState {
   setupIndex: number;
   buildings: Record<VertexId, Building>;
   roads: Record<EdgeId, number>;
-  robber: TileId;
+  /** Null when the map has no desert: the robber then waits off the board until the first 7. */
+  robber: TileId | null;
+  /** Fog tiles revealed so far; overrides the map's 'fog' entry for that tile. */
+  revealed: Record<TileId, FogTile>;
+  /** Remaining fog pool, already shuffled. Secret: the server must not send it to clients. */
+  fogPool: FogTile[];
   bank: ResourceCounts;
   devDeck: DevCardType[];
   devPlayedThisTurn: boolean;

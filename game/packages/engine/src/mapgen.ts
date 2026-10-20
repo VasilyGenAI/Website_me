@@ -76,43 +76,47 @@ export function generateStandardMap(seed: number): MapDef {
   return { name: 'Standard', tiles, ports };
 }
 
+export const MAX_MAP_RADIUS = 7;
+export const MAX_MAP_TILES = 100;
+
+function numberError(id: string, terrain: string, n: number | null): string | null {
+  if (terrain === 'desert' || terrain === 'fog') return n === null ? null : `${id}: ${terrain} must not have a number`;
+  if (n === null || !Number.isInteger(n) || n < 2 || n > 12 || n === 7) return `${id}: needs a number from 2-12 other than 7`;
+  return null;
+}
+
 /** Checks a (possibly user-made) map for structural problems. Returns a list of errors; empty means valid. */
 export function validateMap(map: MapDef): string[] {
   const errors: string[] = [];
   if (map.tiles.length === 0) return ['Map has no tiles'];
+  if (map.tiles.length > MAX_MAP_TILES) errors.push(`Map has more than ${MAX_MAP_TILES} tiles`);
 
   const seen = new Set<string>();
   for (const t of map.tiles) {
     const id = tileId(t.q, t.r);
     if (seen.has(id)) errors.push(`Duplicate tile ${id}`);
     seen.add(id);
-    if (t.terrain === 'desert') {
-      if (t.number !== null) errors.push(`Desert ${id} must not have a number`);
-    } else if (t.number === null || !Number.isInteger(t.number) || t.number < 2 || t.number > 12 || t.number === 7) {
-      errors.push(`Tile ${id} needs a number from 2-12 other than 7`);
-    }
+    if (Math.max(Math.abs(t.q), Math.abs(t.r), Math.abs(t.q + t.r)) > MAX_MAP_RADIUS) errors.push(`Tile ${id} is too far from the centre`);
+    const err = numberError(`Tile ${id}`, t.terrain, t.number);
+    if (err) errors.push(err);
   }
 
-  // All land must be one connected island so roads can reach everything.
-  const start = map.tiles[0];
-  const stack = [tileId(start.q, start.r)];
-  const reached = new Set(stack);
-  while (stack.length) {
-    const [q, r] = stack.pop()!.split(',').map(Number);
-    for (const [dq, dr] of AXIAL_NEIGHBORS) {
-      const n = tileId(q + dq, r + dr);
-      if (seen.has(n) && !reached.has(n)) {
-        reached.add(n);
-        stack.push(n);
-      }
-    }
-  }
-  if (reached.size !== seen.size) errors.push('All tiles must be connected');
+  const fogTiles = map.tiles.filter((t) => t.terrain === 'fog').length;
+  const pool = map.fogPool ?? [];
+  if (pool.length < fogTiles) errors.push(`Fog pool needs at least ${fogTiles} entries (has ${pool.length})`);
+  pool.forEach((f, i) => {
+    if ((f.terrain as string) === 'fog') errors.push(`Fog pool entry ${i + 1} cannot be fog`);
+    const err = numberError(`Fog pool entry ${i + 1}`, f.terrain, f.number);
+    if (err) errors.push(err);
+  });
 
   const coastal = new Set(topology(map).coastalEdges.map((c) => `${c.q},${c.r},${c.side}`));
+  const usedEdges = new Set<string>();
   for (const p of map.ports) {
-    if (!coastal.has(`${p.q},${p.r},${p.side}`)) errors.push(`Port at ${p.q},${p.r} side ${p.side} is not on the coast`);
+    const key = `${p.q},${p.r},${p.side}`;
+    if (!coastal.has(key)) errors.push(`Port at ${p.q},${p.r} side ${p.side} is not on the coast`);
+    if (usedEdges.has(key)) errors.push(`Two ports on ${p.q},${p.r} side ${p.side}`);
+    usedEdges.add(key);
   }
-  if (!map.tiles.some((t) => t.terrain === 'desert')) errors.push('Map needs a desert for the robber to start on');
   return errors;
 }
