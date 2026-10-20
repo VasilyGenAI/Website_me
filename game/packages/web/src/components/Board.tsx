@@ -165,10 +165,10 @@ export function Board(props: BoardProps) {
               // Square artwork, cropped to the hexagon; the variant is fixed per tile position.
               <image
                 href={style.images[(((t.q * 7 + t.r * 13) % style.images.length) + style.images.length) % style.images.length]}
-                x={c.x - (S * Math.sqrt(3)) / 2}
-                y={c.y - S}
-                width={S * Math.sqrt(3)}
-                height={S * 2}
+                x={c.x - S * (style.focus?.zoom ?? 1)}
+                y={c.y + S * ((style.focus?.dy ?? 0) - (style.focus?.zoom ?? 1))}
+                width={S * 2 * (style.focus?.zoom ?? 1)}
+                height={S * 2 * (style.focus?.zoom ?? 1)}
                 preserveAspectRatio="xMidYMid slice"
                 clipPath={`url(#hex${t.q}_${t.r})`}
               />

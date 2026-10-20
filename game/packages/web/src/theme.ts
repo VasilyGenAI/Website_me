@@ -11,13 +11,15 @@ import wueste1 from './art/wueste-1.webp';
 /**
  * Every visual is looked up here. `images` holds artwork variants for a terrain; each tile always
  * gets the same variant, so a board mixes them. Terrains without artwork show the colour and icon.
+ * `focus` reframes the picture inside the hexagon: `zoom` below 1 shows more of it, `dy` moves it
+ * down (in tile radii) so its top part comes into view. Both stay small enough that no gap appears.
  */
-export const TERRAIN_STYLE: Record<Terrain, { fill: string; icon: string; images?: string[] }> = {
+export const TERRAIN_STYLE: Record<Terrain, { fill: string; icon: string; images?: string[]; focus?: { zoom: number; dy: number } }> = {
   forest: { fill: '#2e8b3d', icon: '🌲', images: [wald1] },
   hills: { fill: '#d9673a', icon: '🧱', images: [huegel1] },
   pasture: { fill: '#8cc63f', icon: '🐑', images: [weide1] },
-  fields: { fill: '#f2c230', icon: '🌾', images: [acker1] },
-  mountains: { fill: '#9aa4ad', icon: '⛰️', images: [gebirge1] },
+  fields: { fill: '#f2c230', icon: '🌾', images: [acker1], focus: { zoom: 0.9, dy: 0.05 } },
+  mountains: { fill: '#9aa4ad', icon: '⛰️', images: [gebirge1], focus: { zoom: 0.9, dy: 0.05 } },
   desert: { fill: '#e6d29a', icon: '🌵', images: [wueste1] },
   fog: { fill: '#c9d1d9', icon: '☁️', images: [nebel1] },
 };
