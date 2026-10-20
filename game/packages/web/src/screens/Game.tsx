@@ -4,6 +4,7 @@ import { COSTS, RESOURCES, hasResources, totalCards } from '@kontinentalist/engi
 import type { Action, DevCardType, GameView, Resource, ResourceCounts, RoomView } from '@kontinentalist/engine';
 import { Board } from '../components/Board';
 import { Dice } from '../components/Dice';
+import { TradePanel } from '../components/TradePanel';
 import { Log } from '../components/Log';
 import { DEV_HELP, DEV_NAME, RES_NAME } from '../i18n';
 import { RESOURCE_STYLE } from '../theme';
@@ -217,7 +218,7 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
       )}
       {dialog === 'trade' && myTurn && phase.type === 'main' && <TradeDialog g={g} hand={hand} act={act} close={() => setDialog(null)} />}
       {dialog === 'dev' && <DevDialog g={g} playable={playableDev} act={(a) => { act(a); setDialog(null); }} close={() => setDialog(null)} />}
-      <TradeOfferBox g={g} act={act} />
+      <TradePanel g={g} act={act} />
       {phase.type === 'ended' && (
         <Modal title="Spiel vorbei">
           <p className="winner">🏆 {g.players[phase.winner].name} gewinnt!</p>
@@ -295,35 +296,6 @@ function TradeDialog({ g, hand, act, close }: { g: GameView; hand: ResourceCount
         Angebot senden
       </button>
     </Modal>
-  );
-}
-
-function TradeOfferBox({ g, act }: { g: GameView; act: (a: Action) => void }) {
-  const o = g.tradeOffer;
-  if (!o || g.me === null) return null;
-  const Side = ({ r }: { r: Partial<ResourceCounts> }) => <>{RESOURCES.flatMap((k) => Array(r[k] ?? 0).fill(RESOURCE_STYLE[k].icon)).join(' ')}</>;
-  if (o.from === g.me) {
-    return (
-      <div className="offer-box">
-        <div>Dein Angebot: <Side r={o.give} /> für <Side r={o.want} /></div>
-        {Object.entries(o.responses).map(([p, r]) => (
-          <span key={p} className={`resp ${r}`}>
-            {g.players[Number(p)].name}: {r === 'pending' ? '…' : r === 'accepted' ? '✔' : '✘'}
-            {r === 'accepted' && <button className="mini" onClick={() => act({ type: 'confirmTrade', with: Number(p) })}>Tauschen</button>}
-          </span>
-        ))}
-        <button className="mini" onClick={() => act({ type: 'cancelTrade' })}>Zurückziehen</button>
-      </div>
-    );
-  }
-  if (o.responses[g.me] !== 'pending') return null;
-  const canPay = g.hand !== null && hasResources(g.hand, o.want);
-  return (
-    <div className="offer-box">
-      <div><b>{g.players[o.from].name}</b> bietet <Side r={o.give} /> für <Side r={o.want} /></div>
-      <button className="primary mini" disabled={!canPay} onClick={() => act({ type: 'respondTrade', accept: true })}>Annehmen</button>
-      <button className="mini" onClick={() => act({ type: 'respondTrade', accept: false })}>Ablehnen</button>
-    </div>
   );
 }
 
