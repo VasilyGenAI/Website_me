@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { hexCorners, pips, tileId, topology, vertexPoint } from '@hexlands/engine';
-import type { Building, EdgeId, FogTile, MapDef, TileId, VertexId } from '@hexlands/engine';
+import { hexCorners, pips, tileId, topology, vertexPoint } from '@kontinentalist/engine';
+import type { Building, EdgeId, FogTile, MapDef, TileId, VertexId } from '@kontinentalist/engine';
 import { SHORE, TERRAIN_STYLE, portLabel } from '../theme';
 
 const S = 50; // hex size in SVG units

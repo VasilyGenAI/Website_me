@@ -1,6 +1,6 @@
-import type { MapDef } from '@hexlands/engine';
+import type { MapDef } from '@kontinentalist/engine';
 
-const KEY = 'hexlands.maps';
+const KEY = 'kontinentalist.maps';
 
 /** Saved boards live in the browser for now; they move to the account database with logins. */
 export function loadMaps(): MapDef[] {

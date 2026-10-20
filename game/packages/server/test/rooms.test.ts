@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { botAction, fogForestMap } from '@hexlands/engine';
+import { botAction, fogForestMap } from '@kontinentalist/engine';
 import { RoomError, RoomRegistry } from '../src/rooms';
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));

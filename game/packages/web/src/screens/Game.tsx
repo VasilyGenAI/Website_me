@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { COSTS, RESOURCES, hasResources, totalCards } from '@hexlands/engine';
-import type { Action, DevCardType, GameView, Resource, ResourceCounts, RoomView } from '@hexlands/engine';
+import { COSTS, RESOURCES, hasResources, totalCards } from '@kontinentalist/engine';
+import type { Action, DevCardType, GameView, Resource, ResourceCounts, RoomView } from '@kontinentalist/engine';
 import { Board } from '../components/Board';
 import { Log } from '../components/Log';
 import { DEV_HELP, DEV_NAME, RES_NAME } from '../i18n';
@@ -115,7 +115,7 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
   return (
     <div className="game">
       <header className="topbar">
-        <span className="brand">Hexlands</span>
+        <span className="brand">Kontinentalist</span>
         <span className={`status${myTurn ? ' mine' : ''}`}>{status}</span>
         <button className="ghost-btn" onClick={() => conn.send({ t: 'leave' })}>Verlassen</button>
       </header>

@@ -1,11 +1,13 @@
+import { randomBytes } from 'node:crypto';
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
 import type { WebSocket } from 'ws';
-import { CAN_CREATE_MAPS, fogForestMap } from '@hexlands/engine';
-import type { ClientMessage, MapDef, Role, RoomView, ServerMessage } from '@hexlands/engine';
+import { CAN_CREATE_MAPS, fogForestMap } from '@kontinentalist/engine';
+import type { ClientMessage, MapDef, Role, RoomView, ServerMessage } from '@kontinentalist/engine';
+import { Auth, AuthError } from './auth';
 import { Room, RoomError, RoomRegistry } from './rooms';
 import type { Listener } from './rooms';
 
@@ -22,8 +24,16 @@ const MIME: Record<string, string> = {
   '.woff2': 'font/woff2',
 };
 
-/** Until accounts exist everyone gets this role; set DEFAULT_ROLE=basic to try the restricted view. */
-const DEFAULT_ROLE: Role = (['admin', 'pro', 'basic'] as const).find((r) => r === process.env.DEFAULT_ROLE) ?? 'pro';
+/** Role for players without a token. DEFAULT_ROLE=pro is handy locally to try the editor. */
+const DEFAULT_ROLE: Role = (['admin', 'pro', 'basic'] as const).find((r) => r === process.env.DEFAULT_ROLE) ?? 'basic';
+
+if (!process.env.SECRET) console.warn('SECRET is not set: Pro codes and logins only last until the server restarts.');
+if (!process.env.ADMIN_KEY) console.warn('ADMIN_KEY is not set: the admin page is disabled.');
+const auth = new Auth(
+  process.env.SECRET ?? randomBytes(32).toString('hex'),
+  process.env.ADMIN_KEY ?? null,
+  join(process.env.DATA_DIR ?? resolve(fileURLToPath(new URL('.', import.meta.url)), '../data'), 'used-codes.json'),
+);
 
 const registry = new RoomRegistry();
 setInterval(() => registry.sweep(60 * 60 * 1000), 5 * 60 * 1000).unref();
@@ -38,7 +48,7 @@ const http = createServer((req, res) => {
   let file = normalize(join(WEB_DIST, decodeURIComponent(url.pathname)));
   if (!file.startsWith(WEB_DIST) || !existsSync(file) || statSync(file).isDirectory()) file = join(WEB_DIST, 'index.html');
   if (!existsSync(file)) {
-    res.writeHead(404).end('Web client not built. Run: npm run build -w @hexlands/web');
+    res.writeHead(404).end('Web client not built. Run: npm run build -w @kontinentalist/web');
     return;
   }
   res.writeHead(200, { 'content-type': MIME[extname(file)] ?? 'application/octet-stream' });
@@ -50,7 +60,7 @@ const wss = new WebSocketServer({ server: http, path: '/ws', maxPayload: 256 * 1
 wss.on('connection', (ws: WebSocket) => {
   let userId: string | null = null;
   let name = 'Gast';
-  const role: Role = DEFAULT_ROLE;
+  let role: Role = DEFAULT_ROLE;
   let room: Room | null = null;
   const send = (msg: ServerMessage) => ws.readyState === ws.OPEN && ws.send(JSON.stringify(msg));
   const listener: Listener = { userId: '', send: (view: RoomView) => send({ t: 'room', room: view }) };
@@ -74,9 +84,25 @@ wss.on('connection', (ws: WebSocket) => {
       if (msg.t === 'hello') {
         userId = String(msg.userId).slice(0, 64);
         name = String(msg.name).trim().slice(0, 24) || 'Gast';
+        role = auth.roleFromToken(userId, msg.token) ?? DEFAULT_ROLE;
         return send({ t: 'welcome', userId, role });
       }
       if (!userId) return send({ t: 'error', message: 'Say hello first' });
+
+      switch (msg.t) {
+        case 'redeemCode':
+        case 'adminLogin': {
+          const granted = msg.t === 'redeemCode' ? auth.redeem(String(msg.code), userId) : auth.adminLogin(String(msg.key), userId);
+          // Never downgrade an admin who redeems a code.
+          if (role !== 'admin') role = granted.role;
+          return send({ t: 'token', token: granted.token, role: granted.role });
+        }
+        case 'adminCreateCodes':
+        case 'adminStats':
+          if (role !== 'admin') throw new AuthError('Admins only');
+          if (msg.t === 'adminStats') return send({ t: 'stats', ...registry.stats(), connections: wss.clients.size });
+          return send({ t: 'codes', codes: auth.createCodes(Number(msg.count), Number(msg.days)), days: Math.max(0, Math.floor(Number(msg.days))) });
+      }
 
       switch (msg.t) {
         case 'createRoom': {
@@ -126,7 +152,7 @@ wss.on('connection', (ws: WebSocket) => {
       }
       room.touch();
     } catch (e) {
-      if (e instanceof RoomError) return send({ t: 'error', message: e.message });
+      if (e instanceof RoomError || e instanceof AuthError) return send({ t: 'error', message: e.message });
       console.error(e);
       send({ t: 'error', message: 'Server error' });
     }
@@ -138,4 +164,4 @@ wss.on('connection', (ws: WebSocket) => {
   });
 });
 
-http.listen(PORT, () => console.log(`Hexlands server on http://localhost:${PORT}`));
+http.listen(PORT, () => console.log(`Kontinentalist server on http://localhost:${PORT}`));

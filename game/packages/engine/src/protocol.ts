@@ -34,7 +34,12 @@ export interface RoomView {
 }
 
 export type ClientMessage =
-  | { t: 'hello'; userId: string; name: string }
+  /** `token` proves a pro/admin role earned earlier (code redeemed or admin login). */
+  | { t: 'hello'; userId: string; name: string; token?: string }
+  | { t: 'redeemCode'; code: string }
+  | { t: 'adminLogin'; key: string }
+  | { t: 'adminCreateCodes'; count: number; days: number }
+  | { t: 'adminStats' }
   /** `preset` boards are open to everyone; a custom `map` needs the pro or admin role. */
   | { t: 'createRoom'; preset?: PresetId; map?: MapDef; bots?: number; start?: boolean }
   | { t: 'joinRoom'; roomId: string }
@@ -47,6 +52,10 @@ export type ClientMessage =
 
 export type ServerMessage =
   | { t: 'welcome'; userId: string; role: Role }
+  /** New role proof for the client to keep. */
+  | { t: 'token'; token: string; role: Role }
+  | { t: 'codes'; codes: string[]; days: number }
+  | { t: 'stats'; rooms: number; playing: number; connections: number }
   | { t: 'room'; room: RoomView }
   | { t: 'left' }
   | { t: 'error'; message: string };

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { STANDARD_NUMBERS, fogForestMap, generateStandardMap, hexagonCoords, tileId, validateMap } from '@hexlands/engine';
-import type { FogTile, MapDef, MapTile, PortType, Terrain } from '@hexlands/engine';
+import { STANDARD_NUMBERS, fogForestMap, generateStandardMap, hexagonCoords, tileId, validateMap } from '@kontinentalist/engine';
+import type { FogTile, MapDef, MapTile, PortType, Terrain } from '@kontinentalist/engine';
 import { Board } from '../components/Board';
 import { TERRAIN_NAME } from '../i18n';
 import { deleteMap, loadMaps, saveMap } from '../maps';
@@ -75,7 +75,7 @@ export function Editor({ conn }: { conn: Connection }) {
   return (
     <div className="editor">
       <header className="topbar">
-        <a className="brand" href="#/">⬅ Hexlands</a>
+        <a className="brand" href="#/">⬅ Kontinentalist</a>
         <input className="map-name" value={map.name} maxLength={40} onChange={(e) => setMap({ ...map, name: e.target.value })} />
         <span className={errors.length ? 'status bad' : 'status mine'}>{errors.length ? `${errors.length} Problem(e)` : 'Karte gültig'}</span>
       </header>

@@ -7,8 +7,8 @@ import {
   generateStandardMap,
   validateMap,
   viewFor,
-} from '@hexlands/engine';
-import type { Action, ChatMessage, GameState, MapDef, RoomView } from '@hexlands/engine';
+} from '@kontinentalist/engine';
+import type { Action, ChatMessage, GameState, MapDef, RoomView } from '@kontinentalist/engine';
 
 export interface Seat {
   id: string;
@@ -192,6 +192,11 @@ export class RoomRegistry {
 
   get(id: string): Room | undefined {
     return this.rooms.get(id);
+  }
+
+  stats(): { rooms: number; playing: number } {
+    const all = [...this.rooms.values()];
+    return { rooms: all.length, playing: all.filter((r) => r.status === 'playing').length };
   }
 
   /** Drops rooms nobody has touched for a while. */

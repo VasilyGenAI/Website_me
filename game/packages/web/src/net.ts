@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ClientMessage, Role, RoomView, ServerMessage } from '@hexlands/engine';
+import type { ClientMessage, Role, RoomView, ServerMessage } from '@kontinentalist/engine';
 import { translateError } from './i18n';
 
 function storage(key: string, fallback: () => string): string {
@@ -14,15 +14,25 @@ function storage(key: string, fallback: () => string): string {
   }
 }
 
-export const userId = storage('hexlands.userId', () => crypto.randomUUID());
+export const userId = storage('kontinentalist.userId', () => crypto.randomUUID());
 
 export function savedName(): string {
-  return storage('hexlands.name', () => `Gast${Math.floor(Math.random() * 900 + 100)}`);
+  return storage('kontinentalist.name', () => `Gast${Math.floor(Math.random() * 900 + 100)}`);
+}
+
+const TOKEN_KEY = 'kontinentalist.token';
+
+function savedToken(): string | undefined {
+  try {
+    return localStorage.getItem(TOKEN_KEY) ?? undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export function saveName(name: string) {
   try {
-    localStorage.setItem('hexlands.name', name);
+    localStorage.setItem('kontinentalist.name', name);
   } catch {
     /* private mode: name just isn't remembered */
   }
@@ -33,6 +43,9 @@ export interface Connection {
   role: Role | null;
   room: RoomView | null;
   error: string | null;
+  notice: string | null;
+  codes: { codes: string[]; days: number } | null;
+  stats: { rooms: number; playing: number; connections: number } | null;
   send(msg: ClientMessage): void;
   clearError(): void;
 }
@@ -45,6 +58,9 @@ export function useConnection(name: string): Connection {
   const [role, setRole] = useState<Role | null>(null);
   const [room, setRoom] = useState<RoomView | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [codes, setCodes] = useState<Connection['codes']>(null);
+  const [stats, setStats] = useState<Connection['stats']>(null);
   const nameRef = useRef(name);
   nameRef.current = name;
 
@@ -57,12 +73,22 @@ export function useConnection(name: string): Connection {
       ws.current = sock;
       sock.onopen = () => {
         setConnected(true);
-        sock.send(JSON.stringify({ t: 'hello', userId, name: nameRef.current }));
+        sock.send(JSON.stringify({ t: 'hello', userId, name: nameRef.current, token: savedToken() }));
         if (roomId.current) sock.send(JSON.stringify({ t: 'joinRoom', roomId: roomId.current }));
       };
       sock.onmessage = (ev) => {
         const msg = JSON.parse(ev.data) as ServerMessage;
         if (msg.t === 'welcome') setRole(msg.role);
+        else if (msg.t === 'token') {
+          try {
+            localStorage.setItem(TOKEN_KEY, msg.token);
+          } catch {
+            /* private mode: the role lasts for this tab only */
+          }
+          setRole(msg.role);
+          setNotice(msg.role === 'admin' ? 'Als Admin angemeldet' : 'Pro freigeschaltet!');
+        } else if (msg.t === 'codes') setCodes({ codes: msg.codes, days: msg.days });
+        else if (msg.t === 'stats') setStats({ rooms: msg.rooms, playing: msg.playing, connections: msg.connections });
         else if (msg.t === 'room') {
           roomId.current = msg.room.id;
           setRoom(msg.room);
@@ -85,9 +111,25 @@ export function useConnection(name: string): Connection {
   }, []);
 
   const send = useCallback((msg: ClientMessage) => {
-    if (msg.t === 'hello') nameRef.current = msg.name;
+    if (msg.t === 'hello') {
+      nameRef.current = msg.name;
+      msg = { ...msg, token: savedToken() };
+    }
     ws.current?.readyState === WebSocket.OPEN && ws.current.send(JSON.stringify(msg));
   }, []);
 
-  return { connected, role, room, error, send, clearError: () => setError(null) };
+  return {
+    connected,
+    role,
+    room,
+    error,
+    notice,
+    codes,
+    stats,
+    send,
+    clearError: () => {
+      setError(null);
+      setNotice(null);
+    },
+  };
 }

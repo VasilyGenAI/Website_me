@@ -1,4 +1,4 @@
-import type { RoomView } from '@hexlands/engine';
+import type { RoomView } from '@kontinentalist/engine';
 import { userId } from '../net';
 import type { Connection } from '../net';
 

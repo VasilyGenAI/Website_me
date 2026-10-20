@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { CAN_CREATE_MAPS } from '@hexlands/engine';
+import { CAN_CREATE_MAPS } from '@kontinentalist/engine';
 import { savedName, useConnection } from './net';
+import { Admin } from './screens/Admin';
 import { Editor } from './screens/Editor';
 import { Game } from './screens/Game';
 import { Home } from './screens/Home';
@@ -42,14 +43,15 @@ export function App() {
   let screen;
   if (room) screen = room.status === 'lobby' ? <Lobby room={room} conn={conn} /> : <Game room={room} conn={conn} />;
   else if (hash === '#/editor' && conn.role && CAN_CREATE_MAPS[conn.role]) screen = <Editor conn={conn} />;
+  else if (hash === '#/admin') screen = <Admin conn={conn} />;
   else screen = <Home conn={conn} name={name} setName={setName} />;
 
   return (
     <>
       {screen}
-      {conn.error && (
-        <div className="toast" onClick={conn.clearError}>
-          {conn.error}
+      {(conn.error || conn.notice) && (
+        <div className={conn.error ? 'toast' : 'toast good'} onClick={conn.clearError}>
+          {conn.error ?? conn.notice}
         </div>
       )}
     </>

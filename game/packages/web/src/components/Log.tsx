@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
-import { RESOURCES } from '@hexlands/engine';
-import type { GameEvent, PublicPlayer, ResourceCounts } from '@hexlands/engine';
+import { RESOURCES } from '@kontinentalist/engine';
+import type { GameEvent, PublicPlayer, ResourceCounts } from '@kontinentalist/engine';
 import { DEV_NAME, RES_NAME, TERRAIN_NAME } from '../i18n';
 import { RESOURCE_STYLE } from '../theme';
 

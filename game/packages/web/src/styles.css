@@ -166,3 +166,5 @@ input, select { border: 1px solid #c9bfa6; border-radius: 8px; padding: 8px 10px
   .dice { font-size: 40px; }
   .topbar .status { font-size: .85rem; }
 }
+.toast.good { background: var(--ok); }
+.codes { width: 100%; font-family: ui-monospace, monospace; font-size: .9rem; border-radius: 8px; border: 1px solid #c9bfa6; padding: 8px; }

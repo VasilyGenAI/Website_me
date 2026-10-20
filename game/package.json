@@ -1,14 +1,14 @@
 {
-  "name": "hexlands",
+  "name": "kontinentalist",
   "private": true,
   "type": "module",
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev -w @hexlands/server & npm run dev -w @hexlands/web",
-    "build": "npm run build -w @hexlands/web",
-    "start": "npm start -w @hexlands/server",
+    "dev": "npm run dev -w @kontinentalist/server & npm run dev -w @kontinentalist/web",
+    "build": "npm run build -w @kontinentalist/web",
+    "start": "npm start -w @kontinentalist/server",
     "test": "vitest run",
     "typecheck": "tsc -p packages/engine --noEmit && tsc -p packages/server --noEmit && tsc -p packages/web --noEmit",
     "simulate": "tsx scripts/simulate.ts"
@@ -16,6 +16,6 @@
   "devDependencies": {
     "tsx": "^4.20.0",
     "typescript": "^5.9.0",
-    "vitest": "^3.2.0"
+    "vitest": "^5.0.0"
   }
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { CAN_CREATE_MAPS } from '@hexlands/engine';
-import type { MapDef, PresetId } from '@hexlands/engine';
+import { CAN_CREATE_MAPS } from '@kontinentalist/engine';
+import type { MapDef, PresetId } from '@kontinentalist/engine';
 import { loadMaps } from '../maps';
 import { saveName, userId } from '../net';
 import type { Connection } from '../net';
@@ -11,6 +11,7 @@ export function Home({ conn, name, setName }: { conn: Connection; name: string; 
   const [board, setBoard] = useState<string>('preset:standard');
   const [bots, setBots] = useState(3);
   const [code, setCode] = useState('');
+  const [proCode, setProCode] = useState('');
   const myMaps = loadMaps();
   const canMaps = conn.role !== null && CAN_CREATE_MAPS[conn.role];
 
@@ -22,7 +23,7 @@ export function Home({ conn, name, setName }: { conn: Connection; name: string; 
   return (
     <div className="home">
       <div className="hero">
-        <h1>⬢ Hexlands</h1>
+        <h1>⬢ Kontinentalist</h1>
         <p>Siedeln, handeln, bauen. Im Browser, auf Laptop und Handy.</p>
       </div>
       <div className="card">
@@ -84,9 +85,25 @@ export function Home({ conn, name, setName }: { conn: Connection; name: string; 
         {canMaps ? (
           <a className="button big" href="#/editor">Eigenes Spielbrett bauen</a>
         ) : (
-          <p className="muted">🔒 Eigene Spielbretter sind ein Pro-Feature.</p>
+          <>
+            <p className="muted">🔒 Eigene Spielbretter sind ein Pro-Feature. Hast du einen Pro-Code?</p>
+            <form
+              className="join"
+              onSubmit={(e) => {
+                e.preventDefault();
+                conn.send({ t: 'redeemCode', code: proCode });
+                setProCode('');
+              }}
+            >
+              <input value={proCode} onChange={(e) => setProCode(e.target.value)} placeholder="KONT-…" maxLength={40} />
+              <button disabled={!proCode.trim()}>Einlösen</button>
+            </form>
+          </>
         )}
       </div>
+      {conn.role === 'admin' && (
+        <a className="button" href="#/admin">⚙️ Admin-Bereich</a>
+      )}
       {!conn.connected && <p className="muted">Verbinde mit dem Server…</p>}
     </div>
   );

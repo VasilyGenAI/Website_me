@@ -1,4 +1,4 @@
-import type { DevCardType, Resource, Terrain } from '@hexlands/engine';
+import type { DevCardType, Resource, Terrain } from '@kontinentalist/engine';
 
 /** German UI strings. Kept in one place so English/Ukrainian can be added later. */
 export const RES_NAME: Record<Resource, string> = {
@@ -47,6 +47,10 @@ const ERRORS: Record<string, string> = {
   'Custom boards need a Pro account': 'Eigene Karten brauchen einen Pro-Account',
   'Room not found': 'Raum nicht gefunden',
   'The room is full': 'Der Raum ist voll',
+  'Invalid code': 'Ungültiger Code',
+  'This code has already been used': 'Dieser Code wurde schon eingelöst',
+  'Wrong admin key': 'Falscher Admin-Schlüssel',
+  'Admins only': 'Nur für Admins',
 };
 
 export function translateError(msg: string): string {

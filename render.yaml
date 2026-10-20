@@ -1,0 +1,20 @@
+# Render Blueprint for the Kontinentalist game server (free plan).
+# Render: New > Blueprint > pick this repository. ADMIN_KEY is asked for once during setup.
+services:
+  - type: web
+    name: kontinentalist
+    runtime: node
+    plan: free
+    rootDir: game
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DEFAULT_ROLE
+        value: basic
+      - key: SECRET
+        generateValue: true
+      - key: ADMIN_KEY
+        sync: false

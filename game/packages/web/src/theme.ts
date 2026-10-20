@@ -1,4 +1,4 @@
-import type { PortType, Resource, Terrain } from '@hexlands/engine';
+import type { PortType, Resource, Terrain } from '@kontinentalist/engine';
 
 /**
  * Placeholder look. Every visual is looked up here, so swapping in real artwork later means

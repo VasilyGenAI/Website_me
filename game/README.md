@@ -1,4 +1,4 @@
-# Hexlands (Arbeitstitel)
+# Kontinentalist
 
 Online-Brettspiel nach den klassischen Siedler-Regeln, mit eigenem Namen und eigenen Grafiken.
 Ziel: im Browser auf Laptop und Handy spielbar, später auch als Telegram Mini App.
@@ -18,7 +18,19 @@ Ziel: im Browser auf Laptop und Handy spielbar, später auch als Telegram Mini A
 - **Eigene Spielbretter (Pro):** Felder frei malen, Wasser und Seen, Inseln, Zahlen, Häfen an jeder Küste,
   **Nebelfelder** mit eigenem Nebel-Vorrat (wird beim Straßenbau aufgedeckt, Entdecker bekommt 1 Rohstoff)
 - Vorlage „Nebelwald“: Waldring um einen See mit Holzhäfen, Wüsteninsel in der Mitte, Nebelring außen ohne Holz
-- Rollen: Eigene Karten darf nur Pro/Admin starten (bis es Logins gibt, ist jeder Pro; `DEFAULT_ROLE=basic` zum Testen)
+- Rollen: Basic spielt, Pro baut eigene Karten, Admin erzeugt unter `/#/admin` Pro-Codes (einmal einlösbar, optional befristet)
+
+## Umgebungsvariablen (Server)
+
+| Variable | Zweck |
+|---|---|
+| `SECRET` | Signiert Pro-Codes und Freischaltungen. Muss fest bleiben. |
+| `ADMIN_KEY` | Passwort für den Admin-Bereich `/#/admin` |
+| `DEFAULT_ROLE` | Rolle ohne Freischaltung, Standard `basic` (lokal zum Ausprobieren `pro`) |
+| `DATA_DIR` | Ordner für die Liste eingelöster Codes |
+| `PORT` | Standard 8787 |
+
+Online stellen: siehe [DEPLOY.md](DEPLOY.md).
 
 ## Befehle
 
@@ -40,5 +52,5 @@ eintragen und die Datei unter `packages/web/public/art/` ablegen.
 ## Nächste Schritte
 
 1. Zug-Timer, Auto-Ablehnen von Handelsangeboten, Bot übernimmt bei Verbindungsabbruch
-2. Accounts und Rollen (Admin-Bereich), Karten in der Datenbank statt im Browser
+2. Datenbank für Accounts, Codes und Karten; Bezahlung für Pro
 3. Grafiken (KI/Vektor), Telegram Mini App, Deployment
