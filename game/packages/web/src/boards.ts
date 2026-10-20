@@ -16,7 +16,7 @@ export interface BoardChoice {
 export const PRESET_CHOICES: BoardChoice[] = [
   { key: 'p:standard', title: 'Klassisch', subtitle: '19 Felder, jedes Mal neu gemischt', map: generateStandardMap(7), preset: 'standard' },
   { key: 'p:deutschland', title: 'Deutschland', subtitle: 'Küste im Norden, Alpen im Süden · 30 Felder', map: PRESET_MAPS.deutschland(), preset: 'deutschland' },
-  { key: 'p:ukraine', title: 'Ukraine', subtitle: 'Weizensteppe, Karpaten, Donbas, Krim · 27 Felder', map: PRESET_MAPS.ukraine(), preset: 'ukraine' },
+  { key: 'p:ukraine', title: 'Ukraine', subtitle: 'Karpaten, Steppe, Donbas, Odesa, Krim · 53 Felder', map: PRESET_MAPS.ukraine(), preset: 'ukraine' },
   { key: 'p:nebelwald', title: 'Nebelwald', subtitle: 'Waldring am See, Nebel deckt Neues auf', map: PRESET_MAPS.nebelwald(), preset: 'nebelwald' },
 ];
 

@@ -53,7 +53,7 @@ export function Editor({ conn, mapId }: { conn: Connection; mapId?: string }) {
     let ports = map.ports;
     if (tool.kind === 'terrain') {
       const keep = existing && hasNumber(tool.terrain) ? existing.number : null;
-      tiles.push({ q, r, terrain: tool.terrain, number: hasNumber(tool.terrain) ? keep : null });
+      tiles.push({ q, r, terrain: tool.terrain, number: hasNumber(tool.terrain) ? keep : null, ...(existing?.label ? { label: existing.label } : {}) });
     } else if (tool.kind === 'number') {
       if (!existing) return;
       tiles.push(hasNumber(existing.terrain) ? { ...existing, number: tool.n } : existing);

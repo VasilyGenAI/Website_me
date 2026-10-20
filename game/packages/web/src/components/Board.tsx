@@ -137,6 +137,11 @@ export function Board(props: BoardProps) {
                 </text>
               </g>
             )}
+            {t.label && (
+              <text x={c.x} y={c.y + S * 0.66} textAnchor="middle" className="tile-label" fontSize={S * 0.19}>
+                {t.label}
+              </text>
+            )}
             {robber === id && (
               <g className="robber" filter="url(#shadow)">
                 <ellipse cx={c.x + S * 0.42} cy={c.y + S * 0.3} rx={S * 0.15} ry={S * 0.07} fill="#222" />

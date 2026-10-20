@@ -1,7 +1,7 @@
 import { AXIAL_NEIGHBORS, tileId, topology } from './geometry';
 import { STANDARD_NUMBERS, STANDARD_PORTS, hexagonCoords, redNumbersAdjacent } from './mapgen';
 import { shuffle } from './rng';
-import type { FogTile, MapDef, MapPort, MapTile, Terrain } from './types';
+import type { FogTile, MapDef, MapPort, MapTile, PortType, Terrain } from './types';
 
 const ring = (q: number, r: number) => (Math.abs(q) + Math.abs(r) + Math.abs(q + r)) / 2;
 
@@ -119,21 +119,106 @@ export function germanyMap(): MapDef {
   });
 }
 
-/** Ukraine: Polissia forests in the north, Carpathians in the west, wheat steppe, Donbas in the east, Crimea. */
+const LETTER: Record<string, Land> = { W: 'forest', H: 'hills', P: 'pasture', A: 'fields', G: 'mountains', D: 'desert' };
+
+interface DrawnSpec {
+  name: string;
+  /**
+   * Rows north to south in odd-r offset layout (odd rows sit half a hex to the right).
+   * W Wald, H Hügel, P Weide, A Acker, G Gebirge, D Wüste, anything else is water.
+   */
+  rows: string[];
+  /** Harbours at a cell; the first listed side that faces water is used (0 NE, 1 E, 2 SE, 3 SW, 4 W, 5 NW). */
+  ports: { row: number; col: number; type: PortType; sides: number[] }[];
+  labels: { row: number; col: number; text: string }[];
+  seed: number;
+}
+
+/** A hand-drawn board: terrain exactly as drawn, numbers shuffled so 6 and 8 never touch. */
+function drawnMap(spec: DrawnSpec): MapDef {
+  const width = Math.max(...spec.rows.map((r) => r.length));
+  // Keep the row offset even so odd rows stay the shifted ones after centring.
+  const rowOffset = Math.floor(spec.rows.length / 4) * 2;
+  const colOffset = Math.floor(width / 2);
+  const at = (row: number, col: number) => {
+    const r = row - rowOffset;
+    return { q: col - colOffset - (r - (r & 1)) / 2, r };
+  };
+
+  const cells: { q: number; r: number; terrain: Land; label?: string }[] = [];
+  spec.rows.forEach((line, row) =>
+    [...line].forEach((ch, col) => {
+      if (!LETTER[ch]) return;
+      const label = spec.labels.find((l) => l.row === row && l.col === col)?.text;
+      cells.push({ ...at(row, col), terrain: LETTER[ch], ...(label ? { label } : {}) });
+    }),
+  );
+
+  const rng = { rng: spec.seed };
+  const numbered = cells.filter((c) => c.terrain !== 'desert').length;
+  let tiles: MapTile[] = [];
+  for (let attempt = 0; ; attempt++) {
+    if (attempt > 5000) throw new Error(`${spec.name}: could not place numbers`);
+    const numbers = shuffle(rng, Array.from({ length: numbered }, (_, i) => STANDARD_NUMBERS[i % STANDARD_NUMBERS.length]));
+    let n = 0;
+    tiles = cells.map((c) => ({ ...c, number: c.terrain === 'desert' ? null : numbers[n++] }));
+    if (!redNumbersAdjacent(tiles)) break;
+  }
+
+  const land = new Set(tiles.map((t) => tileId(t.q, t.r)));
+  const ports: MapPort[] = spec.ports.map((p) => {
+    const { q, r } = at(p.row, p.col);
+    const side = p.sides.find((s) => !land.has(tileId(q + AXIAL_NEIGHBORS[s][0], r + AXIAL_NEIGHBORS[s][1])));
+    if (side === undefined || !land.has(tileId(q, r))) throw new Error(`${spec.name}: no coast for port at ${p.row},${p.col}`);
+    return { q, r, side, type: p.type };
+  });
+  return { name: spec.name, tiles, ports };
+}
+
+/**
+ * Ukraine, drawn after the physical map: Polissia forests in the north, the Carpathians in the
+ * west, wheat steppe in the middle, Kryvyi Rih iron and Donbas coal in the east, Odesa with the
+ * Budjak strip down to the Danube, the Oleshky sands, and Crimea with all five resources.
+ */
 export function ukraineMap(): MapDef {
-  return shapeMap({
+  return drawnMap({
     name: 'Ukraine',
-    rows: ['.XXX.XX.', 'XXXXXXXX', '.XXXXXXX', '..XXXXX.', '....XX..'],
-    counts: { fields: 8, forest: 5, pasture: 5, hills: 4, mountains: 4, desert: 1 },
-    prefer(row, col) {
-      if (row > 0.9) return ['mountains', 'pasture'];
-      if (row < 0.2) return ['forest', 'pasture'];
-      if (col < 0.2) return ['mountains', 'forest'];
-      if (col > 0.8) return ['hills', 'mountains'];
-      if (row > 0.6 && col < 0.5) return ['desert', 'fields'];
-      return ['fields', 'pasture', 'hills'];
-    },
-    seed: 380,
+    // Each cell is about 1.8° of longitude by 1° of latitude, placed from real coordinates.
+    rows: [
+      '.WWWWWA...', //  Wolyn, Riwne, Schytomyr, Polissja, Tschernihiw, Sumy
+      'HPWWAPA...', //  Tscherwonohrad, Luzk, Riwne, Schytomyr, Kyjiw, Nischyn, Sumy
+      'WHAAAWPAPH', //  Jaworiw, Lwiw, Ternopil, Winnyzja, Bila Zerkwa, Tscherkassy, Poltawa, Charkiw, Kupjansk, Luhansk-Nord
+      'GGPAPAHAHG', //  Uschhorod, Iwano-Frankiwsk, Kamjanez, Winnyzja, Uman, Kropywnyzkyj, Dnipro, Pawlohrad, Kramatorsk, Luhansk
+      '.GW.PAGHGH', //  Howerla, Czernowitz, (Moldau), Podilsk, Perwomajsk, Krywyj Rih, Saporischschja, Donezk, Donbas
+      '....ADAPG.', //  Odesa, Oleschky-Sande, Melitopol, Berdjansk, Mariupol
+      '...PA.AH..', //  Ismajil (Donau), Bilhorod, Krim-Nord, Kertsch
+      '.....PGW..', //  Sewastopol, Jalta, Sudak
+    ],
+    ports: [
+      { row: 6, col: 3, type: 'wool', sides: [3, 4, 2] }, // Ismajil, Donau (Schafe im Budschak)
+      { row: 6, col: 4, type: 'any', sides: [2, 3] }, // Bilhorod-Dnistrowskyj
+      { row: 5, col: 4, type: 'grain', sides: [2, 3] }, // Odesa, Getreidehafen
+      { row: 7, col: 5, type: 'lumber', sides: [3, 4, 2] }, // Sewastopol
+      { row: 7, col: 6, type: 'any', sides: [2, 3] }, // Jalta
+      { row: 7, col: 7, type: 'any', sides: [2, 1] }, // Sudak
+      { row: 6, col: 7, type: 'brick', sides: [1, 0, 2] }, // Kertsch
+      { row: 5, col: 8, type: 'ore', sides: [2, 1, 3] }, // Mariupol, Stahl
+      { row: 2, col: 9, type: 'any', sides: [1, 0] }, // Luhansk, Grenzhandel
+    ],
+    labels: [
+      { row: 1, col: 4, text: 'Kyjiw' },
+      { row: 2, col: 1, text: 'Lwiw' },
+      { row: 2, col: 7, text: 'Charkiw' },
+      { row: 3, col: 6, text: 'Dnipro' },
+      { row: 4, col: 8, text: 'Donezk' },
+      { row: 5, col: 4, text: 'Odesa' },
+      { row: 5, col: 8, text: 'Mariupol' },
+      { row: 6, col: 3, text: 'Ismajil' },
+      { row: 6, col: 6, text: 'Krim' },
+      { row: 6, col: 7, text: 'Kertsch' },
+      { row: 7, col: 5, text: 'Sewastopol' },
+    ],
+    seed: 1991,
   });
 }
 

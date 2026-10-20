@@ -105,6 +105,7 @@ input, select { border: 1px solid #c9bfa6; border-radius: 8px; padding: 8px 10px
 .num { font-weight: 800; fill: #2b2b2b; }
 .num.red, .pips.red { fill: #c0392b; }
 .pips { fill: #2b2b2b; letter-spacing: -1px; }
+.tile-label { font-weight: 800; fill: #fff; stroke: rgba(0,0,0,.55); stroke-width: 2.5px; paint-order: stroke; pointer-events: none; }
 .port line { stroke: #8a5a2b; stroke-width: 4; }
 .port circle { fill: #fff; stroke: #8a5a2b; stroke-width: 2; }
 .port text { font-size: 10px; font-weight: 800; }

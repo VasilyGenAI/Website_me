@@ -30,6 +30,8 @@ export interface MapTile {
   terrain: Terrain;
   /** Dice number 2..12 (never 7); null for desert and fog. */
   number: number | null;
+  /** Optional place name shown on the tile, e.g. a city on a country board. */
+  label?: string;
 }
 
 export interface MapPort {

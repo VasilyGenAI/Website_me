@@ -99,6 +99,7 @@ export function validateMap(map: MapDef): string[] {
     if (Math.max(Math.abs(t.q), Math.abs(t.r), Math.abs(t.q + t.r)) > MAX_MAP_RADIUS) errors.push(`Tile ${id} is too far from the centre`);
     const err = numberError(`Tile ${id}`, t.terrain, t.number);
     if (err) errors.push(err);
+    if (t.label !== undefined && (typeof t.label !== 'string' || t.label.length > 20)) errors.push(`Tile ${id}: label must be at most 20 characters`);
   }
 
   const fogTiles = map.tiles.filter((t) => t.terrain === 'fog').length;
