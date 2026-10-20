@@ -12,7 +12,7 @@ export interface Flight {
   delay: number;
 }
 
-export const FLIGHT_MS = 650;
+export const FLIGHT_MS = 1950;
 
 const centerOf = (el: Element | null) => {
   const r = el?.getBoundingClientRect();

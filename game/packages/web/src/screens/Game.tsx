@@ -189,7 +189,7 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
           for (const v of topo.tileVertices[id]) {
             const b = g.buildings[v];
             if (!b || !produced.gains[b.owner]?.[r]) continue;
-            for (let k = 0; k < (b.type === 'city' ? 2 : 1); k++) out.push({ from: id, to: target(b.owner, r), resource: r, delay: 1000 + out.length * 70 });
+            for (let k = 0; k < (b.type === 'city' ? 2 : 1); k++) out.push({ from: id, to: target(b.owner, r), resource: r, delay: 1000 + out.length * 210 });
           }
         }
       }
