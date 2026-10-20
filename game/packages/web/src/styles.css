@@ -245,3 +245,4 @@ details p { margin: 0 0 8px; }
   .maplist .mapcard { grid-template-columns: 1fr; }
   .mapgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+.error-text { white-space: pre-wrap; background: #fff; border-radius: 8px; padding: 8px; font-size: .85rem; max-height: 200px; overflow: auto; }

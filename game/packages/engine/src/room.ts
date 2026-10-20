@@ -42,6 +42,15 @@ function botDelay(state: GameState): number {
 
 export class RoomError extends Error {}
 
+export interface RoomSnapshot {
+  id: string;
+  hostId: string;
+  map: MapDef | null;
+  seats: Seat[];
+  chat: ChatMessage[];
+  state: GameState | null;
+}
+
 export class Room {
   readonly seats: Seat[] = [];
   readonly listeners = new Set<Listener>();
@@ -57,6 +66,20 @@ export class Room {
     readonly hostId: string,
     readonly map: MapDef | null,
   ) {}
+
+  /** Plain data for carrying a room across a page update. */
+  snapshot(): RoomSnapshot {
+    return { id: this.id, hostId: this.hostId, map: this.map, seats: this.seats, chat: this.chat, state: this.state };
+  }
+
+  static restore(s: RoomSnapshot): Room {
+    const room = new Room(s.id, s.hostId, s.map);
+    room.seats.push(...s.seats);
+    room.chat.push(...s.chat);
+    room.state = s.state;
+    room.scheduleBots();
+    return room;
+  }
 
   get status(): RoomView['status'] {
     if (!this.state) return 'lobby';
@@ -190,6 +213,10 @@ export class RoomRegistry {
     const room = new Room(id, hostId, map);
     this.rooms.set(id, room);
     return room;
+  }
+
+  adopt(room: Room) {
+    this.rooms.set(room.id, room);
   }
 
   get(id: string): Room | undefined {

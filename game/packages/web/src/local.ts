@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { PRESET_MAPS, RoomError, RoomRegistry } from '@kontinentalist/engine';
-import type { ClientMessage, Listener, MapDef, Role, Room, RoomView } from '@kontinentalist/engine';
+import { PRESET_MAPS, Room, RoomError, RoomRegistry } from '@kontinentalist/engine';
+import type { ClientMessage, Listener, MapDef, Role, RoomSnapshot, RoomView } from '@kontinentalist/engine';
 import { translateError } from './i18n';
 import { userId } from './net';
 import type { Connection } from './net';
@@ -9,6 +9,19 @@ import type { Connection } from './net';
  * Offline stand-in for the server: rooms, rules and bots run in this browser tab.
  * Used by the test build, so everything can be played against bots without hosting.
  */
+/** Room carried over from the previous version of the page, if it was updated mid-game. */
+let carried: RoomSnapshot | null = null;
+let live: Room | null = null;
+
+export function restoreLocal(data: unknown) {
+  const snap = (data as { room?: RoomSnapshot } | null)?.room;
+  if (snap?.id && snap.seats) carried = snap;
+}
+
+export function localSnapshot(): { room: RoomSnapshot | null } {
+  return { room: live?.snapshot() ?? null };
+}
+
 export function useLocalConnection(name: string): Connection {
   const registry = useRef(new RoomRegistry());
   const room = useRef<Room | null>(null);
@@ -21,12 +34,26 @@ export function useLocalConnection(name: string): Connection {
   roleRef.current = role;
   const listener = useRef<Listener>({ userId, send: setView });
 
-  useEffect(() => () => room.current?.dispose(), []);
+  useEffect(() => {
+    if (carried) {
+      try {
+        const r = Room.restore(carried);
+        registry.current.adopt(r);
+        r.listeners.add(listener.current);
+        room.current = live = r;
+        r.touch();
+      } catch {
+        /* an incompatible snapshot from an older version: start fresh */
+      }
+      carried = null;
+    }
+    return () => room.current?.dispose();
+  }, []);
 
   const leave = () => {
     room.current?.dispose();
     room.current?.listeners.delete(listener.current);
-    room.current = null;
+    room.current = live = null;
     setView(null);
   };
 
@@ -45,7 +72,7 @@ export function useLocalConnection(name: string): Connection {
           for (let i = 0; i < Math.min(msg.bots ?? 0, 3); i++) r.addBot(userId);
           if (msg.start) r.start(userId);
           r.listeners.add(listener.current);
-          room.current = r;
+          room.current = live = r;
           r.touch();
           return;
         }
