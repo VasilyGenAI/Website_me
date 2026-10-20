@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { CAN_CREATE_MAPS } from '@kontinentalist/engine';
+import { OFFLINE, useLocalConnection } from './local';
+import { navigate, useRoute } from './nav';
 import { savedName, useConnection } from './net';
 import { Admin } from './screens/Admin';
 import { Editor } from './screens/Editor';
@@ -7,20 +9,11 @@ import { Game } from './screens/Game';
 import { Home } from './screens/Home';
 import { Lobby } from './screens/Lobby';
 
-function useHash() {
-  const [hash, setHash] = useState(location.hash);
-  useEffect(() => {
-    const on = () => setHash(location.hash);
-    addEventListener('hashchange', on);
-    return () => removeEventListener('hashchange', on);
-  }, []);
-  return hash;
-}
-
 export function App() {
   const [name, setName] = useState(savedName);
-  const conn = useConnection(name);
-  const hash = useHash();
+  // The build decides once which one runs, so the hook order never changes.
+  const conn = OFFLINE ? useLocalConnection(name) : useConnection(name);
+  const hash = useRoute();
   const room = conn.room;
 
   // Invite links (#/room/abc123) join as soon as the socket is up.
@@ -33,9 +26,9 @@ export function App() {
   const prevRoom = useRef<string | null>(null);
   useEffect(() => {
     if (room) {
-      if (location.hash !== `#/room/${room.id}`) location.hash = `#/room/${room.id}`;
+      navigate(`#/room/${room.id}`);
     } else if (prevRoom.current) {
-      location.hash = '#/';
+      navigate('#/');
     }
     prevRoom.current = room?.id ?? null;
   }, [room?.id]);

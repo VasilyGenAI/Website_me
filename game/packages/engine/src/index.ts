@@ -8,3 +8,4 @@ export { rand, randInt, shuffle } from './rng';
 export * from './presets';
 export * from './view';
 export * from './protocol';
+export * from './room';

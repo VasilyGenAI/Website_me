@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { CAN_CREATE_MAPS } from '@kontinentalist/engine';
 import type { MapDef, PresetId } from '@kontinentalist/engine';
+import { OFFLINE } from '../local';
 import { loadMaps } from '../maps';
+import { navigate } from '../nav';
 import { saveName, userId } from '../net';
 import type { Connection } from '../net';
 
@@ -65,10 +67,10 @@ export function Home({ conn, name, setName }: { conn: Connection; name: string; 
             Gegen Bots spielen
           </button>
           <button className="big" disabled={!conn.connected} onClick={() => conn.send({ t: 'createRoom', ...boardChoice() })}>
-            Raum für Freunde
+            {OFFLINE ? 'Raum selbst einrichten' : 'Raum für Freunde'}
           </button>
         </div>
-        <form
+        {!OFFLINE && <form
           className="join"
           onSubmit={(e) => {
             e.preventDefault();
@@ -77,13 +79,13 @@ export function Home({ conn, name, setName }: { conn: Connection; name: string; 
         >
           <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Raum-Code" maxLength={12} />
           <button disabled={!code.trim()}>Beitreten</button>
-        </form>
+        </form>}
       </div>
 
       <div className="card">
         <h2>Karten-Editor</h2>
         {canMaps ? (
-          <a className="button big" href="#/editor">Eigenes Spielbrett bauen</a>
+          <button className="big" onClick={() => navigate('#/editor')}>Eigenes Spielbrett bauen</button>
         ) : (
           <>
             <p className="muted">🔒 Eigene Spielbretter sind ein Pro-Feature. Hast du einen Pro-Code?</p>
@@ -102,7 +104,23 @@ export function Home({ conn, name, setName }: { conn: Connection; name: string; 
         )}
       </div>
       {conn.role === 'admin' && (
-        <a className="button" href="#/admin">⚙️ Admin-Bereich</a>
+        <button onClick={() => navigate('#/admin')}>⚙️ Admin-Bereich</button>
+      )}
+      {OFFLINE && conn.setTestRole && (
+        <div className="card">
+          <h2>Testversion</h2>
+          <p className="muted">
+            Regeln und Bots laufen komplett in deinem Browser, ohne Server. Mit Freunden spielen geht erst in der Online-Version.
+            Zum Testen kannst du hier die Rolle wechseln:
+          </p>
+          <div className="row-btns">
+            {(['admin', 'pro', 'basic'] as const).map((r) => (
+              <button key={r} className={conn.role === r ? 'on' : ''} onClick={() => conn.setTestRole!(r)}>
+                {ROLE_LABEL[r]}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
       {!conn.connected && <p className="muted">Verbinde mit dem Server…</p>}
     </div>

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { STANDARD_NUMBERS, fogForestMap, generateStandardMap, hexagonCoords, tileId, validateMap } from '@kontinentalist/engine';
 import type { FogTile, MapDef, MapTile, PortType, Terrain } from '@kontinentalist/engine';
 import { Board } from '../components/Board';
+import { navigate } from '../nav';
 import { TERRAIN_NAME } from '../i18n';
 import { deleteMap, loadMaps, saveMap } from '../maps';
 import { TERRAIN_STYLE, portLabel } from '../theme';
@@ -75,7 +76,7 @@ export function Editor({ conn }: { conn: Connection }) {
   return (
     <div className="editor">
       <header className="topbar">
-        <a className="brand" href="#/">⬅ Kontinentalist</a>
+        <button className="brand ghost-btn" onClick={() => navigate('#/')}>⬅ Kontinentalist</button>
         <input className="map-name" value={map.name} maxLength={40} onChange={(e) => setMap({ ...map, name: e.target.value })} />
         <span className={errors.length ? 'status bad' : 'status mine'}>{errors.length ? `${errors.length} Problem(e)` : 'Karte gültig'}</span>
       </header>

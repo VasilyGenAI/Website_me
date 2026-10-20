@@ -1,14 +1,16 @@
-import {
-  PLAYER_COLORS,
-  actingPlayers,
-  applyAction,
-  botAction,
-  createGame,
-  generateStandardMap,
-  validateMap,
-  viewFor,
-} from '@kontinentalist/engine';
-import type { Action, ChatMessage, GameState, MapDef, RoomView } from '@kontinentalist/engine';
+import { botAction } from './bot';
+import { applyAction, createGame } from './game';
+import { generateStandardMap, validateMap } from './mapgen';
+import { PLAYER_COLORS } from './protocol';
+import type { ChatMessage, RoomView } from './protocol';
+import { actingPlayers } from './rules';
+import type { Action, GameState, MapDef } from './types';
+import { viewFor } from './view';
+
+/*
+ * A game room: seats, chat, the authoritative state and the bot clock. It has no I/O of its
+ * own, so the Node server and the offline browser build both run exactly this code.
+ */
 
 export interface Seat {
   id: string;
@@ -46,7 +48,7 @@ export class Room {
   readonly chat: ChatMessage[] = [];
   state: GameState | null = null;
   lastActivity = Date.now();
-  private botTimer: NodeJS.Timeout | null = null;
+  private botTimer: ReturnType<typeof setTimeout> | null = null;
   /** Divides bot delays; tests set it high to play instantly. */
   speed = 1;
 

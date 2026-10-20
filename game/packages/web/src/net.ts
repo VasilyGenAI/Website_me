@@ -14,7 +14,9 @@ function storage(key: string, fallback: () => string): string {
   }
 }
 
-export const userId = storage('kontinentalist.userId', () => crypto.randomUUID());
+export const userId = storage('kontinentalist.userId', () =>
+  typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `u${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`,
+);
 
 export function savedName(): string {
   return storage('kontinentalist.name', () => `Gast${Math.floor(Math.random() * 900 + 100)}`);
@@ -48,6 +50,8 @@ export interface Connection {
   stats: { rooms: number; playing: number; connections: number } | null;
   send(msg: ClientMessage): void;
   clearError(): void;
+  /** Offline test build only: switch roles to see what each one can do. */
+  setTestRole?: (role: Role) => void;
 }
 
 /** One WebSocket per tab; reconnects and rejoins the current room automatically. */

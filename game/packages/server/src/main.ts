@@ -5,11 +5,9 @@ import { extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
 import type { WebSocket } from 'ws';
-import { CAN_CREATE_MAPS, fogForestMap } from '@kontinentalist/engine';
-import type { ClientMessage, MapDef, Role, RoomView, ServerMessage } from '@kontinentalist/engine';
+import { CAN_CREATE_MAPS, RoomError, RoomRegistry, fogForestMap } from '@kontinentalist/engine';
+import type { ClientMessage, Listener, MapDef, Role, Room, RoomView, ServerMessage } from '@kontinentalist/engine';
 import { Auth, AuthError } from './auth';
-import { Room, RoomError, RoomRegistry } from './rooms';
-import type { Listener } from './rooms';
 
 const PORT = Number(process.env.PORT ?? 8787);
 const WEB_DIST = resolve(fileURLToPath(new URL('.', import.meta.url)), '../../web/dist');

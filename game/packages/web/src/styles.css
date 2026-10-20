@@ -9,6 +9,7 @@
   --ok: #2e9d4a;
   --bad: #c0392b;
   --radius: 10px;
+  /* One deliberate look (sea, parchment panels) in every theme. */
   color-scheme: light;
   font-family: 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
   color: var(--ink);
@@ -52,7 +53,7 @@ input, select { border: 1px solid #c9bfa6; border-radius: 8px; padding: 8px 10px
 
 /* Game layout: board left, panels right, hand and actions at the bottom */
 .game, .editor {
-  height: 100dvh; display: grid; grid-template-columns: 1fr 340px; grid-template-rows: auto 1fr auto;
+  height: 100%; display: grid; grid-template-columns: 1fr 340px; grid-template-rows: auto 1fr auto;
   grid-template-areas: 'top top' 'board side' 'bottom side';
 }
 .editor { grid-template-rows: auto 1fr; grid-template-areas: 'top top' 'board side'; }

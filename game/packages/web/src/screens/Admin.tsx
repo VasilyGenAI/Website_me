@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { OFFLINE } from '../local';
+import { navigate } from '../nav';
 import type { Connection } from '../net';
 
 /** Hidden page (#/admin): log in with ADMIN_KEY, then mint Pro codes. */
@@ -45,6 +47,7 @@ export function Admin({ conn }: { conn: Connection }) {
               <input type="number" min={0} max={3650} value={days} onChange={(e) => setDays(Number(e.target.value))} />
             </label>
             <button className="primary" onClick={() => conn.send({ t: 'adminCreateCodes', count, days })}>Codes erzeugen</button>
+            {OFFLINE && <p className="muted">Codes werden erst in der Online-Version erzeugt, weil nur der Server sie signieren kann.</p>}
             {conn.codes && (
               <>
                 <textarea className="codes" readOnly rows={Math.min(conn.codes.codes.length, 10)} value={conn.codes.codes.join('\n')} onFocus={(e) => e.target.select()} />
@@ -64,7 +67,7 @@ export function Admin({ conn }: { conn: Connection }) {
           </div>
         </>
       )}
-      <a className="button" href="#/">Zur Startseite</a>
+      <button onClick={() => navigate('#/')}>Zur Startseite</button>
     </div>
   );
 }

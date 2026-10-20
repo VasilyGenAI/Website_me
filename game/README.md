@@ -32,6 +32,12 @@ Ziel: im Browser auf Laptop und Handy spielbar, später auch als Telegram Mini A
 
 Online stellen: siehe [DEPLOY.md](DEPLOY.md).
 
+## Offline-Testversion
+
+`npm run build:offline` baut eine einzelne HTML-Datei (`packages/web/dist-offline/kontinentalist.html`), in der Regeln und
+Bots komplett im Browser laufen. Damit lässt sich alles gegen Bots testen, inklusive Karten-Editor und Rollenwechsel,
+ohne Server.
+
 ## Befehle
 
 ```bash
