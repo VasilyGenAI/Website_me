@@ -1,10 +1,13 @@
 import { useMemo } from 'react';
 import { hexCorners, pips, tileId, topology, vertexPoint } from '@kontinentalist/engine';
-import type { Building, EdgeId, FogTile, MapDef, TileId, VertexId } from '@kontinentalist/engine';
-import { SEA_IMAGE, SHORE, TERRAIN_STYLE, portLabel, portStyle } from '../theme';
+import type { Building, EdgeId, FogTile, MapDef, PortType, TileId, VertexId } from '@kontinentalist/engine';
+import { RESOURCE_STYLE, SEA_IMAGE, SHORE, TERRAIN_STYLE, portLabel, portStyle } from '../theme';
 
 const S = 50; // hex size in SVG units
 const SEA_TILE = 260; // size of one repeat of the water texture
+// Tiles are drawn smaller than their hex so sandy paths run between them, where roads go.
+const TILE = 0.9;
+const INNER = 0.85;
 
 const pt = (v: VertexId) => {
   const p = vertexPoint(v);
@@ -103,7 +106,7 @@ export function Board(props: BoardProps) {
         </pattern>
         {map.tiles.map((t) => (
           <clipPath key={`k${t.q},${t.r}`} id={`hex${t.q}_${t.r}`}>
-            <polygon points={polygon(t.q, t.r, 0.97)} />
+            <polygon points={polygon(t.q, t.r, INNER)} />
           </clipPath>
         ))}
       </defs>
@@ -137,17 +140,9 @@ export function Board(props: BoardProps) {
         const mx = (a.x + b.x) / 2;
         const my = (a.y + b.y) / 2;
         const len = Math.hypot(mx - c.x, my - c.y);
-        const px = mx + ((mx - c.x) / len) * S * 0.62;
-        const py = my + ((my - c.y) / len) * S * 0.62;
         return (
           <g key={`p${i}`} className="port" onClick={() => props.onCoast?.(p.q, p.r, p.side)}>
-            <line x1={a.x} y1={a.y} x2={px} y2={py} />
-            <line x1={b.x} y1={b.y} x2={px} y2={py} />
-            <circle cx={px} cy={py} r={17} fill={portStyle(p.type).fill} />
-            <text x={px} y={py + 4.5} textAnchor="middle" className={portStyle(p.type).dark ? 'port-ratio dark' : 'port-ratio'}>
-              {portStyle(p.type).ratio}
-            </text>
-            <title>{portLabel(p.type)}</title>
+            <Harbor x={mx} y={my} dx={(mx - c.x) / len} dy={(my - c.y) / len} type={p.type} ends={[a, b]} />
           </g>
         );
       })}
@@ -162,7 +157,10 @@ export function Board(props: BoardProps) {
         const red = shown.number === 6 || shown.number === 8;
         return (
           <g key={id} className="tile" onClick={() => (props.onCell ? props.onCell(t.q, t.r) : props.onTile?.(id))}>
-            <polygon points={polygon(t.q, t.r, 0.97)} fill={style.fill} />
+            {/* Raised tile: a darker rim around the picture, then a light bevel on the inner edge. */}
+            <polygon className="tile-base" points={polygon(t.q, t.r, TILE)} fill={style.fill} />
+            <polygon className="tile-rim" points={polygon(t.q, t.r, TILE)} />
+            <polygon points={polygon(t.q, t.r, INNER)} fill={style.fill} />
             {style.images?.length ? (
               // Square artwork, cropped to the hexagon; the variant is fixed per tile position.
               <image
@@ -179,7 +177,8 @@ export function Board(props: BoardProps) {
                 {style.icon}
               </text>
             )}
-            <polygon className="tile-light" points={polygon(t.q, t.r, 0.97)} />
+            <polygon className="tile-light" points={polygon(t.q, t.r, INNER)} />
+            <polygon className="tile-bevel" points={polygon(t.q, t.r, INNER)} />
             {shown.number !== null && (
               <g filter="url(#shadow)">
                 <circle cx={c.x} cy={c.y + S * 0.12} r={S * 0.34} fill="url(#wood)" stroke="#9c7a45" strokeWidth={1.5} />
@@ -194,7 +193,7 @@ export function Board(props: BoardProps) {
             )}
             {covered && props.revealHidden && (
               <g className="fog-veil">
-                <polygon points={polygon(t.q, t.r, 0.97)} />
+                <polygon points={polygon(t.q, t.r, INNER)} />
                 <text x={c.x + S * 0.42} y={c.y - S * 0.4} textAnchor="middle" fontSize={S * 0.38}>☁️</text>
               </g>
             )}
@@ -304,6 +303,53 @@ function City({ color }: { color: string }) {
       <path d="M-3.5,-8 L4,-17 L11.5,-8 z" fill={color} stroke="#1d1d1d" strokeWidth={1.8} strokeLinejoin="round" />
       <path d="M-3.5,-8 L4,-17 L11.5,-8 z" fill="#000" fillOpacity=".28" />
       <path d="M2,-3 h4 v4 h-4 z M-10.5,10 v-5 h4 v5" fill="#1d1d1d" fillOpacity=".6" />
+    </>
+  );
+}
+
+/**
+ * Harbour: a wooden pier from the coast into the water, a harbour house in the colour of the
+ * traded resource with its symbol, a ratio sign, and a small boat moored alongside.
+ */
+function Harbor({ x, y, dx, dy, type, ends }: { x: number; y: number; dx: number; dy: number; type: PortType; ends: { x: number; y: number }[] }) {
+  const style = portStyle(type);
+  const px = -dy;
+  const py = dx; // perpendicular to the pier
+  const bx = x + dx * S * 0.86;
+  const by = y + dy * S * 0.86;
+  const pier = (along: number, side: number) => `${x + dx * along + px * side},${y + dy * along + py * side}`;
+  // Boat moored beside the pier, on whichever side faces more to the right so it reads the same everywhere.
+  const side = px >= 0 ? 1 : -1;
+  const boatX = x + dx * S * 0.62 + px * side * S * 0.4;
+  const boatY = y + dy * S * 0.62 + py * side * S * 0.4;
+  const dockX = x + dx * S * 0.22;
+  const dockY = y + dy * S * 0.22;
+  return (
+    <>
+      <title>{portLabel(type)}</title>
+      {/* Short gangways from both corners show which two building spots use this harbour. */}
+      {ends.map((e, k) => (
+        <line key={k} className="gangway" x1={e.x} y1={e.y} x2={dockX} y2={dockY} />
+      ))}
+      <polygon className="pier" points={[pier(-4, -5), pier(S * 0.8, -5), pier(S * 0.8, 5), pier(-4, 5)].join(' ')} />
+      {[0.25, 0.45, 0.65].map((t) => (
+        <line key={t} className="pier-plank" x1={x + dx * S * t + px * 5} y1={y + dy * S * t + py * 5} x2={x + dx * S * t - px * 5} y2={y + dy * S * t - py * 5} />
+      ))}
+      <g transform={`translate(${boatX} ${boatY})`} className="boat">
+        <path className="hull" d="M-11,0 h22 l-4,6 h-14 z" />
+        <line x1={-1} y1={0} x2={-1} y2={-15} />
+        <path className="sail" d="M0,-14 L9,-2 L0,-2 Z" />
+        <path className="sail" d="M-2,-12 L-8,-2 L-2,-2 Z" />
+      </g>
+      <g transform={`translate(${bx} ${by})`} filter="url(#shadow)">
+        <path d="M-12,-2 h24 v12 h-24 z" fill={style.fill} stroke="#1d1d1d" strokeWidth={1.6} strokeLinejoin="round" />
+        <path d="M-15,-1 L0,-13 L15,-1 z" fill={style.fill} stroke="#1d1d1d" strokeWidth={1.6} strokeLinejoin="round" />
+        <path d="M-15,-1 L0,-13 L15,-1 z" fill="#000" fillOpacity=".3" />
+        <circle cx={0} cy={4} r={6.5} fill="#fff8e6" stroke="#1d1d1d" strokeWidth={1.2} />
+        <text x={0} y={7} textAnchor="middle" fontSize={8.5}>{type === 'any' ? '❓' : RESOURCE_STYLE[type].icon}</text>
+        <rect x={-11} y={12} width={22} height={10} rx={3} fill="#fff8e6" stroke="#6b4420" strokeWidth={1.2} />
+        <text x={0} y={20} textAnchor="middle" className="port-sign">{style.ratio}</text>
+      </g>
     </>
   );
 }

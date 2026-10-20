@@ -360,3 +360,17 @@ details p { margin: 0 0 8px; }
 .piece { transition: transform .12s ease-out; }
 
 .sea-texture { opacity: .5; }
+
+/* Raised tiles with sandy paths between them */
+.tile-base { filter: drop-shadow(0 2px 1.5px rgba(60, 40, 10, .45)); }
+.tile-rim { fill: #000; fill-opacity: .24; pointer-events: none; }
+.tile-bevel { fill: none; stroke: #fff; stroke-opacity: .45; stroke-width: 1.6; pointer-events: none; }
+/* Harbours */
+.pier { fill: #b07a3f; stroke: #5c3b1a; stroke-width: 1.4; stroke-linejoin: round; }
+.pier-plank { stroke: #5c3b1a; stroke-opacity: .55; stroke-width: 1; }
+.boat .hull { fill: #8a5a2b; stroke: #3d2610; stroke-width: 1.2; stroke-linejoin: round; }
+.gangway { stroke: #8a5a2b; stroke-width: 3.5; stroke-linecap: round; stroke-dasharray: 2 2.2; }
+.boat line { stroke: #3d2610; stroke-width: 1.4; }
+.boat .sail { fill: #fff8e6; stroke: #6b4420; stroke-width: .8; }
+.port-sign { font-size: 8.5px; font-weight: 900; fill: #2b2b2b; }
+.port { cursor: default; }
