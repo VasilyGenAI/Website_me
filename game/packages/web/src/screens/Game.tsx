@@ -174,13 +174,19 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
   const firstFog = useRef(flash?.tile);
   const flights = useMemo(() => {
     const out: Flight[] = [];
-    const target = (p: number, r: Resource) => (p === me ? `[data-res="${r}"]` : `[data-player="${p}"]`);
+    // Yours land on your hand card; the others' fan out upwards, a direction per opponent.
+    const others = g.players.map((_, i) => i).filter((i) => i !== me);
+    const target = (p: number, r: Resource): Pick<Flight, 'to' | 'away' | 'color'> =>
+      p === me ? { to: `[data-res="${r}"]`, color: '#ffffff' } : { away: [-140, -90, -40][others.indexOf(p) % 3], color: colors[p] };
     const roll = g.lastRoll;
     if (roll && roll.count !== firstRoll.current) {
       let i = g.log.length - 1;
       while (i >= 0 && g.log[i].type !== 'diceRolled') i--;
       const produced = g.log.slice(i + 1).find((e) => e.type === 'produced');
       if (produced?.type === 'produced') {
+        // Never more cards than were actually paid out (the bank can run short).
+        const left = new Map<string, number>();
+        for (const [p, got] of Object.entries(produced.gains)) for (const [r, n] of Object.entries(got)) left.set(`${p}/${r}`, n ?? 0);
         const sum = roll.dice[0] + roll.dice[1];
         for (const t of g.map.tiles) {
           const id = tileId(t.q, t.r);
@@ -189,14 +195,19 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
           if (!r || shown.number !== sum || id === g.robber) continue;
           for (const v of topo.tileVertices[id]) {
             const b = g.buildings[v];
-            if (!b || !produced.gains[b.owner]?.[r]) continue;
-            for (let k = 0; k < (b.type === 'city' ? 2 : 1); k++) out.push({ from: id, to: target(b.owner, r), resource: r, delay: 1000 + out.length * 210 });
+            if (!b) continue;
+            for (let k = 0; k < (b.type === 'city' ? 2 : 1); k++) {
+              const key = `${b.owner}/${r}`;
+              if (!left.get(key)) continue;
+              left.set(key, left.get(key)! - 1);
+              out.push({ from: id, ...target(b.owner, r), resource: r, delay: 1000 + out.length * 210 });
+            }
           }
         }
       }
     }
     if (found?.type === 'fogRevealed' && found.reward && found.tile !== firstFog.current) {
-      out.push({ from: found.tile, to: target(found.player, found.reward), resource: found.reward, delay: 300 });
+      out.push({ from: found.tile, ...target(found.player, found.reward), resource: found.reward, delay: 300 });
     }
     return out;
   }, [g.lastRoll?.count, found?.type === 'fogRevealed' ? found.tile : null]);
@@ -295,7 +306,7 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
         <div className="players">
           {g.players.map((p, i) => (
             <div key={p.id} className={`player${i === g.currentPlayer ? ' active' : ''}`} style={{ borderColor: p.color }}>
-              <span className="avatar" style={{ background: p.color }} data-player={i}>{p.isBot ? '🤖' : '🙂'}</span>
+              <span className="avatar" style={{ background: p.color }}>{p.isBot ? '🤖' : '🙂'}</span>
               <span className="pn">{p.name}{i === me && ' (du)'}</span>
               {i === me && phase.type !== 'ended' && (p.victoryCards ?? 0) > 0 ? (
                 // Colonist style "10 (11)": what the others see, then the real total with your hidden cards.
