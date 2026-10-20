@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
 import { hexCorners, pips, tileId, topology, vertexPoint } from '@kontinentalist/engine';
 import type { Building, EdgeId, FogTile, MapDef, TileId, VertexId } from '@kontinentalist/engine';
-import { SHORE, TERRAIN_STYLE, portLabel, portStyle } from '../theme';
+import { SEA_IMAGE, SHORE, TERRAIN_STYLE, portLabel, portStyle } from '../theme';
 
 const S = 50; // hex size in SVG units
+const SEA_TILE = 260; // size of one repeat of the water texture
 
 const pt = (v: VertexId) => {
   const p = vertexPoint(v);
@@ -97,8 +98,8 @@ export function Board(props: BoardProps) {
           <stop offset="0" stopColor="#7a7a7a" />
           <stop offset="1" stopColor="#1c1c1c" />
         </radialGradient>
-        <pattern id="waves" width="90" height="44" patternUnits="userSpaceOnUse">
-          <path d="M0 22 q11 -9 22 0 t22 0 M45 44 q11 -9 22 0 t22 0 M-45 44 q11 -9 22 0 t22 0" fill="none" stroke="#fff" strokeOpacity=".1" strokeWidth="2" strokeLinecap="round" />
+        <pattern id="seaTex" width={SEA_TILE} height={SEA_TILE} patternUnits="userSpaceOnUse">
+          <image href={SEA_IMAGE} width={SEA_TILE} height={SEA_TILE} />
         </pattern>
         {map.tiles.map((t) => (
           <clipPath key={`k${t.q},${t.r}`} id={`hex${t.q}_${t.r}`}>
@@ -108,7 +109,9 @@ export function Board(props: BoardProps) {
       </defs>
 
       {/* Waves reach far past the board so no edge shows on wide or tall screens. */}
-      <rect className="sea" x={vb[0] - vb[2] * 2} y={vb[1] - vb[3] * 2} width={vb[2] * 5} height={vb[3] * 5} fill="url(#waves)" />
+      <rect className="sea" x={vb[0] - vb[2] * 2} y={vb[1] - vb[3] * 2} width={vb[2] * 5} height={vb[3] * 5} fill="url(#seaTex)" />
+      {/* Calm the water down a little so the island stays the brightest thing on screen. */}
+      <rect className="sea sea-tint" x={vb[0] - vb[2] * 2} y={vb[1] - vb[3] * 2} width={vb[2] * 5} height={vb[3] * 5} />
 
       {props.ghostCells?.map((c) => (
         <polygon

@@ -1,8 +1,11 @@
 import type { PortType, Resource, Terrain } from '@kontinentalist/engine';
 import acker1 from './art/acker-1.webp';
 import gebirge1 from './art/gebirge-1.webp';
+import huegel1 from './art/huegel-1.webp';
+import meer1 from './art/meer-1.webp';
 import nebel1 from './art/nebel-1.webp';
 import wald1 from './art/wald-1.webp';
+import weide1 from './art/weide-1.webp';
 import wueste1 from './art/wueste-1.webp';
 
 /**
@@ -11,8 +14,8 @@ import wueste1 from './art/wueste-1.webp';
  */
 export const TERRAIN_STYLE: Record<Terrain, { fill: string; icon: string; images?: string[] }> = {
   forest: { fill: '#2e8b3d', icon: '🌲', images: [wald1] },
-  hills: { fill: '#d9673a', icon: '🧱' },
-  pasture: { fill: '#8cc63f', icon: '🐑' },
+  hills: { fill: '#d9673a', icon: '🧱', images: [huegel1] },
+  pasture: { fill: '#8cc63f', icon: '🐑', images: [weide1] },
   fields: { fill: '#f2c230', icon: '🌾', images: [acker1] },
   mountains: { fill: '#9aa4ad', icon: '⛰️', images: [gebirge1] },
   desert: { fill: '#e6d29a', icon: '🌵', images: [wueste1] },
@@ -37,4 +40,6 @@ export function portLabel(type: PortType): string {
 }
 
 export const SEA = '#1565c0';
+/** Seamless water texture tiled behind the board. */
+export const SEA_IMAGE = meer1;
 export const SHORE = '#f3dfa2';

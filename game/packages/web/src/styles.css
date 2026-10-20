@@ -358,3 +358,5 @@ details p { margin: 0 0 8px; }
 .tile-light { fill: url(#tileLight); stroke: rgba(0,0,0,.28); stroke-width: 1.5; pointer-events: none; }
 .sea { pointer-events: none; }
 .piece { transition: transform .12s ease-out; }
+
+.sea-tint { fill: #062a5a; fill-opacity: .28; }
