@@ -6,8 +6,11 @@
     "packages/*"
   ],
   "scripts": {
+    "dev": "npm run dev -w @hexlands/server & npm run dev -w @hexlands/web",
+    "build": "npm run build -w @hexlands/web",
+    "start": "npm start -w @hexlands/server",
     "test": "vitest run",
-    "typecheck": "tsc -p packages/engine --noEmit",
+    "typecheck": "tsc -p packages/engine --noEmit && tsc -p packages/server --noEmit && tsc -p packages/web --noEmit",
     "simulate": "tsx scripts/simulate.ts"
   },
   "devDependencies": {

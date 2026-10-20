@@ -1,0 +1,415 @@
+import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
+import { COSTS, RESOURCES, hasResources, totalCards } from '@hexlands/engine';
+import type { Action, DevCardType, GameView, Resource, ResourceCounts, RoomView } from '@hexlands/engine';
+import { Board } from '../components/Board';
+import { Log } from '../components/Log';
+import { DEV_HELP, DEV_NAME, RES_NAME } from '../i18n';
+import { RESOURCE_STYLE } from '../theme';
+import type { Connection } from '../net';
+
+type BuildMode = 'road' | 'settlement' | 'city' | null;
+type Dialog = 'trade' | 'dev' | null;
+
+const empty = (): ResourceCounts => ({ lumber: 0, brick: 0, wool: 0, grain: 0, ore: 0 });
+
+function ResourceCard({ r, n, onClick, dim }: { r: Resource; n: number; onClick?: () => void; dim?: boolean }) {
+  return (
+    <button className={`rcard${dim ? ' dim' : ''}`} style={{ background: RESOURCE_STYLE[r].fill }} onClick={onClick} disabled={!onClick} title={RES_NAME[r]}>
+      <span className="ricon">{RESOURCE_STYLE[r].icon}</span>
+      <span className="rcount">{n}</span>
+    </button>
+  );
+}
+
+/** Pick a multiset of resources, e.g. for discarding or a trade side. */
+function Picker({ value, onChange, max }: { value: ResourceCounts; onChange: (v: ResourceCounts) => void; max?: ResourceCounts }) {
+  return (
+    <div className="picker">
+      {RESOURCES.map((r) => (
+        <div key={r} className="picker-col">
+          <ResourceCard r={r} n={value[r]} onClick={() => (!max || value[r] < max[r] ? onChange({ ...value, [r]: value[r] + 1 }) : undefined)} />
+          <button className="mini" disabled={value[r] === 0} onClick={() => onChange({ ...value, [r]: value[r] - 1 })}>
+            −
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
+  const g = room.game as GameView;
+  const me = g.me;
+  const myTurn = me !== null && g.currentPlayer === me;
+  const [mode, setMode] = useState<BuildMode>(null);
+  const [dialog, setDialog] = useState<Dialog>(null);
+  const [panel, setPanel] = useState<'log' | 'chat'>('log');
+  const act = (action: Action) => {
+    conn.send({ t: 'action', action });
+    setMode(null);
+  };
+  const colors = g.players.map((p) => p.color);
+  const phase = g.phase;
+  const hand = g.hand ?? empty();
+
+  // Leave build mode whenever the situation changes underneath it.
+  useEffect(() => setMode(null), [g.turn, phase.type]);
+
+  const can = (cost: Partial<ResourceCounts>) => myTurn && phase.type === 'main' && hasResources(hand, cost);
+  let hintVertices: string[] = [];
+  let hintEdges: string[] = [];
+  let hintTiles: string[] = [];
+  if (myTurn) {
+    if (phase.type === 'setup') {
+      hintVertices = g.hints.settlements;
+      hintEdges = g.hints.roads;
+    } else if (phase.type === 'roadBuilding') {
+      hintEdges = g.hints.roads;
+    } else if (phase.type === 'robber') {
+      hintTiles = g.hints.robberTiles;
+    } else if (phase.type === 'main') {
+      if (mode === 'road') hintEdges = g.hints.roads;
+      if (mode === 'settlement') hintVertices = g.hints.settlements;
+      if (mode === 'city') hintVertices = g.hints.cities;
+    }
+  }
+
+  const onVertex = (v: string) => {
+    if (phase.type === 'setup' || mode === 'settlement') act({ type: 'placeSettlement', vertex: v });
+    else if (mode === 'city') act({ type: 'placeCity', vertex: v });
+  };
+
+  const current = g.players[g.currentPlayer];
+  let status: string;
+  switch (phase.type) {
+    case 'setup':
+      status = myTurn ? (phase.step === 'settlement' ? 'Setze deine Siedlung' : 'Setze eine Straße an die Siedlung') : `${current.name} baut auf…`;
+      break;
+    case 'roll':
+      status = myTurn ? 'Würfeln oder Ritter spielen' : `${current.name} würfelt…`;
+      break;
+    case 'discard':
+      status = me !== null && phase.pending[me] !== undefined ? `Wirf ${phase.pending[me]} Karten ab` : 'Warten auf Abwurf…';
+      break;
+    case 'robber':
+      status = myTurn ? 'Versetze den Räuber' : `${current.name} versetzt den Räuber…`;
+      break;
+    case 'steal':
+      status = myTurn ? 'Wähle, von wem du stiehlst' : `${current.name} stiehlt…`;
+      break;
+    case 'roadBuilding':
+      status = myTurn ? `Baue noch ${phase.remaining} Straße(n)` : `${current.name} baut Straßen…`;
+      break;
+    case 'main':
+      status = myTurn ? (mode ? 'Wähle einen Bauplatz' : 'Bauen, handeln oder Zug beenden') : `${current.name} ist am Zug`;
+      break;
+    case 'ended':
+      status = `${g.players[phase.winner].name} hat gewonnen!`;
+      break;
+  }
+
+  const playableDev = (type: DevCardType) =>
+    myTurn && !g.devPlayedThisTurn && (phase.type === 'main' || phase.type === 'roll') && g.devCards.some((c) => c.type === type && c.boughtOnTurn < g.turn);
+
+  return (
+    <div className="game">
+      <header className="topbar">
+        <span className="brand">Hexlands</span>
+        <span className={`status${myTurn ? ' mine' : ''}`}>{status}</span>
+        <button className="ghost-btn" onClick={() => conn.send({ t: 'leave' })}>Verlassen</button>
+      </header>
+
+      <main className="board-wrap">
+        <Board
+          map={g.map}
+          revealed={g.revealed}
+          buildings={g.buildings}
+          roads={g.roads}
+          colors={colors}
+          robber={g.robber}
+          hintVertices={hintVertices}
+          hintEdges={hintEdges}
+          hintTiles={hintTiles}
+          onVertex={onVertex}
+          onEdge={(e) => act({ type: 'placeRoad', edge: e })}
+          onTile={(t) => phase.type === 'robber' && myTurn && act({ type: 'moveRobber', tile: t })}
+        />
+        {g.dice && (
+          <div className="dice">
+            <span>{'⚀⚁⚂⚃⚄⚅'[g.dice[0] - 1]}</span>
+            <span>{'⚀⚁⚂⚃⚄⚅'[g.dice[1] - 1]}</span>
+          </div>
+        )}
+      </main>
+
+      <aside className="side">
+        <div className="tabs">
+          <button className={panel === 'log' ? 'on' : ''} onClick={() => setPanel('log')}>Protokoll</button>
+          <button className={panel === 'chat' ? 'on' : ''} onClick={() => setPanel('chat')}>Chat {room.chat.length > 0 && `(${room.chat.length})`}</button>
+        </div>
+        {panel === 'log' ? <Log events={g.log} players={g.players} /> : <Chat room={room} conn={conn} />}
+        <div className="bank">
+          <span title="Bank">🏦</span>
+          {RESOURCES.map((r) => (
+            <span key={r} className="bank-card" style={{ background: RESOURCE_STYLE[r].fill }} title={RES_NAME[r]}>
+              {RESOURCE_STYLE[r].icon}
+              <small>{g.bank[r]}</small>
+            </span>
+          ))}
+          <span className="bank-card dev" title="Entwicklungskarten">🃏<small>{g.devDeckSize}</small></span>
+          {g.fogPoolSize > 0 && <span className="bank-card fog" title="Nebelfelder">☁️<small>{g.fogPoolSize}</small></span>}
+        </div>
+        <div className="players">
+          {g.players.map((p, i) => (
+            <div key={p.id} className={`player${i === g.currentPlayer ? ' active' : ''}`} style={{ borderColor: p.color }}>
+              <span className="avatar" style={{ background: p.color }}>{p.isBot ? '🤖' : '🙂'}</span>
+              <span className="pn">{p.name}{i === me && ' (du)'}</span>
+              <span className="stat" title="Siegpunkte">🏆 {i === me ? g.myPoints : p.points}</span>
+              <span className="stat" title="Rohstoffkarten">🂠 {p.resourceCount}</span>
+              <span className="stat" title="Entwicklungskarten">🃏 {p.devCardCount}</span>
+              <span className={`stat${g.largestArmy === i ? ' bonus' : ''}`} title="Gespielte Ritter">⚔️ {p.knightsPlayed}</span>
+              <span className={`stat${g.longestRoad === i ? ' bonus' : ''}`} title="Längste Straße">🛣️ {p.roadLength}</span>
+            </div>
+          ))}
+        </div>
+      </aside>
+
+      <footer className="bottombar">
+        <div className="hand">
+          {RESOURCES.map((r) => <ResourceCard key={r} r={r} n={hand[r]} dim={hand[r] === 0} />)}
+        </div>
+        <div className="actions">
+          {myTurn && phase.type === 'roll' && (
+            <button className="primary" onClick={() => act({ type: 'rollDice' })}>🎲 Würfeln</button>
+          )}
+          <button disabled={!myTurn || phase.type !== 'main'} onClick={() => setDialog('trade')} title="Handeln">🔄</button>
+          <button disabled={me === null} onClick={() => setDialog('dev')} title="Entwicklungskarten">
+            🃏<small>{g.devCards.length}</small>
+          </button>
+          <button className={mode === 'road' ? 'on' : ''} disabled={!can(COSTS.road) || g.hints.roads.length === 0} onClick={() => setMode(mode === 'road' ? null : 'road')} title="Straße (Holz + Lehm)">
+            ▬<small>{me !== null ? g.players[me].roadsLeft : ''}</small>
+          </button>
+          <button className={mode === 'settlement' ? 'on' : ''} disabled={!can(COSTS.settlement) || g.hints.settlements.length === 0} onClick={() => setMode(mode === 'settlement' ? null : 'settlement')} title="Siedlung (Holz, Lehm, Wolle, Getreide)">
+            🏠<small>{me !== null ? g.players[me].settlementsLeft : ''}</small>
+          </button>
+          <button className={mode === 'city' ? 'on' : ''} disabled={!can(COSTS.city) || g.hints.cities.length === 0} onClick={() => setMode(mode === 'city' ? null : 'city')} title="Stadt (2 Getreide, 3 Erz)">
+            🏰<small>{me !== null ? g.players[me].citiesLeft : ''}</small>
+          </button>
+          <button disabled={!can(COSTS.devCard) || g.devDeckSize === 0} onClick={() => act({ type: 'buyDevCard' })} title="Entwicklungskarte kaufen (Wolle, Getreide, Erz)">
+            🛒
+          </button>
+          <button className="primary" disabled={!myTurn || phase.type !== 'main'} onClick={() => act({ type: 'endTurn' })} title="Zug beenden">
+            ⏭
+          </button>
+        </div>
+      </footer>
+
+      {me !== null && phase.type === 'discard' && phase.pending[me] !== undefined && (
+        <DiscardDialog need={phase.pending[me]} hand={hand} onDone={(r) => act({ type: 'discard', resources: r })} />
+      )}
+      {myTurn && phase.type === 'steal' && (
+        <Modal title="Von wem stehlen?">
+          <div className="choices">
+            {phase.candidates.map((p) => (
+              <button key={p} style={{ borderColor: g.players[p].color }} onClick={() => act({ type: 'steal', victim: p })}>
+                {g.players[p].name} ({g.players[p].resourceCount} Karten)
+              </button>
+            ))}
+          </div>
+        </Modal>
+      )}
+      {dialog === 'trade' && myTurn && phase.type === 'main' && <TradeDialog g={g} hand={hand} act={act} close={() => setDialog(null)} />}
+      {dialog === 'dev' && <DevDialog g={g} playable={playableDev} act={(a) => { act(a); setDialog(null); }} close={() => setDialog(null)} />}
+      <TradeOfferBox g={g} act={act} />
+      {phase.type === 'ended' && (
+        <Modal title="Spiel vorbei">
+          <p className="winner">🏆 {g.players[phase.winner].name} gewinnt!</p>
+          <ol className="scores">
+            {g.players
+              .map((p, i) => ({ p, i }))
+              .sort((a, b) => b.p.points - a.p.points)
+              .map(({ p, i }) => <li key={i}>{p.name}: {p.points} Punkte</li>)}
+          </ol>
+          <button className="primary" onClick={() => conn.send({ t: 'leave' })}>Zur Startseite</button>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+function Modal({ title, children, onClose }: { title: string; children: ReactNode; onClose?: () => void }) {
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <h3>{title}{onClose && <button className="close" onClick={onClose}>✕</button>}</h3>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function DiscardDialog({ need, hand, onDone }: { need: number; hand: ResourceCounts; onDone: (r: ResourceCounts) => void }) {
+  const [pick, setPick] = useState(empty());
+  const n = totalCards(pick);
+  return (
+    <Modal title={`Wirf ${need} Karten ab`}>
+      <p className="muted">Deine Hand: {RESOURCES.map((r) => `${RESOURCE_STYLE[r].icon}${hand[r]}`).join('  ')}</p>
+      <Picker value={pick} onChange={setPick} max={hand} />
+      <button className="primary" disabled={n !== need} onClick={() => onDone(pick)}>Abwerfen ({n}/{need})</button>
+    </Modal>
+  );
+}
+
+function TradeDialog({ g, hand, act, close }: { g: GameView; hand: ResourceCounts; act: (a: Action) => void; close: () => void }) {
+  const [give, setGive] = useState(empty());
+  const [want, setWant] = useState(empty());
+  const [bankGive, setBankGive] = useState<Resource | null>(null);
+  const ratios = g.tradeRatios!;
+  return (
+    <Modal title="Handeln" onClose={close}>
+      <h4>Mit der Bank</h4>
+      <p className="muted">Wähle, was du abgibst, dann was du bekommst.</p>
+      <div className="choices row">
+        {RESOURCES.map((r) => (
+          <button key={r} className={bankGive === r ? 'on' : ''} disabled={hand[r] < ratios[r]} onClick={() => setBankGive(r)}>
+            {ratios[r]}× {RESOURCE_STYLE[r].icon}
+          </button>
+        ))}
+      </div>
+      {bankGive && (
+        <div className="choices row">
+          {RESOURCES.filter((r) => r !== bankGive).map((r) => (
+            <button key={r} disabled={g.bank[r] === 0} onClick={() => { act({ type: 'bankTrade', give: bankGive, get: r }); setBankGive(null); }}>
+              → 1× {RESOURCE_STYLE[r].icon}
+            </button>
+          ))}
+        </div>
+      )}
+      <h4>Mit Mitspielern</h4>
+      <p className="muted">Du gibst:</p>
+      <Picker value={give} onChange={setGive} max={hand} />
+      <p className="muted">Du möchtest:</p>
+      <Picker value={want} onChange={setWant} />
+      <button
+        className="primary"
+        disabled={totalCards(give) === 0 || totalCards(want) === 0 || !!g.tradeOffer || RESOURCES.some((r) => give[r] && want[r])}
+        onClick={() => { act({ type: 'offerTrade', give, want }); close(); }}
+      >
+        Angebot senden
+      </button>
+    </Modal>
+  );
+}
+
+function TradeOfferBox({ g, act }: { g: GameView; act: (a: Action) => void }) {
+  const o = g.tradeOffer;
+  if (!o || g.me === null) return null;
+  const Side = ({ r }: { r: Partial<ResourceCounts> }) => <>{RESOURCES.flatMap((k) => Array(r[k] ?? 0).fill(RESOURCE_STYLE[k].icon)).join(' ')}</>;
+  if (o.from === g.me) {
+    return (
+      <div className="offer-box">
+        <div>Dein Angebot: <Side r={o.give} /> für <Side r={o.want} /></div>
+        {Object.entries(o.responses).map(([p, r]) => (
+          <span key={p} className={`resp ${r}`}>
+            {g.players[Number(p)].name}: {r === 'pending' ? '…' : r === 'accepted' ? '✔' : '✘'}
+            {r === 'accepted' && <button className="mini" onClick={() => act({ type: 'confirmTrade', with: Number(p) })}>Tauschen</button>}
+          </span>
+        ))}
+        <button className="mini" onClick={() => act({ type: 'cancelTrade' })}>Zurückziehen</button>
+      </div>
+    );
+  }
+  if (o.responses[g.me] !== 'pending') return null;
+  const canPay = g.hand !== null && hasResources(g.hand, o.want);
+  return (
+    <div className="offer-box">
+      <div><b>{g.players[o.from].name}</b> bietet <Side r={o.give} /> für <Side r={o.want} /></div>
+      <button className="primary mini" disabled={!canPay} onClick={() => act({ type: 'respondTrade', accept: true })}>Annehmen</button>
+      <button className="mini" onClick={() => act({ type: 'respondTrade', accept: false })}>Ablehnen</button>
+    </div>
+  );
+}
+
+function DevDialog({ g, playable, act, close }: { g: GameView; playable: (t: DevCardType) => boolean; act: (a: Action) => void; close: () => void }) {
+  const [yop, setYop] = useState<Resource[]>([]);
+  const [choosing, setChoosing] = useState<'yearOfPlenty' | 'monopoly' | null>(null);
+  const counts = new Map<DevCardType, number>();
+  for (const c of g.devCards) counts.set(c.type, (counts.get(c.type) ?? 0) + 1);
+  return (
+    <Modal title="Entwicklungskarten" onClose={close}>
+      {g.devCards.length === 0 && <p className="muted">Du hast keine Entwicklungskarten.</p>}
+      {[...counts].map(([type, n]) => (
+        <div key={type} className="dev-row">
+          <div>
+            <b>{DEV_NAME[type]}</b> ×{n}
+            <div className="muted">{DEV_HELP[type]}</div>
+          </div>
+          {type !== 'victoryPoint' && (
+            <button
+              disabled={!playable(type)}
+              onClick={() => {
+                if (type === 'knight') act({ type: 'playKnight' });
+                else if (type === 'roadBuilding') act({ type: 'playRoadBuilding' });
+                else {
+                  setYop([]);
+                  setChoosing(type);
+                }
+              }}
+            >
+              Spielen
+            </button>
+          )}
+          {type === 'yearOfPlenty' && choosing === 'yearOfPlenty' && (
+            <div className="choices row">
+              {RESOURCES.map((r) => (
+                <button
+                  key={r}
+                  disabled={g.bank[r] === 0}
+                  onClick={() => {
+                    const next = [...yop, r];
+                    if (next.length === 2) act({ type: 'playYearOfPlenty', resources: [next[0], next[1]] });
+                    else setYop(next);
+                  }}
+                >
+                  {RESOURCE_STYLE[r].icon}
+                </button>
+              ))}
+              <span className="muted">{yop.length}/2 gewählt</span>
+            </div>
+          )}
+          {type === 'monopoly' && choosing === 'monopoly' && (
+            <div className="choices row">
+              {RESOURCES.map((r) => (
+                <button key={r} onClick={() => act({ type: 'playMonopoly', resource: r })}>{RESOURCE_STYLE[r].icon}</button>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+      <p className="muted">Pro Zug eine Karte, nicht im Zug des Kaufs.</p>
+    </Modal>
+  );
+}
+
+function Chat({ room, conn }: { room: RoomView; conn: Connection }) {
+  const [text, setText] = useState('');
+  return (
+    <div className="chat">
+      <div className="chat-lines">
+        {room.chat.map((m, i) => (
+          <div key={i}><b>{m.from}:</b> {m.text}</div>
+        ))}
+      </div>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          conn.send({ t: 'chat', text });
+          setText('');
+        }}
+      >
+        <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Nachricht…" maxLength={300} />
+      </form>
+    </div>
+  );
+}

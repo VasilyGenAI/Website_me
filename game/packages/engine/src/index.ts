@@ -6,3 +6,5 @@ export * from './game';
 export * from './bot';
 export { rand, randInt, shuffle } from './rng';
 export * from './presets';
+export * from './view';
+export * from './protocol';
