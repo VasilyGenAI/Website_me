@@ -338,9 +338,7 @@ export function Board(props: BoardProps) {
         const [a, b] = topo.edgeVertices[e].map(pt);
         return (
           <g key={`r${e}`} filter="url(#roadShadow)">
-            <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#1d1d1d" strokeWidth={11} strokeLinecap="round" />
-            <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={colors[owner]} strokeWidth={7.5} strokeLinecap="round" />
-            <line x1={a.x} y1={a.y - 1.5} x2={b.x} y2={b.y - 1.5} stroke="#fff" strokeOpacity=".35" strokeWidth={2} strokeLinecap="round" />
+            <RoadPiece x1={a.x} y1={a.y} x2={b.x} y2={b.y} color={colors[owner]} />
           </g>
         );
       })}
@@ -367,7 +365,16 @@ export function Board(props: BoardProps) {
             className={isHint ? 'hint-building piece' : 'piece'}
             onClick={isHint ? () => props.onVertex?.(v) : undefined}
           >
-            {b.type === 'settlement' ? <House color={colors[b.owner]} /> : <City color={colors[b.owner]} />}
+            {/* Settlements drawn half again as large, cities a fifth larger, so both read at a glance. */}
+            {b.type === 'settlement' ? (
+              <g transform="scale(1.5)">
+                <House color={colors[b.owner]} />
+              </g>
+            ) : (
+              <g transform="scale(1.2)">
+                <City color={colors[b.owner]} />
+              </g>
+            )}
           </g>
         );
       })}
@@ -392,6 +399,39 @@ export function Board(props: BoardProps) {
           return <circle key={`hv${v}`} className="hint-vertex" cx={p.x} cy={p.y} r={9} onClick={() => props.onVertex?.(v)} />;
         })}
     </svg>
+  );
+}
+
+/**
+ * A road as a medieval stone bridge: a cobbled deck between two low parapet walls in the owner's
+ * colour, with a dark outline. Also used on the road building card.
+ */
+export function RoadPiece({ x1, y1, x2, y2, color, scale = 1 }: { x1: number; y1: number; x2: number; y2: number; color: string; scale?: number }) {
+  const len = Math.hypot(x2 - x1, y2 - y1) / scale;
+  const h = len / 2;
+  const angle = (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI;
+  const joints: number[] = [];
+  for (let x = -h + 3.5; x < h - 2; x += 3.6) joints.push(x);
+  const merlons: number[] = [];
+  for (let x = -h + 3; x < h - 4; x += 6.5) merlons.push(x);
+  return (
+    <g transform={`translate(${(x1 + x2) / 2} ${(y1 + y2) / 2}) rotate(${angle}) scale(${scale})`} className="road">
+      <rect x={-h - 1} y={-7.6} width={len + 2} height={15.2} rx={3} fill="#1d1d1d" />
+      {/* parapet walls in the owner's colour, built from blocks */}
+      <rect x={-h + 0.3} y={-6.4} width={len - 0.6} height={12.8} rx={2.2} fill={color} />
+      {merlons.map((x) => (
+        <g key={x} className="merlon">
+          <rect x={x} y={-6.4} width={4} height={4} rx={0.6} />
+          <rect x={x} y={2.4} width={4} height={4} rx={0.6} />
+        </g>
+      ))}
+      {/* cobbled deck, laid like bricks */}
+      <rect x={-h + 0.3} y={-2.4} width={len - 0.6} height={4.8} fill="#cbc1ae" stroke="#1d1d1d" strokeWidth={0.7} />
+      <line x1={-h + 0.3} y1={0} x2={h - 0.3} y2={0} className="cobble" />
+      {joints.map((x, i) => (
+        <line key={x} x1={x} y1={i % 2 ? -2.4 : 0} x2={x} y2={i % 2 ? 0 : 2.4} className="cobble" />
+      ))}
+    </g>
   );
 }
 
@@ -437,6 +477,11 @@ function Robber() {
       <path d="M0,-7 L0,12" stroke="#000" strokeOpacity=".35" strokeWidth={1} />
       <rect x={-8.6} y={2} width={17.2} height={2.3} fill="#6b4420" stroke={ink} strokeWidth={0.6} />
       <rect x={-1.6} y={1.7} width={3.2} height={2.9} rx={0.5} fill="#e0b84a" stroke={ink} strokeWidth={0.5} />
+      {/* cowboy revolver in its holster on the belt */}
+      <path d="M-8.4,3.6 L-4.6,3.6 L-5,10 L-7.6,10.6 Z" fill="#7a4a22" stroke={ink} strokeWidth={0.7} strokeLinejoin="round" />
+      <path d="M-6.4,4.2 L-4.8,10" stroke="#5c3b1a" strokeWidth={0.5} />
+      <path d="M-7.9,3.8 L-8.9,-0.4 Q-9.3,-1.6 -8,-1.6 L-6.6,-1.6 L-5.6,1.4 L-4.4,1.6 L-4.6,3.6 Z" fill="#3a3a40" stroke={ink} strokeWidth={0.7} strokeLinejoin="round" />
+      <circle cx={-5.4} cy={2.5} r={0.7} fill="none" stroke="#9aa4ad" strokeWidth={0.5} />
       {/* red scarf */}
       <path d="M-6.5,-8.5 h13 l-1.2,3.2 h-10.6 z" fill="#b8322a" stroke={ink} strokeWidth={0.8} strokeLinejoin="round" />
       <path d="M3.5,-5.5 l2.5,5 l-3,-0.5 z" fill="#b8322a" stroke={ink} strokeWidth={0.6} strokeLinejoin="round" />

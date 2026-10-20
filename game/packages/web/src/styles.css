@@ -441,3 +441,22 @@ details p { margin: 0 0 8px; }
 .flight-layer { position: fixed; inset: 0; pointer-events: none; z-index: 20; overflow: hidden; }
 .flying-card { position: absolute; left: 0; top: 0; width: 26px; height: 34px; border-radius: 5px; border: 2px solid #fff;
   display: grid; place-items: center; font-size: 16px; box-shadow: 0 3px 8px rgba(0,0,0,.4); will-change: transform; }
+
+/* Roads as stone bridges */
+.road .cobble { stroke: #8f8574; stroke-width: .8; }
+.road .merlon rect { fill: #fff; fill-opacity: .28; stroke: #000; stroke-opacity: .35; stroke-width: .6; }
+
+/* Development cards */
+.dev-face { display: block; width: 100%; height: auto; }
+.devcard { width: 46px; height: 64px; padding: 0; border: none; background: none; position: relative; border-radius: 6px; filter: drop-shadow(0 2px 3px rgba(0,0,0,.35)); }
+.devcard:not(.playable) { opacity: .8; }
+.devcard.playable { box-shadow: 0 0 0 2px #ffe08a; }
+.devcard:hover { transform: translateY(-3px); }
+.devcount { position: absolute; top: -7px; right: -7px; background: var(--sea-dark); color: #fff; border-radius: 99px; font-size: 11px; font-weight: 800; padding: 1px 6px; border: 2px solid #fff; }
+.dev-back { display: inline-grid; place-items: center; width: 14px; height: 19px; border-radius: 3px; background: linear-gradient(#7d5bc4, #4a2f86); border: 1.5px solid #1d1d1d; color: #fff; font-size: 10px; font-weight: 900; vertical-align: -3px; }
+.bank-card.dev .dev-back { width: 18px; height: 24px; font-size: 12px; }
+.dev-big { width: 96px; flex: none; }
+.dev-row { display: flex; gap: 12px; align-items: center; }
+.dev-row .dev-info { flex: 1; display: grid; gap: 4px; }
+@media (max-width: 820px) { .devcard { width: 40px; height: 56px; } }
+.hand-gap { width: 6px; }

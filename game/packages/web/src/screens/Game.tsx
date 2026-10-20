@@ -4,6 +4,7 @@ import { COSTS, RESOURCES, TERRAIN_RESOURCE, hasResources, tileId, topology, tot
 import type { Action, DevCardType, GameView, Resource, ResourceCounts, RoomView } from '@kontinentalist/engine';
 import { Board } from '../components/Board';
 import { Dice } from '../components/Dice';
+import { DevCardBack, DevCardButton, DevCardFace } from '../components/DevCards';
 import { FLIGHT_MS, FlyingCards } from '../components/Flights';
 import type { Flight } from '../components/Flights';
 import { TradeComposer, emptyCounts } from '../components/TradeComposer';
@@ -235,7 +236,14 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
   const lastEvent = JSON.stringify(g.log[g.log.length - 1] ?? null);
 
   const playableDev = (type: DevCardType) =>
-    myTurn && !g.devPlayedThisTurn && (phase.type === 'main' || phase.type === 'roll') && g.devCards.some((c) => c.type === type && c.boughtOnTurn < g.turn);
+    type !== 'victoryPoint' &&
+    myTurn &&
+    !g.devPlayedThisTurn &&
+    (phase.type === 'main' || phase.type === 'roll') &&
+    g.devCards.some((c) => c.type === type && c.boughtOnTurn < g.turn);
+  // Your development cards, one card per kind with a count, in the order of the rules.
+  const DEV_ORDER: DevCardType[] = ['knight', 'roadBuilding', 'yearOfPlenty', 'monopoly', 'victoryPoint'];
+  const devTypes = DEV_ORDER.map((t) => [t, g.devCards.filter((c) => c.type === t).length] as const).filter(([, n]) => n > 0);
 
   return (
     <div className="game">
@@ -281,7 +289,7 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
               <small>{g.bank[r]}</small>
             </span>
           ))}
-          <span className="bank-card dev" title="Entwicklungskarten">🃏<small>{g.devDeckSize}</small></span>
+          <span className="bank-card dev" title="Entwicklungskarten"><DevCardBack /><small>{g.devDeckSize}</small></span>
           {g.fogPoolSize > 0 && <span className="bank-card fog" title="Nebelfelder">☁️<small>{g.fogPoolSize}</small></span>}
         </div>
         <div className="players">
@@ -298,7 +306,7 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
                 <span className="stat" title="Siegpunkte">🏆 {p.points}</span>
               )}
               <span className="stat" title="Rohstoffkarten">🂠 {p.resourceCount}</span>
-              <span className="stat" title="Entwicklungskarten">🃏 {p.devCardCount}</span>
+              <span className="stat" title="Entwicklungskarten"><DevCardBack /> {p.devCardCount}</span>
               <span className={`stat${g.largestArmy === i ? ' bonus' : ''}`} title="Gespielte Ritter">⚔️ {p.knightsPlayed}</span>
               <span className={`stat${g.longestRoad === i ? ' bonus' : ''}`} title="Längste Straße">🛣️ {p.roadLength}</span>
             </div>
@@ -318,15 +326,16 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
               gain={gains[r]}
             />
           ))}
+          {devTypes.length > 0 && <span className="hand-gap" />}
+          {devTypes.map(([type, n]) => (
+            <DevCardButton key={type} type={type} count={n} playable={playableDev(type)} onClick={() => setDialog('dev')} />
+          ))}
         </div>
         <div className="actions">
           {myTurn && phase.type === 'roll' && (
             <button className="primary nudge-soon" onClick={() => act({ type: 'rollDice' })}>🎲 Würfeln</button>
           )}
           <button className={trading ? 'on' : ''} disabled={!canTrade} onClick={() => (trading ? closeTrade() : openTrade())} title="Handeln">🔄</button>
-          <button disabled={me === null} onClick={() => setDialog('dev')} title="Entwicklungskarten">
-            🃏<small>{g.devCards.length}</small>
-          </button>
           <button className={mode === 'road' ? 'on' : ''} disabled={!can(COSTS.road) || g.hints.roads.length === 0} onClick={() => setMode(mode === 'road' ? null : 'road')} title="Straße (Holz + Lehm)">
             ▬<small>{me !== null ? g.players[me].roadsLeft : ''}</small>
           </button>
@@ -337,7 +346,7 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
             🏰<small>{me !== null ? g.players[me].citiesLeft : ''}</small>
           </button>
           <button disabled={!can(COSTS.devCard) || g.devDeckSize === 0} onClick={() => act({ type: 'buyDevCard' })} title="Entwicklungskarte kaufen (Wolle, Getreide, Erz)">
-            🛒
+            🃏
           </button>
           <button
             key={lastEvent}
@@ -491,50 +500,53 @@ function DevDialog({ g, playable, act, close }: { g: GameView; playable: (t: Dev
       {g.devCards.length === 0 && <p className="muted">Du hast keine Entwicklungskarten.</p>}
       {[...counts].map(([type, n]) => (
         <div key={type} className="dev-row">
-          <div>
-            <b>{DEV_NAME[type]}</b> ×{n}
-            <div className="muted">{DEV_HELP[type]}</div>
+          <div className="dev-big">
+            <DevCardFace type={type} />
           </div>
-          {type !== 'victoryPoint' && (
-            <button
-              disabled={!playable(type)}
-              onClick={() => {
-                if (type === 'knight') act({ type: 'playKnight' });
-                else if (type === 'roadBuilding') act({ type: 'playRoadBuilding' });
-                else {
-                  setYop([]);
-                  setChoosing(type);
-                }
-              }}
-            >
-              Spielen
-            </button>
-          )}
-          {type === 'yearOfPlenty' && choosing === 'yearOfPlenty' && (
-            <div className="choices row">
-              {RESOURCES.map((r) => (
-                <button
-                  key={r}
-                  disabled={g.bank[r] === 0}
-                  onClick={() => {
-                    const next = [...yop, r];
-                    if (next.length === 2) act({ type: 'playYearOfPlenty', resources: [next[0], next[1]] });
-                    else setYop(next);
-                  }}
-                >
-                  {RESOURCE_STYLE[r].icon}
-                </button>
-              ))}
-              <span className="muted">{yop.length}/2 gewählt</span>
-            </div>
-          )}
-          {type === 'monopoly' && choosing === 'monopoly' && (
-            <div className="choices row">
-              {RESOURCES.map((r) => (
-                <button key={r} onClick={() => act({ type: 'playMonopoly', resource: r })}>{RESOURCE_STYLE[r].icon}</button>
-              ))}
-            </div>
-          )}
+          <div className="dev-info">
+            <b>{DEV_NAME[type]} ×{n}</b>
+            <div className="muted">{DEV_HELP[type]}</div>
+            {type !== 'victoryPoint' && (
+              <button
+                disabled={!playable(type)}
+                onClick={() => {
+                  if (type === 'knight') act({ type: 'playKnight' });
+                  else if (type === 'roadBuilding') act({ type: 'playRoadBuilding' });
+                  else {
+                    setYop([]);
+                    setChoosing(type);
+                  }
+                }}
+              >
+                Spielen
+              </button>
+            )}
+            {type === 'yearOfPlenty' && choosing === 'yearOfPlenty' && (
+              <div className="choices row">
+                {RESOURCES.map((r) => (
+                  <button
+                    key={r}
+                    disabled={g.bank[r] === 0}
+                    onClick={() => {
+                      const next = [...yop, r];
+                      if (next.length === 2) act({ type: 'playYearOfPlenty', resources: [next[0], next[1]] });
+                      else setYop(next);
+                    }}
+                  >
+                    {RESOURCE_STYLE[r].icon}
+                  </button>
+                ))}
+                <span className="muted">{yop.length}/2 gewählt</span>
+              </div>
+            )}
+            {type === 'monopoly' && choosing === 'monopoly' && (
+              <div className="choices row">
+                {RESOURCES.map((r) => (
+                  <button key={r} onClick={() => act({ type: 'playMonopoly', resource: r })}>{RESOURCE_STYLE[r].icon}</button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       ))}
       <p className="muted">Pro Zug eine Karte, nicht im Zug des Kaufs.</p>
