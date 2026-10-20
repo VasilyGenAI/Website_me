@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { COSTS, RESOURCES, hasResources, totalCards } from '@kontinentalist/engine';
 import type { Action, DevCardType, GameView, Resource, ResourceCounts, RoomView } from '@kontinentalist/engine';
@@ -76,9 +76,6 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
     setTrading(false);
   }, [g.turn, phase.type]);
 
-  // Leave build mode whenever the situation changes underneath it.
-
-
   const can = (cost: Partial<ResourceCounts>) => myTurn && phase.type === 'main' && hasResources(hand, cost);
   let hintVertices: string[] = [];
   let hintEdges: string[] = [];
@@ -132,6 +129,12 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
       break;
   }
 
+  // A road that clears the fog pays one card of what it found; float it up from the tile.
+  const found = [...g.log.slice(-6)].reverse().find((e) => e.type === 'fogRevealed' && e.reward);
+  const flash = found?.type === 'fogRevealed' && found.reward ? { tile: found.tile, text: `+1 ${RESOURCE_STYLE[found.reward].icon}`, color: colors[found.player] } : undefined;
+  // The end-turn button nudges again 5 s after anything happens; the key restarts its animation.
+  const lastEvent = JSON.stringify(g.log[g.log.length - 1] ?? null);
+
   const playableDev = (type: DevCardType) =>
     myTurn && !g.devPlayedThisTurn && (phase.type === 'main' || phase.type === 'roll') && g.devCards.some((c) => c.type === type && c.boughtOnTurn < g.turn);
 
@@ -140,6 +143,7 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
       <header className="topbar">
         <span className="brand">Kontinentalist</span>
         <span className={`status${myTurn ? ' mine' : ''}`}>{status}</span>
+        <TurnClock room={room} />
         <button className="ghost-btn" onClick={() => conn.send({ t: 'leave' })}>Verlassen</button>
       </header>
 
@@ -157,6 +161,7 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
           onVertex={onVertex}
           onEdge={(e) => act({ type: 'placeRoad', edge: e })}
           onTile={(t) => phase.type === 'robber' && myTurn && act({ type: 'moveRobber', tile: t })}
+          flash={flash}
         />
         {g.lastRoll && <Dice key={g.lastRoll.count} dice={g.lastRoll.dice} roll={g.lastRoll.count} />}
       </main>
@@ -201,7 +206,7 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
         </div>
         <div className="actions">
           {myTurn && phase.type === 'roll' && (
-            <button className="primary" onClick={() => act({ type: 'rollDice' })}>🎲 Würfeln</button>
+            <button className="primary nudge-soon" onClick={() => act({ type: 'rollDice' })}>🎲 Würfeln</button>
           )}
           <button className={trading ? 'on' : ''} disabled={!canTrade} onClick={() => (trading ? closeTrade() : openTrade())} title="Handeln">🔄</button>
           <button disabled={me === null} onClick={() => setDialog('dev')} title="Entwicklungskarten">
@@ -219,7 +224,13 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
           <button disabled={!can(COSTS.devCard) || g.devDeckSize === 0} onClick={() => act({ type: 'buyDevCard' })} title="Entwicklungskarte kaufen (Wolle, Getreide, Erz)">
             🛒
           </button>
-          <button className="primary" disabled={!myTurn || phase.type !== 'main'} onClick={() => act({ type: 'endTurn' })} title="Zug beenden">
+          <button
+            key={lastEvent}
+            className={`primary${myTurn && phase.type === 'main' && !mode && !trading && !g.tradeOffer ? ' nudge' : ''}`}
+            disabled={!myTurn || phase.type !== 'main'}
+            onClick={() => act({ type: 'endTurn' })}
+            title="Zug beenden"
+          >
             ⏭
           </button>
         </div>
@@ -255,6 +266,30 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
         </Modal>
       )}
     </div>
+  );
+}
+
+/** Seconds left for whoever the game is waiting on; red in the last ten. */
+function TurnClock({ room }: { room: RoomView }) {
+  const clock = room.clock;
+  // `left` is measured when the server sent the view, so count down from when it arrived.
+  const deadline = useMemo(() => (clock ? Date.now() + clock.left : null), [clock]);
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    if (deadline === null) return;
+    const id = setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(id);
+  }, [deadline]);
+  if (!clock || deadline === null) return null;
+  const secs = Math.max(0, Math.ceil((deadline - now) / 1000));
+  const total = room.settings.turnTimer;
+  const mine = room.you !== null && clock.waiting.includes(room.you);
+  const who = mine ? 'Du' : clock.waiting.map((p) => room.seats[p]?.name).join(', ');
+  return (
+    <span className={`turn-clock${secs <= 10 ? ' urgent' : ''}${mine ? ' mine' : ''}`} title={`Zeit für ${who}`}>
+      <span className="turn-clock-bar" style={{ width: `${Math.min(100, (secs / total) * 100)}%` }} />
+      <span className="turn-clock-text">⏱ {secs}s</span>
+    </span>
   );
 }
 

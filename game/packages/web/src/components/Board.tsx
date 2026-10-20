@@ -46,6 +46,8 @@ export interface BoardProps {
   onCell?: (q: number, r: number) => void;
   /** Editor: coastal edges that can hold a port. */
   onCoast?: (q: number, r: number, side: number) => void;
+  /** Short text floating up from a tile, e.g. the card found under the fog. */
+  flash?: { tile: TileId; text: string; color?: string };
 }
 
 export function Board(props: BoardProps) {
@@ -65,9 +67,25 @@ export function Board(props: BoardProps) {
       }
     }
     const pad = S * 1.1;
-    const minX = Math.min(...xs) - pad;
-    const minY = Math.min(...ys) - pad;
-    return `${minX} ${minY} ${Math.max(...xs) + pad - minX} ${Math.max(...ys) + pad - minY}`;
+    xs.push(Math.min(...xs) - pad, Math.max(...xs) + pad);
+    ys.push(Math.min(...ys) - pad, Math.max(...ys) + pad);
+    // Harbour banks stand far out in the water; keep their roof signs and ratio plates in view.
+    for (const p of map.ports) {
+      const cs = hexCorners(p.q, p.r);
+      const a = pt(cs[p.side]);
+      const b = pt(cs[(p.side + 1) % 6]);
+      const c = center(p.q, p.r);
+      const mx = (a.x + b.x) / 2;
+      const my = (a.y + b.y) / 2;
+      const len = Math.hypot(mx - c.x, my - c.y);
+      const bx = mx + ((mx - c.x) / len) * S * 0.86;
+      const by = my + ((my - c.y) / len) * S * 0.86;
+      xs.push(bx - 24, bx + 24);
+      ys.push(by - 44, by + 28);
+    }
+    const minX = Math.min(...xs);
+    const minY = Math.min(...ys);
+    return `${minX} ${minY} ${Math.max(...xs) - minX} ${Math.max(...ys) - minY}`;
   }, [map, props.ghostCells]);
 
   const vb = viewBox.split(' ').map(Number);
@@ -97,10 +115,15 @@ export function Board(props: BoardProps) {
           <stop offset=".45" stopColor="#fff" stopOpacity="0" />
           <stop offset="1" stopColor="#000" stopOpacity=".22" />
         </radialGradient>
-        <radialGradient id="pawn" cx="35%" cy="30%" r="80%">
-          <stop offset="0" stopColor="#7a7a7a" />
-          <stop offset="1" stopColor="#1c1c1c" />
-        </radialGradient>
+        {/* Roads are often perfectly vertical; a filter sized to their (zero-width) box would
+            hide them, so this one covers the whole board instead. */}
+        <filter id="roadShadow" filterUnits="userSpaceOnUse" x={vb[0] - S} y={vb[1] - S} width={vb[2] + 2 * S} height={vb[3] + 2 * S}>
+          <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" floodOpacity="0.45" />
+        </filter>
+        <linearGradient id="cloak" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#4a4a58" />
+          <stop offset="1" stopColor="#15151b" />
+        </linearGradient>
         <pattern id="seaTex" width={SEA_TILE} height={SEA_TILE} patternUnits="userSpaceOnUse">
           <image href={SEA_IMAGE} width={SEA_TILE} height={SEA_TILE} />
         </pattern>
@@ -204,11 +227,8 @@ export function Board(props: BoardProps) {
               </text>
             )}
             {robber === id && (
-              <g className="robber" filter="url(#shadow)" transform={`translate(${c.x + S * 0.44} ${c.y + S * 0.08})`}>
-                <ellipse cx={0} cy={S * 0.24} rx={S * 0.17} ry={S * 0.07} fill="#151515" />
-                <path d={`M${-S * 0.13},${S * 0.24} C${-S * 0.13},${S * 0.02} ${-S * 0.06},${-S * 0.06} ${-S * 0.05},${-S * 0.12} L${S * 0.05},${-S * 0.12} C${S * 0.06},${-S * 0.06} ${S * 0.13},${S * 0.02} ${S * 0.13},${S * 0.24} Z`} fill="url(#pawn)" />
-                <circle cx={0} cy={-S * 0.2} r={S * 0.12} fill="url(#pawn)" />
-                <circle cx={-S * 0.04} cy={-S * 0.24} r={S * 0.035} fill="#fff" fillOpacity=".35" />
+              <g className="robber" filter="url(#shadow)" transform={`translate(${c.x + S * 0.5} ${c.y + S * 0.12})`}>
+                <Robber />
               </g>
             )}
             {hintT.has(id) && <polygon className="hint-tile" points={polygon(t.q, t.r, 0.9)} />}
@@ -235,7 +255,7 @@ export function Board(props: BoardProps) {
       {Object.entries(roads).map(([e, owner]) => {
         const [a, b] = topo.edgeVertices[e].map(pt);
         return (
-          <g key={`r${e}`} filter="url(#shadow)">
+          <g key={`r${e}`} filter="url(#roadShadow)">
             <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#1d1d1d" strokeWidth={11} strokeLinecap="round" />
             <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={colors[owner]} strokeWidth={7.5} strokeLinecap="round" />
             <line x1={a.x} y1={a.y - 1.5} x2={b.x} y2={b.y - 1.5} stroke="#fff" strokeOpacity=".35" strokeWidth={2} strokeLinecap="round" />
@@ -269,6 +289,19 @@ export function Board(props: BoardProps) {
           </g>
         );
       })}
+
+      {props.flash &&
+        (() => {
+          const [q, r] = props.flash.tile.split(',').map(Number);
+          const c = center(q, r);
+          return (
+            <g key={`flash${props.flash.tile}`} className="flash" pointerEvents="none">
+              <text x={c.x} y={c.y - S * 0.42} textAnchor="middle" fill={props.flash.color ?? '#1d1d1d'}>
+                {props.flash.text}
+              </text>
+            </g>
+          );
+        })()}
 
       {[...hintV]
         .filter((v) => !buildings[v])
@@ -307,9 +340,44 @@ function City({ color }: { color: string }) {
   );
 }
 
+/** The robber: a masked bandit in a dark cloak and wide hat, with a sack of loot. */
+function Robber() {
+  const ink = '#0d0d0d';
+  return (
+    <>
+      <ellipse cx={0} cy={12} rx={11} ry={3.5} fill="#000" fillOpacity=".45" />
+      {/* loot sack behind him */}
+      <path d="M6,11.5 C2.5,11.5 3,3.5 7,1.5 L8.5,-0.5 L11.5,-0.5 L13,1.5 C17,3.5 17.5,11.5 14,11.5 Z" fill="#c9a26b" stroke="#5c3b1a" strokeWidth={1} strokeLinejoin="round" />
+      <path d="M8,1 L12,1" stroke="#5c3b1a" strokeWidth={1.4} strokeLinecap="round" />
+      <circle cx={10} cy={6.5} r={2} fill="#f2c230" stroke="#8a6a10" strokeWidth={0.7} />
+      {/* cloak */}
+      <path d="M-9.5,12 C-9.5,1 -7,-5.5 -5,-8 L5,-8 C7,-5.5 9.5,1 9.5,12 Z" fill="url(#cloak)" stroke={ink} strokeWidth={1.2} strokeLinejoin="round" />
+      <path d="M0,-7 L0,12" stroke="#000" strokeOpacity=".35" strokeWidth={1} />
+      <rect x={-8.6} y={2} width={17.2} height={2.3} fill="#6b4420" stroke={ink} strokeWidth={0.6} />
+      <rect x={-1.6} y={1.7} width={3.2} height={2.9} rx={0.5} fill="#e0b84a" stroke={ink} strokeWidth={0.5} />
+      {/* red scarf */}
+      <path d="M-6.5,-8.5 h13 l-1.2,3.2 h-10.6 z" fill="#b8322a" stroke={ink} strokeWidth={0.8} strokeLinejoin="round" />
+      <path d="M3.5,-5.5 l2.5,5 l-3,-0.5 z" fill="#b8322a" stroke={ink} strokeWidth={0.6} strokeLinejoin="round" />
+      {/* head with the bandit mask */}
+      <circle cx={0} cy={-13} r={6} fill="#e6b98e" stroke="#3d2610" strokeWidth={0.8} />
+      <rect x={-6.6} y={-15.6} width={13.2} height={4} rx={1.6} fill="#111" />
+      <circle cx={-2.6} cy={-13.6} r={1.2} fill="#fff" />
+      <circle cx={2.6} cy={-13.6} r={1.2} fill="#fff" />
+      <circle cx={-2.3} cy={-13.5} r={0.55} fill="#111" />
+      <circle cx={2.9} cy={-13.5} r={0.55} fill="#111" />
+      <path d="M-2,-9.6 q2,1 4,0" stroke="#3d2610" strokeWidth={0.7} fill="none" strokeLinecap="round" />
+      {/* wide-brimmed hat */}
+      <ellipse cx={0} cy={-18.2} rx={10} ry={2.6} fill="#1a1a1a" stroke={ink} strokeWidth={0.8} />
+      <path d="M-5.6,-18.4 L-4.6,-25.5 Q0,-27.6 4.6,-25.5 L5.6,-18.4 Z" fill="#26262c" stroke={ink} strokeWidth={0.8} strokeLinejoin="round" />
+      <rect x={-5.3} y={-20.6} width={10.6} height={1.8} fill="#b8322a" />
+    </>
+  );
+}
+
 /**
- * Harbour: a wooden pier from the coast into the water, a harbour house in the colour of the
- * traded resource with its symbol, a ratio sign, and a small boat moored alongside.
+ * Harbour: a wooden pier from the coast into the water, a little bank with columns whose roof is
+ * in the colour of the traded resource and carries its symbol large, a ratio sign, and a small
+ * boat moored alongside.
  */
 function Harbor({ x, y, dx, dy, type, ends }: { x: number; y: number; dx: number; dy: number; type: PortType; ends: { x: number; y: number }[] }) {
   const style = portStyle(type);
@@ -320,8 +388,8 @@ function Harbor({ x, y, dx, dy, type, ends }: { x: number; y: number; dx: number
   const pier = (along: number, side: number) => `${x + dx * along + px * side},${y + dy * along + py * side}`;
   // Boat moored beside the pier, on whichever side faces more to the right so it reads the same everywhere.
   const side = px >= 0 ? 1 : -1;
-  const boatX = x + dx * S * 0.62 + px * side * S * 0.4;
-  const boatY = y + dy * S * 0.62 + py * side * S * 0.4;
+  const boatX = x + dx * S * 0.5 + px * side * S * 0.6;
+  const boatY = y + dy * S * 0.5 + py * side * S * 0.6;
   const dockX = x + dx * S * 0.22;
   const dockY = y + dy * S * 0.22;
   return (
@@ -341,14 +409,24 @@ function Harbor({ x, y, dx, dy, type, ends }: { x: number; y: number; dx: number
         <path className="sail" d="M0,-14 L9,-2 L0,-2 Z" />
         <path className="sail" d="M-2,-12 L-8,-2 L-2,-2 Z" />
       </g>
-      <g transform={`translate(${bx} ${by})`} filter="url(#shadow)">
-        <path d="M-12,-2 h24 v12 h-24 z" fill={style.fill} stroke="#1d1d1d" strokeWidth={1.6} strokeLinejoin="round" />
-        <path d="M-15,-1 L0,-13 L15,-1 z" fill={style.fill} stroke="#1d1d1d" strokeWidth={1.6} strokeLinejoin="round" />
-        <path d="M-15,-1 L0,-13 L15,-1 z" fill="#000" fillOpacity=".3" />
-        <circle cx={0} cy={4} r={6.5} fill="#fff8e6" stroke="#1d1d1d" strokeWidth={1.2} />
-        <text x={0} y={7} textAnchor="middle" fontSize={8.5}>{type === 'any' ? '❓' : RESOURCE_STYLE[type].icon}</text>
-        <rect x={-11} y={12} width={22} height={10} rx={3} fill="#fff8e6" stroke="#6b4420" strokeWidth={1.2} />
-        <text x={0} y={20} textAnchor="middle" className="port-sign">{style.ratio}</text>
+      <g transform={`translate(${bx} ${by})`} filter="url(#shadow)" className="bank">
+        {/* steps */}
+        <rect className="stone" x={-15} y={8} width={30} height={3.5} />
+        <rect className="stone" x={-13} y={4.8} width={26} height={3.4} />
+        {/* columns and the beam on top */}
+        {[-10.5, -4.8, 1.2, 6.9].map((cx) => (
+          <rect key={cx} className="column" x={cx} y={-3} width={3.6} height={7.8} />
+        ))}
+        <rect className="column" x={-14} y={-6.2} width={28} height={3.4} />
+        {/* pediment roof in the resource colour */}
+        <path d="M-17.5,-6 L0,-18.5 L17.5,-6 Z" fill={style.fill} stroke="#1d1d1d" strokeWidth={1.4} strokeLinejoin="round" />
+        <path d="M-12,-8.2 L0,-16.3 L12,-8.2 Z" fill="#000" fillOpacity=".14" />
+        {/* the traded resource, large on top of the roof */}
+        <circle cx={0} cy={-28.5} r={11.2} fill="none" stroke="#1d1d1d" strokeWidth={1.2} />
+        <circle cx={0} cy={-28.5} r={9.8} fill="#fff8e6" stroke={style.fill} strokeWidth={2.8} />
+        <text x={0} y={-24.2} textAnchor="middle" fontSize={12.5}>{type === 'any' ? '❓' : RESOURCE_STYLE[type].icon}</text>
+        <rect x={-11} y={13} width={22} height={10} rx={3} fill="#fff8e6" stroke="#6b4420" strokeWidth={1.2} />
+        <text x={0} y={21} textAnchor="middle" className="port-sign">{style.ratio}</text>
       </g>
     </>
   );

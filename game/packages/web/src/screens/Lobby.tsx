@@ -1,6 +1,7 @@
 import type { RoomView } from '@kontinentalist/engine';
 import { userId } from '../net';
 import type { Connection } from '../net';
+import { SettingsPanel } from '../components/Settings';
 
 export function Lobby({ room, conn }: { room: RoomView; conn: Connection }) {
   const isHost = room.hostId === userId;
@@ -27,6 +28,7 @@ export function Lobby({ room, conn }: { room: RoomView; conn: Connection }) {
             </li>
           ))}
         </ul>
+        <SettingsPanel value={room.settings} onChange={isHost ? (settings) => conn.send({ t: 'settings', settings }) : undefined} />
         {isHost ? (
           <div className="row-btns">
             <button disabled={room.seats.length >= 4} onClick={() => conn.send({ t: 'addBot' })}>+ Bot</button>

@@ -28,11 +28,36 @@ export interface ChatMessage {
   at: number;
 }
 
+/** Chosen before the game starts, like colonist's advanced settings. */
+export interface GameSettings {
+  /** Seconds per turn; 0 turns the clock off. */
+  turnTimer: number;
+  victoryPoints: number;
+  /** Players holding more cards than this discard half on a 7. */
+  discardLimit: number;
+}
+
+export const TURN_TIMERS = [0, 30, 45, 60, 90, 120, 180, 300];
+export const DEFAULT_SETTINGS: GameSettings = { turnTimer: 60, victoryPoints: 10, discardLimit: 7 };
+
+/** Fills gaps and clamps whatever a client sent into allowed values. */
+export function cleanSettings(s: Partial<GameSettings> = {}): GameSettings {
+  const clamp = (v: unknown, lo: number, hi: number, d: number) => (Number.isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v as number))) : d);
+  return {
+    turnTimer: TURN_TIMERS.includes(s.turnTimer as number) ? (s.turnTimer as number) : DEFAULT_SETTINGS.turnTimer,
+    victoryPoints: clamp(s.victoryPoints, 3, 20, DEFAULT_SETTINGS.victoryPoints),
+    discardLimit: clamp(s.discardLimit, 5, 20, DEFAULT_SETTINGS.discardLimit),
+  };
+}
+
 export interface RoomView {
   id: string;
   hostId: string;
   status: 'lobby' | 'playing' | 'ended';
   mapName: string;
+  settings: GameSettings;
+  /** Turn clock: milliseconds left and the seats it is waiting for, or null when nobody is timed. */
+  clock: { left: number; waiting: number[] } | null;
   seats: SeatView[];
   /** Index of the viewer's seat, or null for spectators. */
   you: number | null;
@@ -49,10 +74,11 @@ export type ClientMessage =
   | { t: 'adminStats' }
   | { t: 'listRooms' }
   /** `preset` boards are open to everyone; a custom `map` needs the pro or admin role. */
-  | { t: 'createRoom'; preset?: PresetId; map?: MapDef; bots?: number; start?: boolean }
+  | { t: 'createRoom'; preset?: PresetId; map?: MapDef; bots?: number; start?: boolean; settings?: Partial<GameSettings> }
   | { t: 'joinRoom'; roomId: string }
   | { t: 'addBot' }
   | { t: 'removeSeat'; seat: number }
+  | { t: 'settings'; settings: Partial<GameSettings> }
   | { t: 'start' }
   | { t: 'action'; action: Action }
   | { t: 'chat'; text: string }

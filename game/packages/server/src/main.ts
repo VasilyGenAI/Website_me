@@ -111,7 +111,7 @@ wss.on('connection', (ws: WebSocket) => {
           } else if (msg.preset && msg.preset !== 'standard' && msg.preset in PRESET_MAPS) {
             map = PRESET_MAPS[msg.preset]();
           }
-          const r = registry.create(userId, map);
+          const r = registry.create(userId, map, msg.settings);
           r.addHuman(userId, name);
           for (let i = 0; i < Math.min(msg.bots ?? 0, 3); i++) r.addBot(userId);
           if (msg.start) r.start(userId);
@@ -139,6 +139,9 @@ wss.on('connection', (ws: WebSocket) => {
           break;
         case 'removeSeat':
           room.removeSeat(userId, msg.seat);
+          break;
+        case 'settings':
+          room.setSettings(userId, msg.settings ?? {});
           break;
         case 'start':
           room.start(userId);

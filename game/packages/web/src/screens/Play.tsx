@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { CAN_CREATE_MAPS } from '@kontinentalist/engine';
 import { Tabs } from '../components/Shell';
 import { MapCard } from '../components/MapCard';
+import { SettingsPanel, useSavedSettings } from '../components/Settings';
 import { PRESET_CHOICES, canPlayWithPeople, ownChoice } from '../boards';
 import type { BoardChoice } from '../boards';
 import { STAGE_LABEL, stage, startingGameWith, useLibrary } from '../library';
@@ -14,6 +15,7 @@ export function Play({ conn }: { conn: Connection }) {
   const [pick, setPick] = useState('p:standard');
   const [bots, setBots] = useState(3);
   const [code, setCode] = useState('');
+  const [settings, setSettings] = useSavedSettings();
   const { maps } = useLibrary();
   const canMaps = conn.role !== null && CAN_CREATE_MAPS[conn.role];
 
@@ -37,7 +39,7 @@ export function Play({ conn }: { conn: Connection }) {
 
   const start = () => {
     startingGameWith(chosen.custom);
-    conn.send({ t: 'createRoom', preset: chosen.preset, map: chosen.custom, ...(tab === 'bots' ? { bots, start: true } : {}) });
+    conn.send({ t: 'createRoom', preset: chosen.preset, map: chosen.custom, settings, ...(tab === 'bots' ? { bots, start: true } : {}) });
   };
 
   return (
@@ -71,6 +73,10 @@ export function Play({ conn }: { conn: Connection }) {
           Eigene Karten baust du unter <button className="link" onClick={() => navigate('#/maps')}>Karten</button>.
         </p>
       )}
+      <section>
+        <h3 className="section-title">Einstellungen</h3>
+        <SettingsPanel value={settings} onChange={setSettings} />
+      </section>
       <div className="startbar">
         {tab === 'bots' && (
           <label className="inline">

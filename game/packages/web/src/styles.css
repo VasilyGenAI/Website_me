@@ -106,10 +106,6 @@ input, select { border: 1px solid #c9bfa6; border-radius: 8px; padding: 8px 10px
 .num.red, .pips.red { fill: #c0392b; }
 .pips { fill: #2b2b2b; letter-spacing: -1px; }
 .tile-label { font-weight: 800; fill: #fff; stroke: rgba(0,0,0,.55); stroke-width: 2.5px; paint-order: stroke; pointer-events: none; }
-.port line { stroke: #8a5a2b; stroke-width: 4; }
-.port circle { stroke: #6b4420; stroke-width: 2.5; }
-.port-ratio { font-size: 13px; font-weight: 900; fill: #fff; stroke: rgba(0,0,0,.6); stroke-width: 2.5px; paint-order: stroke; letter-spacing: -.3px; }
-.port-ratio.dark { fill: #2b2b2b; stroke: none; }
 .coast-target { stroke: rgba(255,255,255,.6); stroke-width: 9; stroke-linecap: round; cursor: pointer; }
 .coast-target:hover { stroke: var(--accent); }
 .hint-vertex { fill: rgba(255,255,255,.85); stroke: #222; stroke-width: 2; cursor: pointer; animation: pulse 1s ease-in-out infinite alternate; }
@@ -374,3 +370,38 @@ details p { margin: 0 0 8px; }
 .boat .sail { fill: #fff8e6; stroke: #6b4420; stroke-width: .8; }
 .port-sign { font-size: 8.5px; font-weight: 900; fill: #2b2b2b; }
 .port { cursor: default; }
+
+/* Advanced game settings (play screen and lobby) */
+.settings { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.setting { background: rgba(255,255,255,.14); border: 2px solid rgba(255,255,255,.25); border-radius: var(--radius); padding: 10px 14px; color: #fff; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.home .setting { background: #eef4fb; color: inherit; border-color: #d4e2f1; }
+.setting-title { font-weight: 800; }
+.setting small { opacity: .8; font-size: .75rem; }
+.stepper { display: flex; align-items: center; gap: 14px; font-size: 1.1rem; }
+.stepper b { min-width: 64px; }
+.slider { display: flex; align-items: center; gap: 8px; width: 100%; }
+.slider input { flex: 1; accent-color: #2fa84f; }
+.slider b { background: #fff; color: #1b4f8a; border-radius: 99px; min-width: 30px; padding: 2px 6px; }
+
+/* Turn clock in the top bar */
+.turn-clock { position: relative; overflow: hidden; min-width: 74px; border-radius: 99px; background: rgba(255,255,255,.15); font-weight: 800; text-align: center; padding: 4px 10px; flex-shrink: 0; }
+.turn-clock-bar { position: absolute; inset: 0 auto 0 0; background: rgba(255,255,255,.25); transition: width .25s linear; }
+.turn-clock.mine .turn-clock-bar { background: var(--ok); }
+.turn-clock.urgent .turn-clock-bar { background: var(--bad); }
+.turn-clock.urgent { animation: tick 1s ease-in-out infinite; }
+.turn-clock-text { position: relative; }
+@keyframes tick { 50% { transform: scale(1.08); } }
+
+/* "Your move" nudge: the button swells by 40 % for one second every five seconds.
+   Rolling starts after 1 s (negative delay), ending the turn 5 s after the last event. */
+@keyframes nudge { 0%, 80% { transform: scale(1); } 90% { transform: scale(1.4); } 100% { transform: scale(1); } }
+.actions .nudge { animation: nudge 5s ease-in-out 1s infinite; z-index: 2; }
+.actions .nudge-soon { animation: nudge 5s ease-in-out -3s infinite; z-index: 2; }
+
+/* Card found under the fog floats up from the tile */
+.flash text { font-size: 22px; font-weight: 900; paint-order: stroke; stroke: #fff; stroke-width: 4px; }
+.flash { animation: flash-up 2.6s ease-out forwards; }
+@keyframes flash-up { 0% { opacity: 0; transform: translateY(8px); } 15% { opacity: 1; transform: translateY(0); } 75% { opacity: 1; } 100% { opacity: 0; transform: translateY(-26px); } }
+.bank .stone { fill: #d9d2c0; stroke: #1d1d1d; stroke-width: 1.1; }
+.bank .column { fill: #f4efe2; stroke: #1d1d1d; stroke-width: 1; }
+.stepper button { width: 36px; height: 36px; padding: 0; font-size: 1.4rem; line-height: 1; border-radius: 99px; }

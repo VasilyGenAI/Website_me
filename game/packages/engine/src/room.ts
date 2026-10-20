@@ -1,8 +1,8 @@
 import { botAction } from './bot';
 import { applyAction, createGame } from './game';
 import { generateStandardMap, validateMap } from './mapgen';
-import { PLAYER_COLORS } from './protocol';
-import type { ChatMessage, OpenRoom, RoomView } from './protocol';
+import { DEFAULT_SETTINGS, PLAYER_COLORS, cleanSettings } from './protocol';
+import type { ChatMessage, GameSettings, OpenRoom, RoomView } from './protocol';
 import { actingPlayers } from './rules';
 import type { Action, GameState, MapDef } from './types';
 import { viewFor } from './view';
@@ -49,6 +49,7 @@ export interface RoomSnapshot {
   seats: Seat[];
   chat: ChatMessage[];
   state: GameState | null;
+  settings?: GameSettings;
 }
 
 export class Room {
@@ -56,8 +57,13 @@ export class Room {
   readonly listeners = new Set<Listener>();
   readonly chat: ChatMessage[] = [];
   state: GameState | null = null;
+  settings: GameSettings = DEFAULT_SETTINGS;
   lastActivity = Date.now();
   private botTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Turn clock: one deadline per waiting situation of the current turn, and those that ran out. */
+  private clockTimer: ReturnType<typeof setTimeout> | null = null;
+  private deadlines = new Map<string, number>();
+  private expired = new Set<string>();
   /** Divides bot delays; tests set it high to play instantly. */
   speed = 1;
 
@@ -69,7 +75,7 @@ export class Room {
 
   /** Plain data for carrying a room across a page update. */
   snapshot(): RoomSnapshot {
-    return { id: this.id, hostId: this.hostId, map: this.map, seats: this.seats, chat: this.chat, state: this.state };
+    return { id: this.id, hostId: this.hostId, map: this.map, seats: this.seats, chat: this.chat, state: this.state, settings: this.settings };
   }
 
   static restore(s: RoomSnapshot): Room {
@@ -77,6 +83,7 @@ export class Room {
     room.seats.push(...s.seats);
     room.chat.push(...s.chat);
     room.state = s.state;
+    room.settings = cleanSettings(s.settings);
     room.scheduleBots();
     return room;
   }
@@ -114,12 +121,19 @@ export class Room {
     this.seats.splice(seat, 1);
   }
 
+  setSettings(byUser: string, settings: Partial<GameSettings>) {
+    this.requireHostInLobby(byUser);
+    this.settings = cleanSettings({ ...this.settings, ...settings });
+  }
+
   start(byUser: string, seed = Math.floor(Math.random() * 2 ** 31)) {
     this.requireHostInLobby(byUser);
     if (this.seats.length < 2) throw new RoomError('At least two players are needed');
     const map = this.map ?? generateStandardMap(seed);
-    this.state = createGame({ seed, map, players: this.seats.map((s) => ({ ...s })) });
+    const { victoryPoints, discardLimit } = this.settings;
+    this.state = createGame({ seed, map, players: this.seats.map((s) => ({ ...s })), victoryPoints, discardLimit });
     this.scheduleBots();
+    this.tick();
   }
 
   act(userId: string, action: Action) {
@@ -149,6 +163,8 @@ export class Room {
       hostId: this.hostId,
       status: this.status,
       mapName: this.map?.name ?? 'Klassisch',
+      settings: this.settings,
+      clock: this.clock(),
       seats: this.seats.map((s) => ({
         ...s,
         connected: s.isBot || [...this.listeners].some((l) => l.userId === s.id),
@@ -161,12 +177,99 @@ export class Room {
 
   touch() {
     this.lastActivity = Date.now();
+    this.tick();
     for (const l of this.listeners) l.send(this.view(l.userId));
   }
 
   dispose() {
     if (this.botTimer) clearTimeout(this.botTimer);
-    this.botTimer = null;
+    if (this.clockTimer) clearTimeout(this.clockTimer);
+    this.botTimer = this.clockTimer = null;
+  }
+
+  /** Humans the game is waiting for right now; bots are never timed. */
+  private waitingHumans(state: GameState): number[] {
+    return actingPlayers(state).filter((p) => !state.players[p].isBot);
+  }
+
+  /*
+   * The turn clock. The current player gets one deadline for the whole turn: when it runs out
+   * the dice are rolled for them and the turn ends, so there is no time left to build or trade.
+   * Discarding on a 7 and answering a trade offer get a clock of their own.
+   */
+  private clockKeys(state: GameState): { turn: string; key: string } {
+    const turn = `${state.turn}/${state.currentPlayer}/${state.setupIndex}`;
+    if (state.phase.type === 'discard') return { turn, key: `${turn}/discard` };
+    const answering = state.tradeOffer && this.waitingHumans(state).some((p) => p !== state.currentPlayer);
+    return { turn, key: answering ? `${turn}/trade` : turn };
+  }
+
+  /** What the clock does for a human whose time ran out, or null while they still have time. */
+  private autoAction(state: GameState, p: number): Action | null {
+    const { turn, key } = this.clockKeys(state);
+    const phase = state.phase;
+    if (phase.type === 'discard') {
+      const late = this.expired.has(key) || (p === state.currentPlayer && this.expired.has(turn));
+      return phase.pending[p] !== undefined && late ? botAction(state, p) : null;
+    }
+    if (state.tradeOffer && p !== state.currentPlayer) {
+      return state.tradeOffer.responses[p] === 'pending' && this.expired.has(key) ? { type: 'respondTrade', accept: false } : null;
+    }
+    if (p !== state.currentPlayer || !this.expired.has(turn)) return null;
+    if (state.tradeOffer) return { type: 'cancelTrade' };
+    if (phase.type === 'roll') return { type: 'rollDice' };
+    if (phase.type === 'main') return { type: 'endTurn' };
+    return botAction(state, p); // placing in setup, moving the robber, stealing, free roads
+  }
+
+  private clock(): RoomView['clock'] {
+    const state = this.state;
+    if (!state || !this.settings.turnTimer || state.phase.type === 'ended') return null;
+    const deadline = this.deadlines.get(this.clockKeys(state).key);
+    const waiting = this.waitingHumans(state);
+    if (deadline === undefined || waiting.length === 0) return null;
+    return { left: Math.max(0, deadline - Date.now()), waiting };
+  }
+
+  /** Re-arms the turn clock after every change. */
+  private tick() {
+    if (this.clockTimer) clearTimeout(this.clockTimer);
+    this.clockTimer = null;
+    const state = this.state;
+    if (!state || !this.settings.turnTimer || state.phase.type === 'ended') return;
+    const humans = this.waitingHumans(state);
+    if (humans.some((p) => this.autoAction(state, p))) {
+      this.clockTimer = setTimeout(() => this.runAuto(), 700 / this.speed);
+      return;
+    }
+    if (humans.length === 0) return;
+    const { turn, key } = this.clockKeys(state);
+    // Deadlines from earlier turns are no longer needed.
+    const stale = (k: string) => k !== turn && !k.startsWith(`${turn}/`);
+    for (const k of this.deadlines.keys()) if (stale(k)) this.deadlines.delete(k);
+    for (const k of this.expired) if (stale(k)) this.expired.delete(k);
+    if (!this.deadlines.has(key)) this.deadlines.set(key, Date.now() + this.settings.turnTimer * 1000);
+    this.clockTimer = setTimeout(() => {
+      this.clockTimer = null;
+      this.expired.add(key);
+      this.touch();
+    }, this.deadlines.get(key)! - Date.now());
+  }
+
+  private runAuto() {
+    this.clockTimer = null;
+    const state = this.state;
+    if (!state) return;
+    for (const p of this.waitingHumans(state)) {
+      const action = this.autoAction(state, p);
+      if (!action) continue;
+      const res = applyAction(state, p, action);
+      if (res.ok) this.state = res.state;
+      else console.error(`room ${this.id}: clock ${p} ${action.type} rejected: ${res.error}`);
+      break;
+    }
+    this.touch();
+    this.scheduleBots();
   }
 
   private scheduleBots() {
@@ -202,7 +305,7 @@ export class Room {
 export class RoomRegistry {
   private rooms = new Map<string, Room>();
 
-  create(hostId: string, map: MapDef | null): Room {
+  create(hostId: string, map: MapDef | null, settings?: Partial<GameSettings>): Room {
     if (map) {
       const errors = validateMap(map);
       if (errors.length) throw new RoomError(`Invalid map: ${errors.slice(0, 3).join('; ')}`);
@@ -211,6 +314,7 @@ export class RoomRegistry {
     do id = Math.random().toString(36).slice(2, 8);
     while (this.rooms.has(id));
     const room = new Room(id, hostId, map);
+    room.settings = cleanSettings(settings);
     this.rooms.set(id, room);
     return room;
   }

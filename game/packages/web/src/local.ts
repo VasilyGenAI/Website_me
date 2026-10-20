@@ -67,7 +67,7 @@ export function useLocalConnection(name: string): Connection {
           if (msg.map && roleRef.current === 'basic') throw new RoomError('Custom boards need a Pro account');
           leave();
           const map: MapDef | null = msg.map ?? (msg.preset && msg.preset !== 'standard' ? PRESET_MAPS[msg.preset]() : null);
-          const r = registry.current.create(userId, map);
+          const r = registry.current.create(userId, map, msg.settings);
           r.addHuman(userId, nameRef.current);
           for (let i = 0; i < Math.min(msg.bots ?? 0, 3); i++) r.addBot(userId);
           if (msg.start) r.start(userId);
@@ -95,6 +95,9 @@ export function useLocalConnection(name: string): Connection {
           break;
         case 'removeSeat':
           r.removeSeat(userId, msg.seat);
+          break;
+        case 'settings':
+          r.setSettings(userId, msg.settings ?? {});
           break;
         case 'start':
           r.start(userId);
