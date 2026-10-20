@@ -161,10 +161,10 @@ export function Board(props: BoardProps) {
         return (
           <g key={id} className="tile" onClick={() => (props.onCell ? props.onCell(t.q, t.r) : props.onTile?.(id))}>
             <polygon points={polygon(t.q, t.r, 0.97)} fill={style.fill} />
-            {style.image ? (
-              // Square artwork, cropped to the hexagon.
+            {style.images?.length ? (
+              // Square artwork, cropped to the hexagon; the variant is fixed per tile position.
               <image
-                href={style.image}
+                href={style.images[(((t.q * 7 + t.r * 13) % style.images.length) + style.images.length) % style.images.length]}
                 x={c.x - (S * Math.sqrt(3)) / 2}
                 y={c.y - S}
                 width={S * Math.sqrt(3)}
