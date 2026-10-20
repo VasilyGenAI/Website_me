@@ -22,6 +22,11 @@ export const RESOURCE_STYLE: Record<Resource, { fill: string; icon: string }> = 
   ore: { fill: '#9aa4ad', icon: '🪨' },
 };
 
+/** Harbour badge: the colour of the traded resource (white for 3:1) and the ratio in the middle. */
+export function portStyle(type: PortType): { fill: string; ratio: string; dark: boolean } {
+  return type === 'any' ? { fill: '#ffffff', ratio: '3:1', dark: true } : { fill: RESOURCE_STYLE[type].fill, ratio: '2:1', dark: false };
+}
+
 export function portLabel(type: PortType): string {
   return type === 'any' ? '3:1' : `2:1 ${RESOURCE_STYLE[type].icon}`;
 }

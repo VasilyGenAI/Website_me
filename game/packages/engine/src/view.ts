@@ -45,6 +45,8 @@ export interface GameView {
   devDeckSize: number;
   devPlayedThisTurn: boolean;
   dice: [number, number] | null;
+  /** Most recent roll in the game, with a running count so clients can animate each new one. */
+  lastRoll: { dice: [number, number]; player: number; count: number } | null;
   longestRoad: number | null;
   largestArmy: number | null;
   tradeOffer: TradeOffer | null;
@@ -56,6 +58,17 @@ export interface GameView {
   tradeRatios: Record<Resource, number> | null;
   /** Legal targets for the viewer's next click, so the client can highlight them. */
   hints: { settlements: VertexId[]; roads: EdgeId[]; cities: VertexId[]; robberTiles: TileId[] };
+}
+
+function lastRoll(state: GameState): GameView['lastRoll'] {
+  let count = 0;
+  let last: Extract<GameEvent, { type: 'diceRolled' }> | null = null;
+  for (const ev of state.log) {
+    if (ev.type !== 'diceRolled') continue;
+    count++;
+    last = ev;
+  }
+  return last ? { dice: last.dice, player: last.player, count } : null;
 }
 
 /** Clients only need recent history; the full log stays on the server. */
@@ -122,6 +135,7 @@ export function viewFor(state: GameState, me: number | null): GameView {
     devDeckSize: state.devDeck.length,
     devPlayedThisTurn: state.devPlayedThisTurn,
     dice: state.dice,
+    lastRoll: lastRoll(state),
     longestRoad: state.longestRoad,
     largestArmy: state.largestArmy,
     tradeOffer: state.tradeOffer,

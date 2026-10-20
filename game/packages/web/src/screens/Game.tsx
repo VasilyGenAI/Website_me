@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { COSTS, RESOURCES, hasResources, totalCards } from '@kontinentalist/engine';
 import type { Action, DevCardType, GameView, Resource, ResourceCounts, RoomView } from '@kontinentalist/engine';
 import { Board } from '../components/Board';
+import { Dice } from '../components/Dice';
 import { Log } from '../components/Log';
 import { DEV_HELP, DEV_NAME, RES_NAME } from '../i18n';
 import { RESOURCE_STYLE } from '../theme';
@@ -135,12 +136,7 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
           onEdge={(e) => act({ type: 'placeRoad', edge: e })}
           onTile={(t) => phase.type === 'robber' && myTurn && act({ type: 'moveRobber', tile: t })}
         />
-        {g.dice && (
-          <div className="dice">
-            <span>{'⚀⚁⚂⚃⚄⚅'[g.dice[0] - 1]}</span>
-            <span>{'⚀⚁⚂⚃⚄⚅'[g.dice[1] - 1]}</span>
-          </div>
-        )}
+        {g.lastRoll && <Dice key={g.lastRoll.count} dice={g.lastRoll.dice} roll={g.lastRoll.count} />}
       </main>
 
       <aside className="side">

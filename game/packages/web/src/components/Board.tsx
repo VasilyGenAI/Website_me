@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { hexCorners, pips, tileId, topology, vertexPoint } from '@kontinentalist/engine';
 import type { Building, EdgeId, FogTile, MapDef, TileId, VertexId } from '@kontinentalist/engine';
-import { SHORE, TERRAIN_STYLE, portLabel } from '../theme';
+import { SHORE, TERRAIN_STYLE, portLabel, portStyle } from '../theme';
 
 const S = 50; // hex size in SVG units
 
@@ -102,10 +102,11 @@ export function Board(props: BoardProps) {
           <g key={`p${i}`} className="port" onClick={() => props.onCoast?.(p.q, p.r, p.side)}>
             <line x1={a.x} y1={a.y} x2={px} y2={py} />
             <line x1={b.x} y1={b.y} x2={px} y2={py} />
-            <circle cx={px} cy={py} r={16} />
-            <text x={px} y={py + 4} textAnchor="middle">
-              {portLabel(p.type)}
+            <circle cx={px} cy={py} r={17} fill={portStyle(p.type).fill} />
+            <text x={px} y={py + 4.5} textAnchor="middle" className={portStyle(p.type).dark ? 'port-ratio dark' : 'port-ratio'}>
+              {portStyle(p.type).ratio}
             </text>
+            <title>{portLabel(p.type)}</title>
           </g>
         );
       })}
