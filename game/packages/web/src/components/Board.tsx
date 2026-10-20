@@ -48,6 +48,8 @@ export interface BoardProps {
   onCoast?: (q: number, r: number, side: number) => void;
   /** Short text floating up from a tile, e.g. the card found under the fog. */
   flash?: { tile: TileId; text: string; color?: string };
+  /** Tiles whose edges blink after a roll; `key` restarts the blink for every new roll. */
+  glow?: { key: number; tiles: { id: TileId; color: string; mine: boolean }[] };
 }
 
 export function Board(props: BoardProps) {
@@ -236,6 +238,19 @@ export function Board(props: BoardProps) {
         );
       })}
 
+      {props.glow?.tiles.map((t) => {
+        const [q, r] = t.id.split(',').map(Number);
+        return (
+          <polygon
+            key={`glow${props.glow!.key}-${t.id}`}
+            className={`roll-glow${t.mine ? ' mine' : ''}`}
+            points={polygon(q, r, TILE)}
+            stroke={t.color}
+            style={{ filter: `drop-shadow(0 0 5px ${t.color}) drop-shadow(0 0 9px ${t.color})` }}
+          />
+        );
+      })}
+
       {props.onCoast &&
         topo.coastalEdges.map((c) => {
           const [a, b] = topo.edgeVertices[c.edge].map(pt);
@@ -375,33 +390,32 @@ function Robber() {
 }
 
 /**
- * Harbour: a wooden pier from the coast into the water, a little bank with columns whose roof is
+ * Harbour: two wooden walkways from the coast out into the water, a little bank with columns whose roof is
  * in the colour of the traded resource and carries its symbol large, a ratio sign, and a small
  * boat moored alongside.
  */
 function Harbor({ x, y, dx, dy, type, ends }: { x: number; y: number; dx: number; dy: number; type: PortType; ends: { x: number; y: number }[] }) {
   const style = portStyle(type);
   const px = -dy;
-  const py = dx; // perpendicular to the pier
+  const py = dx; // perpendicular to the way out to sea
   const bx = x + dx * S * 0.86;
   const by = y + dy * S * 0.86;
-  const pier = (along: number, side: number) => `${x + dx * along + px * side},${y + dy * along + py * side}`;
-  // Boat moored beside the pier, on whichever side faces more to the right so it reads the same everywhere.
+  // Boat moored beside the walkways, on whichever side faces more to the right so it reads the same everywhere.
   const side = px >= 0 ? 1 : -1;
   const boatX = x + dx * S * 0.5 + px * side * S * 0.6;
   const boatY = y + dy * S * 0.5 + py * side * S * 0.6;
-  const dockX = x + dx * S * 0.22;
-  const dockY = y + dy * S * 0.22;
   return (
     <>
       <title>{portLabel(type)}</title>
-      {/* Short gangways from both corners show which two building spots use this harbour. */}
+      {/* Exactly two wooden walkways, one from each corner that may use this harbour. The two
+          corners are neighbours, so only one settlement (one player) can ever stand there. */}
       {ends.map((e, k) => (
-        <line key={k} className="gangway" x1={e.x} y1={e.y} x2={dockX} y2={dockY} />
-      ))}
-      <polygon className="pier" points={[pier(-4, -5), pier(S * 0.8, -5), pier(S * 0.8, 5), pier(-4, 5)].join(' ')} />
-      {[0.25, 0.45, 0.65].map((t) => (
-        <line key={t} className="pier-plank" x1={x + dx * S * t + px * 5} y1={y + dy * S * t + py * 5} x2={x + dx * S * t - px * 5} y2={y + dy * S * t - py * 5} />
+        <g key={k} className="walkway">
+          <line className="walkway-edge" x1={e.x} y1={e.y} x2={bx} y2={by + 4} />
+          <line className="walkway-wood" x1={e.x} y1={e.y} x2={bx} y2={by + 4} />
+          <line className="walkway-planks" x1={e.x} y1={e.y} x2={bx} y2={by + 4} />
+          <circle className="walkway-post" cx={e.x} cy={e.y} r={3.6} />
+        </g>
       ))}
       <g transform={`translate(${boatX} ${boatY})`} className="boat">
         <path className="hull" d="M-11,0 h22 l-4,6 h-14 z" />

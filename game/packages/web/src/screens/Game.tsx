@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { COSTS, RESOURCES, hasResources, totalCards } from '@kontinentalist/engine';
+import { COSTS, RESOURCES, hasResources, tileId, topology, totalCards } from '@kontinentalist/engine';
 import type { Action, DevCardType, GameView, Resource, ResourceCounts, RoomView } from '@kontinentalist/engine';
 import { Board } from '../components/Board';
 import { Dice } from '../components/Dice';
@@ -16,11 +16,16 @@ type Dialog = 'dev' | null;
 
 const empty = (): ResourceCounts => ({ lumber: 0, brick: 0, wool: 0, grain: 0, ore: 0 });
 
-function ResourceCard({ r, n, onClick, dim }: { r: Resource; n: number; onClick?: () => void; dim?: boolean }) {
+function ResourceCard({ r, n, onClick, dim, gain }: { r: Resource; n: number; onClick?: () => void; dim?: boolean; gain?: { n: number; key: number; delay: number } }) {
   return (
     <button className={`rcard${dim ? ' dim' : ''}`} style={{ background: RESOURCE_STYLE[r].fill }} onClick={onClick} disabled={!onClick} title={RES_NAME[r]}>
       <span className="ricon">{RESOURCE_STYLE[r].icon}</span>
       <span className="rcount">{n}</span>
+      {gain && gain.n > 0 && (
+        <span key={gain.key} className="gain" style={{ animationDelay: `${gain.delay}ms` }}>
+          +{gain.n}
+        </span>
+      )}
     </button>
   );
 }
@@ -130,6 +135,49 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
       break;
   }
 
+  // After a roll, the tiles with that number blink: in your colour where you earn, white elsewhere.
+  const topo = useMemo(() => topology(g.map), [g.map]);
+  const glow = useMemo(() => {
+    const roll = g.lastRoll;
+    if (!roll) return undefined;
+    const sum = roll.dice[0] + roll.dice[1];
+    const tiles = g.map.tiles
+      .map((t) => ({ id: tileId(t.q, t.r), number: g.revealed[tileId(t.q, t.r)]?.number ?? t.number }))
+      .filter((t) => t.number === sum && t.id !== g.robber)
+      .map((t) => {
+        const mine = me !== null && topo.tileVertices[t.id].some((v) => g.buildings[v]?.owner === me);
+        return { id: t.id, mine, color: mine ? colors[me!] : '#ffffff' };
+      });
+    return { key: roll.count, tiles };
+    // Only a new roll should restart the blink, not every update in between.
+  }, [g.lastRoll?.count, topo]);
+
+  // "+n" on a hand card for 5 s whenever cards arrive; gains in quick succession add up.
+  const handKey = RESOURCES.map((r) => hand[r]).join(',');
+  const prevHand = useRef<{ hand: ResourceCounts; roll: number } | null>(null);
+  const [gains, setGains] = useState<{ n: Partial<ResourceCounts>; key: number; delay: number } | null>(null);
+  useEffect(() => {
+    const roll = g.lastRoll?.count ?? 0;
+    const prev = prevHand.current;
+    prevHand.current = { hand: { ...hand }, roll };
+    if (!prev) return;
+    const up: Partial<ResourceCounts> = {};
+    for (const r of RESOURCES) if (hand[r] > prev.hand[r]) up[r] = hand[r] - prev.hand[r];
+    if (Object.keys(up).length === 0) return;
+    // Cards from a roll appear once the dice have landed.
+    const delay = roll !== prev.roll ? 1000 : 0;
+    setGains((old) => {
+      const n: Partial<ResourceCounts> = { ...(old?.n ?? {}) };
+      for (const r of RESOURCES) if (up[r]) n[r] = (n[r] ?? 0) + up[r]!;
+      return { n, key: Date.now(), delay };
+    });
+  }, [handKey]);
+  useEffect(() => {
+    if (!gains) return;
+    const id = setTimeout(() => setGains(null), 5000 + gains.delay);
+    return () => clearTimeout(id);
+  }, [gains]);
+
   // A road that clears the fog pays one card of what it found; float it up from the tile.
   const found = [...g.log.slice(-6)].reverse().find((e) => e.type === 'fogRevealed' && e.reward);
   const flash = found?.type === 'fogRevealed' && found.reward ? { tile: found.tile, text: `+1 ${RESOURCE_STYLE[found.reward].icon}`, color: colors[found.player] } : undefined;
@@ -163,6 +211,7 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
           onEdge={(e) => act({ type: 'placeRoad', edge: e })}
           onTile={(t) => phase.type === 'robber' && myTurn && act({ type: 'moveRobber', tile: t })}
           flash={flash}
+          glow={glow}
         />
         {g.lastRoll && <Dice key={g.lastRoll.count} dice={g.lastRoll.dice} roll={g.lastRoll.count} />}
       </main>
@@ -209,7 +258,14 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
       <footer className="bottombar">
         <div className="hand">
           {RESOURCES.map((r) => (
-            <ResourceCard key={r} r={r} n={hand[r]} dim={hand[r] === 0} onClick={canTrade && hand[r] > 0 ? () => openTrade(r) : undefined} />
+            <ResourceCard
+              key={r}
+              r={r}
+              n={hand[r]}
+              dim={hand[r] === 0}
+              onClick={canTrade && hand[r] > 0 ? () => openTrade(r) : undefined}
+              gain={gains?.n[r] ? { n: gains.n[r]!, key: gains.key, delay: gains.delay } : undefined}
+            />
           ))}
         </div>
         <div className="actions">
