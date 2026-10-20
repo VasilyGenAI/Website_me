@@ -1,5 +1,9 @@
 import type { PortType, Resource, Terrain } from '@kontinentalist/engine';
+import acker1 from './art/acker-1.webp';
+import gebirge1 from './art/gebirge-1.webp';
+import nebel1 from './art/nebel-1.webp';
 import wald1 from './art/wald-1.webp';
+import wueste1 from './art/wueste-1.webp';
 
 /**
  * Every visual is looked up here. `images` holds artwork variants for a terrain; each tile always
@@ -9,10 +13,10 @@ export const TERRAIN_STYLE: Record<Terrain, { fill: string; icon: string; images
   forest: { fill: '#2e8b3d', icon: '🌲', images: [wald1] },
   hills: { fill: '#d9673a', icon: '🧱' },
   pasture: { fill: '#8cc63f', icon: '🐑' },
-  fields: { fill: '#f2c230', icon: '🌾' },
-  mountains: { fill: '#9aa4ad', icon: '⛰️' },
-  desert: { fill: '#e6d29a', icon: '🌵' },
-  fog: { fill: '#c9d1d9', icon: '☁️' },
+  fields: { fill: '#f2c230', icon: '🌾', images: [acker1] },
+  mountains: { fill: '#9aa4ad', icon: '⛰️', images: [gebirge1] },
+  desert: { fill: '#e6d29a', icon: '🌵', images: [wueste1] },
+  fog: { fill: '#c9d1d9', icon: '☁️', images: [nebel1] },
 };
 
 export const RESOURCE_STYLE: Record<Resource, { fill: string; icon: string }> = {
