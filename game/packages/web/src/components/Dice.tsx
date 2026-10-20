@@ -33,14 +33,12 @@ function Face({ value, place }: { value: number; place: string }) {
 /** One red die that is thrown in, tumbles and settles on `value`. */
 function Die({ value, seed, delay }: { value: number; seed: number; delay: number }) {
   const [rx, ry] = FACES.find((f) => f.value === value)!.show;
-  // Small leftover tilt so the dice don't land perfectly square, like real ones.
-  const tilt = ((seed * 37) % 21) - 10;
+  // Whole turns only, so every throw ends square and face-on.
   const style = {
     '--rx': `${rx}deg`,
     '--ry': `${ry}deg`,
-    '--rz': `${tilt}deg`,
-    '--spin-x': `${720 + ((seed * 53) % 4) * 90}deg`,
-    '--spin-y': `${540 + ((seed * 29) % 4) * 90}deg`,
+    '--spin-x': `${720 + ((seed * 53) % 2) * 360}deg`,
+    '--spin-y': `${360 + ((seed * 29) % 2) * 360}deg`,
     animationDelay: `${delay}ms`,
   } as CSSProperties;
   return (
@@ -58,7 +56,7 @@ export function Dice({ dice, roll }: { dice: [number, number]; roll: number }) {
   return (
     <div className="dice" role="img" aria-label={`Gewürfelt: ${dice[0]} und ${dice[1]}, zusammen ${dice[0] + dice[1]}`}>
       <Die value={dice[0]} seed={roll * 2 + 1} delay={0} />
-      <Die value={dice[1]} seed={roll * 2 + 2} delay={90} />
+      <Die value={dice[1]} seed={roll * 2 + 2} delay={60} />
     </div>
   );
 }
