@@ -436,3 +436,8 @@ details p { margin: 0 0 8px; }
   font-size: 12px; font-weight: 900; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.35); text-shadow: none; pointer-events: none;
   animation: gain 5s ease-out both; }
 @keyframes gain { 0% { opacity: 0; transform: scale(.3); } 5% { opacity: 1; transform: scale(1.35); } 10% { transform: scale(1); } 85% { opacity: 1; } 100% { opacity: 0; transform: translateY(-6px); } }
+
+/* Resource cards flying from a tile to whoever receives them */
+.flight-layer { position: fixed; inset: 0; pointer-events: none; z-index: 20; overflow: hidden; }
+.flying-card { position: absolute; left: 0; top: 0; width: 26px; height: 34px; border-radius: 5px; border: 2px solid #fff;
+  display: grid; place-items: center; font-size: 16px; box-shadow: 0 3px 8px rgba(0,0,0,.4); will-change: transform; }

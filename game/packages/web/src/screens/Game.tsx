@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { COSTS, RESOURCES, hasResources, tileId, topology, totalCards } from '@kontinentalist/engine';
+import { COSTS, RESOURCES, TERRAIN_RESOURCE, hasResources, tileId, topology, totalCards } from '@kontinentalist/engine';
 import type { Action, DevCardType, GameView, Resource, ResourceCounts, RoomView } from '@kontinentalist/engine';
 import { Board } from '../components/Board';
 import { Dice } from '../components/Dice';
+import { FLIGHT_MS, FlyingCards } from '../components/Flights';
+import type { Flight } from '../components/Flights';
 import { TradeComposer, emptyCounts } from '../components/TradeComposer';
 import { TradePanel } from '../components/TradePanel';
 import { Log } from '../components/Log';
@@ -16,9 +18,19 @@ type Dialog = 'dev' | null;
 
 const empty = (): ResourceCounts => ({ lumber: 0, brick: 0, wool: 0, grain: 0, ore: 0 });
 
-function ResourceCard({ r, n, onClick, dim, gain }: { r: Resource; n: number; onClick?: () => void; dim?: boolean; gain?: { n: number; key: number; delay: number } }) {
+interface Gain {
+  /** Shown as "+n" for 5 s; gains in quick succession add up. */
+  n: number;
+  key: number;
+  /** ms until the cards land (after a roll they fly in first) */
+  delay: number;
+  /** Cards still in the air, not yet counted on the card. */
+  pending: number;
+}
+
+function ResourceCard({ r, n, onClick, dim, gain }: { r: Resource; n: number; onClick?: () => void; dim?: boolean; gain?: Gain }) {
   return (
-    <button className={`rcard${dim ? ' dim' : ''}`} style={{ background: RESOURCE_STYLE[r].fill }} onClick={onClick} disabled={!onClick} title={RES_NAME[r]}>
+    <button className={`rcard${dim ? ' dim' : ''}`} style={{ background: RESOURCE_STYLE[r].fill }} onClick={onClick} disabled={!onClick} title={RES_NAME[r]} data-res={r}>
       <span className="ricon">{RESOURCE_STYLE[r].icon}</span>
       <span className="rcount">{n}</span>
       {gain && gain.n > 0 && (
@@ -152,35 +164,73 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
     // Only a new roll should restart the blink, not every update in between.
   }, [g.lastRoll?.count, topo]);
 
-  // "+n" on a hand card for 5 s whenever cards arrive; gains in quick succession add up.
-  const handKey = RESOURCES.map((r) => hand[r]).join(',');
-  const prevHand = useRef<{ hand: ResourceCounts; roll: number } | null>(null);
-  const [gains, setGains] = useState<{ n: Partial<ResourceCounts>; key: number; delay: number } | null>(null);
-  useEffect(() => {
-    const roll = g.lastRoll?.count ?? 0;
-    const prev = prevHand.current;
-    prevHand.current = { hand: { ...hand }, roll };
-    if (!prev) return;
-    const up: Partial<ResourceCounts> = {};
-    for (const r of RESOURCES) if (hand[r] > prev.hand[r]) up[r] = hand[r] - prev.hand[r];
-    if (Object.keys(up).length === 0) return;
-    // Cards from a roll appear once the dice have landed.
-    const delay = roll !== prev.roll ? 1000 : 0;
-    setGains((old) => {
-      const n: Partial<ResourceCounts> = { ...(old?.n ?? {}) };
-      for (const r of RESOURCES) if (up[r]) n[r] = (n[r] ?? 0) + up[r]!;
-      return { n, key: Date.now(), delay };
-    });
-  }, [handKey]);
-  useEffect(() => {
-    if (!gains) return;
-    const id = setTimeout(() => setGains(null), 5000 + gains.delay);
-    return () => clearTimeout(id);
-  }, [gains]);
-
   // A road that clears the fog pays one card of what it found; float it up from the tile.
   const found = [...g.log.slice(-6)].reverse().find((e) => e.type === 'fogRevealed' && e.reward);
   const flash = found?.type === 'fogRevealed' && found.reward ? { tile: found.tile, text: `+1 ${RESOURCE_STYLE[found.reward].icon}`, color: colors[found.player] } : undefined;
+  // Cards fly from the producing tiles to whoever gets them: your hand cards, or the others' panels.
+  // Nothing flies for what had already happened when the page opened.
+  const firstRoll = useRef(g.lastRoll?.count ?? 0);
+  const firstFog = useRef(flash?.tile);
+  const flights = useMemo(() => {
+    const out: Flight[] = [];
+    const target = (p: number, r: Resource) => (p === me ? `[data-res="${r}"]` : `[data-player="${p}"]`);
+    const roll = g.lastRoll;
+    if (roll && roll.count !== firstRoll.current) {
+      let i = g.log.length - 1;
+      while (i >= 0 && g.log[i].type !== 'diceRolled') i--;
+      const produced = g.log.slice(i + 1).find((e) => e.type === 'produced');
+      if (produced?.type === 'produced') {
+        const sum = roll.dice[0] + roll.dice[1];
+        for (const t of g.map.tiles) {
+          const id = tileId(t.q, t.r);
+          const shown = g.revealed[id] ?? t;
+          const r = TERRAIN_RESOURCE[shown.terrain];
+          if (!r || shown.number !== sum || id === g.robber) continue;
+          for (const v of topo.tileVertices[id]) {
+            const b = g.buildings[v];
+            if (!b || !produced.gains[b.owner]?.[r]) continue;
+            for (let k = 0; k < (b.type === 'city' ? 2 : 1); k++) out.push({ from: id, to: target(b.owner, r), resource: r, delay: 1000 + out.length * 70 });
+          }
+        }
+      }
+    }
+    if (found?.type === 'fogRevealed' && found.reward && found.tile !== firstFog.current) {
+      out.push({ from: found.tile, to: target(found.player, found.reward), resource: found.reward, delay: 300 });
+    }
+    return out;
+  }, [g.lastRoll?.count, found?.type === 'fogRevealed' ? found.tile : null]);
+  const flightBatch = `${g.lastRoll?.count ?? 0}/${flash?.tile ?? ''}`;
+
+  // "+n" on a hand card for 5 s whenever cards arrive. Cards that fly in are counted when they land.
+  const handKey = RESOURCES.map((r) => hand[r]).join(',');
+  const prevHand = useRef<ResourceCounts | null>(null);
+  const [gains, setGains] = useState<Partial<Record<Resource, Gain>>>({});
+  useEffect(() => {
+    const prev = prevHand.current;
+    prevHand.current = { ...hand };
+    if (!prev) return;
+    const key = Date.now();
+    for (const r of RESOURCES) {
+      const up = hand[r] - prev[r];
+      if (up <= 0) continue;
+      const mine = flights.filter((f) => f.to === `[data-res="${r}"]`);
+      const delay = mine.length ? Math.max(...mine.map((f) => f.delay)) + FLIGHT_MS : 0;
+      setGains((old) => ({ ...old, [r]: { n: (old[r]?.n ?? 0) + up, key, delay, pending: delay ? up : 0 } }));
+      const forThis = (fn: (g: Gain) => Gain | null) =>
+        setGains((old) => {
+          const cur = old[r];
+          if (cur?.key !== key) return old;
+          const next = { ...old };
+          const v = fn(cur);
+          if (v) next[r] = v;
+          else delete next[r];
+          return next;
+        });
+      if (delay) setTimeout(() => forThis((g) => ({ ...g, pending: 0 })), delay);
+      setTimeout(() => forThis(() => null), delay + 5000);
+    }
+  }, [handKey]);
+
   // The end-turn button nudges again 5 s after anything happens; the key restarts its animation.
   const lastEvent = JSON.stringify(g.log[g.log.length - 1] ?? null);
 
@@ -214,6 +264,7 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
           glow={glow}
         />
         {g.lastRoll && <Dice key={g.lastRoll.count} dice={g.lastRoll.dice} roll={g.lastRoll.count} />}
+        <FlyingCards batch={flightBatch} flights={flights} />
       </main>
 
       <aside className="side">
@@ -236,7 +287,7 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
         <div className="players">
           {g.players.map((p, i) => (
             <div key={p.id} className={`player${i === g.currentPlayer ? ' active' : ''}`} style={{ borderColor: p.color }}>
-              <span className="avatar" style={{ background: p.color }}>{p.isBot ? '🤖' : '🙂'}</span>
+              <span className="avatar" style={{ background: p.color }} data-player={i}>{p.isBot ? '🤖' : '🙂'}</span>
               <span className="pn">{p.name}{i === me && ' (du)'}</span>
               {i === me && phase.type !== 'ended' && (p.victoryCards ?? 0) > 0 ? (
                 // Colonist style "10 (11)": what the others see, then the real total with your hidden cards.
@@ -261,10 +312,10 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
             <ResourceCard
               key={r}
               r={r}
-              n={hand[r]}
+              n={hand[r] - (gains[r]?.pending ?? 0)}
               dim={hand[r] === 0}
               onClick={canTrade && hand[r] > 0 ? () => openTrade(r) : undefined}
-              gain={gains?.n[r] ? { n: gains.n[r]!, key: gains.key, delay: gains.delay } : undefined}
+              gain={gains[r]}
             />
           ))}
         </div>

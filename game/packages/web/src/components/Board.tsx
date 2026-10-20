@@ -24,6 +24,80 @@ const polygon = (q: number, r: number, scale = 1) => {
     .join(' ');
 };
 
+/** Is (x, y) inside the pointy-top hexagon around (cx, cy) with corner radius `radius`? */
+function inHex(x: number, y: number, cx: number, cy: number, radius: number) {
+  const ax = Math.abs(x - cx);
+  const ay = Math.abs(y - cy);
+  return ax <= (radius * Math.sqrt(3)) / 2 && ay <= radius - ax / Math.sqrt(3);
+}
+
+const distToSegment = (x: number, y: number, a: { x: number; y: number }, b: { x: number; y: number }) => {
+  const vx = b.x - a.x;
+  const vy = b.y - a.y;
+  const t = Math.max(0, Math.min(1, ((x - a.x) * vx + (y - a.y) * vy) / (vx * vx + vy * vy || 1)));
+  return Math.hypot(x - a.x - vx * t, y - a.y - vy * t);
+};
+
+interface HarborSpot {
+  type: PortType;
+  q: number;
+  r: number;
+  side: number;
+  ends: { x: number; y: number }[];
+  bank: { x: number; y: number };
+  boat: { x: number; y: number };
+}
+
+/**
+ * Where every harbour's bank and boat go. The bank stands out at sea in front of its coast; the
+ * boat takes the first spot nearby that is open water: clear of the surf and sand around every
+ * tile, of all banks and of all walkways, so it never sits on the beach or hides behind anything.
+ */
+function placeHarbors(map: MapDef): HarborSpot[] {
+  const spots = map.ports.map((p) => {
+    const cs = hexCorners(p.q, p.r);
+    const a = pt(cs[p.side]);
+    const b = pt(cs[(p.side + 1) % 6]);
+    const c = center(p.q, p.r);
+    const mx = (a.x + b.x) / 2;
+    const my = (a.y + b.y) / 2;
+    const len = Math.hypot(mx - c.x, my - c.y);
+    const dx = (mx - c.x) / len;
+    const dy = (my - c.y) / len;
+    return { ...p, ends: [a, b], mx, my, dx, dy, bank: { x: mx + dx * S * 0.86, y: my + dy * S * 0.86 } };
+  });
+  const centers = map.tiles.map((t) => center(t.q, t.r));
+  const onLand = (x: number, y: number) => centers.some((c) => inHex(x, y, c.x, c.y, S * 1.24));
+  const walkways = spots.flatMap((h) => h.ends.map((e) => [e, { x: h.bank.x, y: h.bank.y + 4 }] as const));
+  const boats: { x: number; y: number }[] = [];
+  const free = (x: number, y: number) =>
+    // the boat's outline: hull ±12 wide, sails up to 16 above
+    [[-12, 6], [12, 6], [-12, -4], [12, -4], [0, -16]].every(([ox, oy]) => !onLand(x + ox, y + oy)) &&
+    spots.every((h) => x < h.bank.x - 32 || x > h.bank.x + 32 || y < h.bank.y - 46 || y > h.bank.y + 32) &&
+    walkways.every(([a, b]) => distToSegment(x, y - 4, a, b) > 15) &&
+    boats.every((o) => Math.hypot(o.x - x, o.y - y) > 30);
+  return spots.map((h) => {
+    const px = -h.dy;
+    const py = h.dx;
+    const right = px >= 0 ? 1 : -1; // prefer the side that faces right, so boats read the same everywhere
+    let boat = { x: h.mx + h.dx * S * 0.5 + px * right * S * 0.6, y: h.my + h.dy * S * 0.5 + py * right * S * 0.6 };
+    search: for (const along of [0.6, 0.8, 1.0, 0.4, 1.2, 1.4]) {
+      for (const across of [0.75, 0.95, 1.15, 1.35]) {
+        for (const side of [right, -right]) {
+          const x = h.mx + h.dx * S * along + px * side * S * across;
+          const y = h.my + h.dy * S * along + py * side * S * across;
+          if (free(x, y)) {
+            boat = { x, y };
+            break search;
+          }
+        }
+      }
+    }
+    boats.push(boat);
+    return { type: h.type, q: h.q, r: h.r, side: h.side, ends: h.ends, bank: h.bank, boat };
+  });
+}
+
 export interface BoardProps {
   map: MapDef;
   revealed?: Record<TileId, FogTile>;
@@ -55,6 +129,7 @@ export interface BoardProps {
 export function Board(props: BoardProps) {
   const { map, revealed = {}, buildings = {}, roads = {}, colors = [], robber = null } = props;
   const topo = useMemo(() => topology(map), [map]);
+  const harbors = useMemo(() => placeHarbors(map), [map]);
 
   const viewBox = useMemo(() => {
     const cells = [...map.tiles, ...(props.ghostCells ?? [])];
@@ -72,23 +147,14 @@ export function Board(props: BoardProps) {
     xs.push(Math.min(...xs) - pad, Math.max(...xs) + pad);
     ys.push(Math.min(...ys) - pad, Math.max(...ys) + pad);
     // Harbour banks stand far out in the water; keep their roof signs and ratio plates in view.
-    for (const p of map.ports) {
-      const cs = hexCorners(p.q, p.r);
-      const a = pt(cs[p.side]);
-      const b = pt(cs[(p.side + 1) % 6]);
-      const c = center(p.q, p.r);
-      const mx = (a.x + b.x) / 2;
-      const my = (a.y + b.y) / 2;
-      const len = Math.hypot(mx - c.x, my - c.y);
-      const bx = mx + ((mx - c.x) / len) * S * 0.86;
-      const by = my + ((my - c.y) / len) * S * 0.86;
-      xs.push(bx - 24, bx + 24);
-      ys.push(by - 44, by + 28);
+    for (const h of harbors) {
+      xs.push(h.bank.x - 24, h.bank.x + 24, h.boat.x - 16, h.boat.x + 16);
+      ys.push(h.bank.y - 44, h.bank.y + 28, h.boat.y - 20, h.boat.y + 10);
     }
     const minX = Math.min(...xs);
     const minY = Math.min(...ys);
     return `${minX} ${minY} ${Math.max(...xs) - minX} ${Math.max(...ys) - minY}`;
-  }, [map, props.ghostCells]);
+  }, [map, harbors, props.ghostCells]);
 
   const vb = viewBox.split(' ').map(Number);
   const hintV = new Set(props.hintVertices ?? []);
@@ -157,20 +223,11 @@ export function Board(props: BoardProps) {
         <polygon key={`s${t.q},${t.r}`} points={polygon(t.q, t.r, 1.12)} fill="url(#sand)" stroke={SHORE} strokeWidth={1} />
       ))}
 
-      {map.ports.map((p, i) => {
-        const cs = hexCorners(p.q, p.r);
-        const a = pt(cs[p.side]);
-        const b = pt(cs[(p.side + 1) % 6]);
-        const c = center(p.q, p.r);
-        const mx = (a.x + b.x) / 2;
-        const my = (a.y + b.y) / 2;
-        const len = Math.hypot(mx - c.x, my - c.y);
-        return (
-          <g key={`p${i}`} className="port" onClick={() => props.onCoast?.(p.q, p.r, p.side)}>
-            <Harbor x={mx} y={my} dx={(mx - c.x) / len} dy={(my - c.y) / len} type={p.type} ends={[a, b]} />
-          </g>
-        );
-      })}
+      {harbors.map((h, i) => (
+        <g key={`p${i}`} className="port" onClick={() => props.onCoast?.(h.q, h.r, h.side)}>
+          <Harbor h={h} />
+        </g>
+      ))}
 
       {map.tiles.map((t) => {
         const id = tileId(t.q, t.r);
@@ -183,7 +240,7 @@ export function Board(props: BoardProps) {
         return (
           <g key={id} className="tile" onClick={() => (props.onCell ? props.onCell(t.q, t.r) : props.onTile?.(id))}>
             {/* Raised tile: a darker rim around the picture, then a light bevel on the inner edge. */}
-            <polygon className="tile-base" points={polygon(t.q, t.r, TILE)} fill={style.fill} />
+            <polygon className="tile-base" points={polygon(t.q, t.r, TILE)} fill={style.fill} data-tile={id} />
             <polygon className="tile-rim" points={polygon(t.q, t.r, TILE)} />
             <polygon points={polygon(t.q, t.r, INNER)} fill={style.fill} />
             {style.images?.length ? (
@@ -237,6 +294,16 @@ export function Board(props: BoardProps) {
           </g>
         );
       })}
+
+      {/* Boats last among the water things, so no tile, sand or bank ever covers them. */}
+      {harbors.map((h, i) => (
+        <g key={`boat${i}`} transform={`translate(${h.boat.x} ${h.boat.y})`} className="boat">
+          <path className="hull" d="M-11,0 h22 l-4,6 h-14 z" />
+          <line x1={-1} y1={0} x2={-1} y2={-15} />
+          <path className="sail" d="M0,-14 L9,-2 L0,-2 Z" />
+          <path className="sail" d="M-2,-12 L-8,-2 L-2,-2 Z" />
+        </g>
+      ))}
 
       {props.glow?.tiles.map((t) => {
         const [q, r] = t.id.split(',').map(Number);
@@ -390,20 +457,14 @@ function Robber() {
 }
 
 /**
- * Harbour: two wooden walkways from the coast out into the water, a little bank with columns whose roof is
- * in the colour of the traded resource and carries its symbol large, a ratio sign, and a small
- * boat moored alongside.
+ * Harbour: two wooden walkways from the coast out into the water and a little bank with columns
+ * whose roof is in the colour of the traded resource and carries its symbol large, plus a ratio
+ * sign. Its boat is drawn separately, above everything else on the water.
  */
-function Harbor({ x, y, dx, dy, type, ends }: { x: number; y: number; dx: number; dy: number; type: PortType; ends: { x: number; y: number }[] }) {
+function Harbor({ h }: { h: HarborSpot }) {
+  const { type, ends } = h;
   const style = portStyle(type);
-  const px = -dy;
-  const py = dx; // perpendicular to the way out to sea
-  const bx = x + dx * S * 0.86;
-  const by = y + dy * S * 0.86;
-  // Boat moored beside the walkways, on whichever side faces more to the right so it reads the same everywhere.
-  const side = px >= 0 ? 1 : -1;
-  const boatX = x + dx * S * 0.5 + px * side * S * 0.6;
-  const boatY = y + dy * S * 0.5 + py * side * S * 0.6;
+  const { x: bx, y: by } = h.bank;
   return (
     <>
       <title>{portLabel(type)}</title>
@@ -417,12 +478,6 @@ function Harbor({ x, y, dx, dy, type, ends }: { x: number; y: number; dx: number
           <circle className="walkway-post" cx={e.x} cy={e.y} r={3.6} />
         </g>
       ))}
-      <g transform={`translate(${boatX} ${boatY})`} className="boat">
-        <path className="hull" d="M-11,0 h22 l-4,6 h-14 z" />
-        <line x1={-1} y1={0} x2={-1} y2={-15} />
-        <path className="sail" d="M0,-14 L9,-2 L0,-2 Z" />
-        <path className="sail" d="M-2,-12 L-8,-2 L-2,-2 Z" />
-      </g>
       <g transform={`translate(${bx} ${by})`} filter="url(#shadow)" className="bank">
         {/* steps */}
         <rect className="stone" x={-15} y={8} width={30} height={3.5} />
