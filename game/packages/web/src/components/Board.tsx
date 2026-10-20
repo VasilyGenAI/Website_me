@@ -109,9 +109,8 @@ export function Board(props: BoardProps) {
       </defs>
 
       {/* Waves reach far past the board so no edge shows on wide or tall screens. */}
-      <rect className="sea" x={vb[0] - vb[2] * 2} y={vb[1] - vb[3] * 2} width={vb[2] * 5} height={vb[3] * 5} fill="url(#seaTex)" />
-      {/* Calm the water down a little so the island stays the brightest thing on screen. */}
-      <rect className="sea sea-tint" x={vb[0] - vb[2] * 2} y={vb[1] - vb[3] * 2} width={vb[2] * 5} height={vb[3] * 5} />
+      {/* Water texture at half strength over a light blue, so the sea stays calm behind the island. */}
+      <rect className="sea sea-texture" x={vb[0] - vb[2] * 2} y={vb[1] - vb[3] * 2} width={vb[2] * 5} height={vb[3] * 5} fill="url(#seaTex)" />
 
       {props.ghostCells?.map((c) => (
         <polygon
