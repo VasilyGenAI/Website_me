@@ -1,13 +1,12 @@
 import type { PortType, Resource, Terrain } from '@kontinentalist/engine';
 import wald1 from './art/wald-1.webp';
-import wald2 from './art/wald-2.webp';
 
 /**
  * Every visual is looked up here. `images` holds artwork variants for a terrain; each tile always
  * gets the same variant, so a board mixes them. Terrains without artwork show the colour and icon.
  */
 export const TERRAIN_STYLE: Record<Terrain, { fill: string; icon: string; images?: string[] }> = {
-  forest: { fill: '#2e8b3d', icon: '🌲', images: [wald1, wald2] },
+  forest: { fill: '#2e8b3d', icon: '🌲', images: [wald1] },
   hills: { fill: '#d9673a', icon: '🧱' },
   pasture: { fill: '#8cc63f', icon: '🐑' },
   fields: { fill: '#f2c230', icon: '🌾' },
