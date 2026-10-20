@@ -4,6 +4,7 @@ import { COSTS, RESOURCES, hasResources, totalCards } from '@kontinentalist/engi
 import type { Action, DevCardType, GameView, Resource, ResourceCounts, RoomView } from '@kontinentalist/engine';
 import { Board } from '../components/Board';
 import { Dice } from '../components/Dice';
+import { TradeComposer, emptyCounts } from '../components/TradeComposer';
 import { TradePanel } from '../components/TradePanel';
 import { Log } from '../components/Log';
 import { DEV_HELP, DEV_NAME, RES_NAME } from '../i18n';
@@ -11,7 +12,7 @@ import { RESOURCE_STYLE } from '../theme';
 import type { Connection } from '../net';
 
 type BuildMode = 'road' | 'settlement' | 'city' | null;
-type Dialog = 'trade' | 'dev' | null;
+type Dialog = 'dev' | null;
 
 const empty = (): ResourceCounts => ({ lumber: 0, brick: 0, wool: 0, grain: 0, ore: 0 });
 
@@ -55,8 +56,28 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
   const phase = g.phase;
   const hand = g.hand ?? empty();
 
+  // Trade bar: tapping a card in your hand opens it with that card on the "give" side.
+  const [trading, setTrading] = useState(false);
+  const [give, setGive] = useState(emptyCounts);
+  const [want, setWant] = useState(emptyCounts);
+  const canTrade = myTurn && phase.type === 'main' && !g.tradeOffer;
+  const openTrade = (r?: Resource) => {
+    const base = trading ? give : emptyCounts();
+    if (!trading) setWant(emptyCounts());
+    setGive(r ? { ...base, [r]: Math.min(hand[r], base[r] + 1) } : base);
+    setTrading(true);
+    setMode(null);
+  };
+  const closeTrade = () => setTrading(false);
+
+  // Leave build mode and the trade bar whenever the turn or phase changes underneath them.
+  useEffect(() => {
+    setMode(null);
+    setTrading(false);
+  }, [g.turn, phase.type]);
+
   // Leave build mode whenever the situation changes underneath it.
-  useEffect(() => setMode(null), [g.turn, phase.type]);
+
 
   const can = (cost: Partial<ResourceCounts>) => myTurn && phase.type === 'main' && hasResources(hand, cost);
   let hintVertices: string[] = [];
@@ -174,13 +195,15 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
 
       <footer className="bottombar">
         <div className="hand">
-          {RESOURCES.map((r) => <ResourceCard key={r} r={r} n={hand[r]} dim={hand[r] === 0} />)}
+          {RESOURCES.map((r) => (
+            <ResourceCard key={r} r={r} n={hand[r]} dim={hand[r] === 0} onClick={canTrade && hand[r] > 0 ? () => openTrade(r) : undefined} />
+          ))}
         </div>
         <div className="actions">
           {myTurn && phase.type === 'roll' && (
             <button className="primary" onClick={() => act({ type: 'rollDice' })}>🎲 Würfeln</button>
           )}
-          <button disabled={!myTurn || phase.type !== 'main'} onClick={() => setDialog('trade')} title="Handeln">🔄</button>
+          <button className={trading ? 'on' : ''} disabled={!canTrade} onClick={() => (trading ? closeTrade() : openTrade())} title="Handeln">🔄</button>
           <button disabled={me === null} onClick={() => setDialog('dev')} title="Entwicklungskarten">
             🃏<small>{g.devCards.length}</small>
           </button>
@@ -216,7 +239,7 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
           </div>
         </Modal>
       )}
-      {dialog === 'trade' && myTurn && phase.type === 'main' && <TradeDialog g={g} hand={hand} act={act} close={() => setDialog(null)} />}
+      {trading && canTrade && <TradeComposer g={g} give={give} setGive={setGive} want={want} setWant={setWant} act={act} close={closeTrade} />}
       {dialog === 'dev' && <DevDialog g={g} playable={playableDev} act={(a) => { act(a); setDialog(null); }} close={() => setDialog(null)} />}
       <TradePanel g={g} act={act} />
       {phase.type === 'ended' && (
@@ -254,47 +277,6 @@ function DiscardDialog({ need, hand, onDone }: { need: number; hand: ResourceCou
       <p className="muted">Deine Hand: {RESOURCES.map((r) => `${RESOURCE_STYLE[r].icon}${hand[r]}`).join('  ')}</p>
       <Picker value={pick} onChange={setPick} max={hand} />
       <button className="primary" disabled={n !== need} onClick={() => onDone(pick)}>Abwerfen ({n}/{need})</button>
-    </Modal>
-  );
-}
-
-function TradeDialog({ g, hand, act, close }: { g: GameView; hand: ResourceCounts; act: (a: Action) => void; close: () => void }) {
-  const [give, setGive] = useState(empty());
-  const [want, setWant] = useState(empty());
-  const [bankGive, setBankGive] = useState<Resource | null>(null);
-  const ratios = g.tradeRatios!;
-  return (
-    <Modal title="Handeln" onClose={close}>
-      <h4>Mit der Bank</h4>
-      <p className="muted">Wähle, was du abgibst, dann was du bekommst.</p>
-      <div className="choices row">
-        {RESOURCES.map((r) => (
-          <button key={r} className={bankGive === r ? 'on' : ''} disabled={hand[r] < ratios[r]} onClick={() => setBankGive(r)}>
-            {ratios[r]}× {RESOURCE_STYLE[r].icon}
-          </button>
-        ))}
-      </div>
-      {bankGive && (
-        <div className="choices row">
-          {RESOURCES.filter((r) => r !== bankGive).map((r) => (
-            <button key={r} disabled={g.bank[r] === 0} onClick={() => { act({ type: 'bankTrade', give: bankGive, get: r }); setBankGive(null); }}>
-              → 1× {RESOURCE_STYLE[r].icon}
-            </button>
-          ))}
-        </div>
-      )}
-      <h4>Mit Mitspielern</h4>
-      <p className="muted">Du gibst:</p>
-      <Picker value={give} onChange={setGive} max={hand} />
-      <p className="muted">Du möchtest:</p>
-      <Picker value={want} onChange={setWant} />
-      <button
-        className="primary"
-        disabled={totalCards(give) === 0 || totalCards(want) === 0 || !!g.tradeOffer || RESOURCES.some((r) => give[r] && want[r])}
-        onClick={() => { act({ type: 'offerTrade', give, want }); close(); }}
-      >
-        Angebot senden
-      </button>
     </Modal>
   );
 }

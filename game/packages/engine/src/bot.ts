@@ -221,14 +221,15 @@ function mainAction(state: GameState, me: number): Action {
         const give = RESOURCES.filter((g) => g !== want).find((g) => res[g] - (goal[g] ?? 0) >= tradeRatio(state, me, g));
         if (give) return { type: 'bankTrade', give, get: want };
       }
-      // Offer a 1:1 to the table.
-      if (state.tradesThisTurn < 2) {
-        const want = RESOURCES.find((r) => need[r]);
+      // One offer per turn, for a card someone actually holds; with plenty to spare, pay 2 for 1.
+      if (state.tradesThisTurn < 1) {
+        const want = RESOURCES.find((r) => need[r] && state.players.some((o, i) => i !== me && o.resources[r] > 0));
         const give = best(
           RESOURCES.filter((g) => res[g] - (goal[g] ?? 0) > 0 && g !== want),
           (g) => res[g] - (goal[g] ?? 0),
         );
-        if (want && give && res[give] - (goal[give] ?? 0) > 0) return { type: 'offerTrade', give: { [give]: 1 }, want: { [want]: 1 } };
+        const spare = give ? res[give] - (goal[give] ?? 0) : 0;
+        if (want && give && spare > 0) return { type: 'offerTrade', give: { [give]: spare >= 3 ? 2 : 1 }, want: { [want]: 1 } };
       }
     }
   }
@@ -244,14 +245,27 @@ function mainAction(state: GameState, me: number): Action {
   return { type: 'endTurn' };
 }
 
+/**
+ * Accepts a trade when it is worth it: cards the bot still needs for its next build count extra
+ * on the receiving side, and cards it would have to give away from that build count extra on
+ * the paying side. A generous offer (3 for 1) is taken even without an immediate need.
+ */
 function wantsTrade(state: GameState, me: number, theyGive: Partial<ResourceCounts>, theyWant: Partial<ResourceCounts>, from: number): boolean {
   if (victoryPoints(state, from, false) >= state.victoryPoints - 2) return false; // don't feed the leader
   const res = state.players[me].resources;
   if (!hasResources(res, theyWant)) return false;
   const goal = goalCost(state, me) ?? {};
   const need = missing(res, goal);
-  const gains = RESOURCES.some((r) => (theyGive[r] ?? 0) > 0 && (need[r] ?? 0) > 0);
-  const losesNeeded = RESOURCES.some((r) => (theyWant[r] ?? 0) > 0 && res[r] - (theyWant[r] ?? 0) < (goal[r] ?? 0));
-  return gains && !losesNeeded && totalCards(theyGive) >= totalCards(theyWant);
+  let gain = 0;
+  let loss = 0;
+  for (const r of RESOURCES) {
+    const inN = theyGive[r] ?? 0;
+    const outN = theyWant[r] ?? 0;
+    const stillNeeded = need[r] ?? 0;
+    gain += Math.min(inN, stillNeeded) * 1.6 + Math.max(0, inN - stillNeeded) * 0.9;
+    const spare = Math.max(0, res[r] - (goal[r] ?? 0));
+    loss += Math.min(outN, spare) * 1 + Math.max(0, outN - spare) * 2;
+  }
+  return gain >= loss + 0.5;
 }
 
