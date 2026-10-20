@@ -405,3 +405,18 @@ details p { margin: 0 0 8px; }
 .bank .stone { fill: #d9d2c0; stroke: #1d1d1d; stroke-width: 1.1; }
 .bank .column { fill: #f4efe2; stroke: #1d1d1d; stroke-width: 1; }
 .stepper button { width: 36px; height: 36px; padding: 0; font-size: 1.4rem; line-height: 1; border-radius: 99px; }
+
+/* Hidden victory points: only the owner sees the real total */
+.secret-vp { color: #8a5cd6; }
+
+/* End of game */
+.result { width: 100%; border-collapse: collapse; font-weight: 700; }
+.result th { font-size: 1.1rem; padding: 4px; }
+.result td { text-align: center; padding: 6px 4px; border-top: 1px solid rgba(0,0,0,.08); color: #9a9a9a; }
+.result td.who { text-align: left; display: flex; align-items: center; gap: 8px; color: inherit; white-space: nowrap; }
+.result td.total { font-size: 1.3rem; color: inherit; }
+.result td.got { color: #6b4a00; }
+.result td.got { background: radial-gradient(circle, #ffe08a 0 13px, transparent 14px); }
+.result tr.won td.total { color: var(--ok); }
+.result .avatar { width: 26px; height: 26px; font-size: 14px; }
+.result-btn { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 9; box-shadow: 0 4px 14px rgba(0,0,0,.3); }

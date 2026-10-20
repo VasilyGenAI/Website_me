@@ -25,6 +25,8 @@ export interface PublicPlayer {
   citiesLeft: number;
   /** Points everyone can see (hidden victory point cards excluded until the game ends). */
   points: number;
+  /** Victory point cards held: only the owner sees them during play, everyone once the game ends. */
+  victoryCards: number | null;
   roadLength: number;
 }
 
@@ -127,6 +129,7 @@ export function viewFor(state: GameState, me: number | null): GameView {
       settlementsLeft: p.settlementsLeft,
       citiesLeft: p.citiesLeft,
       points: victoryPoints(state, i, ended),
+      victoryCards: ended || i === me ? p.devCards.filter((c) => c.type === 'victoryPoint').length : null,
       roadLength: longestRoadLength(state, i),
     })),
     phase: state.phase,

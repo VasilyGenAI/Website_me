@@ -14,6 +14,7 @@ import {
   tradeRatio,
   validateMap,
   victoryPoints,
+  viewFor,
 } from '../src/index';
 import type { Action, GameState, ResourceCounts } from '../src/index';
 
@@ -324,8 +325,15 @@ describe('development cards', () => {
     grant(s, 0, { ore: 4 });
     s = act(s, 0, { type: 'bankTrade', give: 'ore', get: 'wool' }); // player 1 has 10 points, but it is player 0's turn...
     expect(s.phase.type).toBe('main');
+    // Before that, only player 1 sees the cards; the others see the public points.
+    expect(viewFor(s, 1).players[1].victoryCards).toBe(8);
+    expect(viewFor(s, 0).players[1].victoryCards).toBeNull();
+    expect(viewFor(s, 0).players[1].points).toBe(victoryPoints(s, 1, false));
     s = act(s, 0, { type: 'endTurn' }); // ...so they win the moment their own turn starts
     expect(s.phase).toEqual({ type: 'ended', winner: 1 });
+    // At the end everyone sees them.
+    expect(viewFor(s, 0).players[1].victoryCards).toBe(8);
+    expect(viewFor(s, 0).players[1].points).toBe(victoryPoints(s, 1));
   });
 });
 

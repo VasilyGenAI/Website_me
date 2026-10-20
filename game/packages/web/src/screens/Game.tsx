@@ -48,6 +48,7 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
   const [mode, setMode] = useState<BuildMode>(null);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [panel, setPanel] = useState<'log' | 'chat'>('log');
+  const [showResult, setShowResult] = useState(true);
   const act = (action: Action) => {
     conn.send({ t: 'action', action });
     setMode(null);
@@ -188,7 +189,14 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
             <div key={p.id} className={`player${i === g.currentPlayer ? ' active' : ''}`} style={{ borderColor: p.color }}>
               <span className="avatar" style={{ background: p.color }}>{p.isBot ? '🤖' : '🙂'}</span>
               <span className="pn">{p.name}{i === me && ' (du)'}</span>
-              <span className="stat" title="Siegpunkte">🏆 {i === me ? g.myPoints : p.points}</span>
+              {i === me && phase.type !== 'ended' && (p.victoryCards ?? 0) > 0 ? (
+                // Colonist style "10 (11)": what the others see, then the real total with your hidden cards.
+                <span className="stat" title={`Siegpunkte: ${p.points} sichtbar, ${g.myPoints} mit deinen Siegpunktkarten (nur du siehst das)`}>
+                  🏆 {p.points} <b className="secret-vp">({g.myPoints})</b>
+                </span>
+              ) : (
+                <span className="stat" title="Siegpunkte">🏆 {p.points}</span>
+              )}
               <span className="stat" title="Rohstoffkarten">🂠 {p.resourceCount}</span>
               <span className="stat" title="Entwicklungskarten">🃏 {p.devCardCount}</span>
               <span className={`stat${g.largestArmy === i ? ' bonus' : ''}`} title="Gespielte Ritter">⚔️ {p.knightsPlayed}</span>
@@ -253,19 +261,69 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
       {trading && canTrade && <TradeComposer g={g} give={give} setGive={setGive} want={want} setWant={setWant} act={act} close={closeTrade} />}
       {dialog === 'dev' && <DevDialog g={g} playable={playableDev} act={(a) => { act(a); setDialog(null); }} close={() => setDialog(null)} />}
       <TradePanel g={g} act={act} />
-      {phase.type === 'ended' && (
-        <Modal title="Spiel vorbei">
-          <p className="winner">🏆 {g.players[phase.winner].name} gewinnt!</p>
-          <ol className="scores">
-            {g.players
-              .map((p, i) => ({ p, i }))
-              .sort((a, b) => b.p.points - a.p.points)
-              .map(({ p, i }) => <li key={i}>{p.name}: {p.points} Punkte</li>)}
-          </ol>
-          <button className="primary" onClick={() => conn.send({ t: 'leave' })}>Zur Startseite</button>
-        </Modal>
-      )}
+      {phase.type === 'ended' &&
+        (showResult ? (
+          <ResultDialog g={g} winner={phase.winner} onBoard={() => setShowResult(false)} onHome={() => conn.send({ t: 'leave' })} />
+        ) : (
+          <button className="primary result-btn" onClick={() => setShowResult(true)}>🏆 Ergebnis</button>
+        ))}
     </div>
+  );
+}
+
+/** End of the game: every player's points by source, hidden victory point cards now revealed. */
+function ResultDialog({ g, winner, onBoard, onHome }: { g: GameView; winner: number; onBoard: () => void; onHome: () => void }) {
+  const rows = g.players
+    .map((p, i) => ({
+      p,
+      i,
+      settlements: 5 - p.settlementsLeft - (4 - p.citiesLeft),
+      cities: 4 - p.citiesLeft,
+      cards: p.victoryCards ?? 0,
+      army: g.largestArmy === i ? 2 : 0,
+      road: g.longestRoad === i ? 2 : 0,
+    }))
+    .sort((a, b) => b.p.points - a.p.points || (a.i === winner ? -1 : 1));
+  const cell = (n: number, title: string) => <td className={n > 0 ? 'got' : ''} title={title}>{n}</td>;
+  return (
+    <Modal title="Spiel vorbei">
+      <p className="winner">🏆 {g.players[winner].name} gewinnt!</p>
+      <p className="muted">{g.turn} Züge · Ziel: {g.victoryPoints} Punkte</p>
+      <table className="result">
+        <thead>
+          <tr>
+            <th />
+            <th title="Siegpunkte">🏆</th>
+            <th title="Siedlungen (je 1 Punkt)">🏠</th>
+            <th title="Städte (je 2 Punkte)">🏰</th>
+            <th title="Siegpunktkarten">⭐</th>
+            <th title="Größte Rittermacht (2 Punkte)">⚔️</th>
+            <th title="Längste Straße (2 Punkte)">🛣️</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.i} className={r.i === winner ? 'won' : ''}>
+              <td className="who">
+                <span className="avatar" style={{ background: r.p.color }}>{r.p.isBot ? '🤖' : '🙂'}</span>
+                {r.p.name}
+                {r.i === g.me && ' (du)'}
+              </td>
+              <td className="total">{r.p.points}</td>
+              {cell(r.settlements, `${r.settlements} Siedlung(en)`)}
+              {cell(r.cities * 2, `${r.cities} Stadt/Städte`)}
+              {cell(r.cards, `${r.cards} Siegpunktkarte(n)`)}
+              {cell(r.army, 'Größte Rittermacht')}
+              {cell(r.road, 'Längste Straße')}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="row-btns">
+        <button onClick={onBoard}>🗺️ Brett ansehen</button>
+        <button className="primary" onClick={onHome}>Zur Startseite</button>
+      </div>
+    </Modal>
   );
 }
 
