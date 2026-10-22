@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { COSTS, RESOURCES, TERRAIN_RESOURCE, hasResources, tileId, topology, totalCards } from '@kontinentalist/engine';
 import type { Action, DevCardType, GameView, Resource, ResourceCounts, RoomView } from '@kontinentalist/engine';
 import { Board } from '../components/Board';
+import { countryOf } from '../campaign/progress';
 import { Dice } from '../components/Dice';
 import { DevCardBack, DevCardButton, DevCardFace } from '../components/DevCards';
 import { FLIGHT_MS, FlyingCards } from '../components/Flights';
@@ -421,6 +422,9 @@ function ResultDialog({ g, winner, onBoard, onHome }: { g: GameView; winner: num
   return (
     <Modal title="Spiel vorbei">
       <p className="winner">🏆 {g.players[winner].name} gewinnt!</p>
+      {winner === g.me && countryOf(g.map.name, g.map.tiles.length) && (
+        <p className="note good">🌍 {g.map.name} ist erobert! Auf der Europa-Karte leuchtet das Land jetzt in seinen Farben.</p>
+      )}
       <p className="muted">{g.turn} Züge · Ziel: {g.victoryPoints} Punkte</p>
       <table className="result">
         <thead>

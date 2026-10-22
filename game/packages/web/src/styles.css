@@ -494,3 +494,54 @@ details p { margin: 0 0 8px; }
 .size-switch { display: inline-flex; background: rgba(0,0,0,.18); border-radius: 99px; padding: 3px; text-transform: none; letter-spacing: 0; }
 .size-switch button { border: none; background: none; color: #fff; padding: 4px 12px; border-radius: 99px; font-weight: 700; font-size: .85rem; box-shadow: none; }
 .size-switch button.on { background: #fff; color: #1b4f8a; }
+
+/* Campaign: globe and continent map */
+.world-layout { display: grid; grid-template-columns: minmax(260px, 420px) 1fr; gap: 18px; align-items: center; }
+@media (max-width: 820px) { .world-layout { grid-template-columns: 1fr; } }
+.globe { width: 100%; max-width: 420px; aspect-ratio: 1; touch-action: none; cursor: grab; justify-self: center; }
+.globe-halo { fill: none; stroke: #9fd8ff; stroke-opacity: .35; stroke-width: 10; filter: blur(4px); }
+.globe-grid { fill: none; stroke: #fff; stroke-opacity: .12; stroke-width: .6; pointer-events: none; }
+.globe-land { stroke: #1d1d1d; stroke-opacity: .35; stroke-width: .8; stroke-linejoin: round; }
+.globe-land.open { fill: #79c35a; cursor: pointer; animation: land-pulse 2.4s ease-in-out infinite; }
+.globe-land.locked { fill: #b9c0c7; }
+@keyframes land-pulse { 50% { fill: #9bdc78; } }
+.globe-label { font-size: 11px; font-weight: 900; paint-order: stroke; stroke: rgba(0,0,0,.55); stroke-width: 3px; fill: #fff; cursor: pointer; }
+.globe-label.locked { fill: #e6e9ec; font-weight: 700; }
+.continents { display: grid; gap: 8px; }
+.continent { display: grid; gap: 4px; text-align: left; padding: 10px 14px; border-radius: var(--radius); background: var(--panel); border: 2px solid transparent; }
+.continent.open { border-color: #79c35a; }
+.continent.locked { opacity: .7; }
+.bar { display: block; height: 7px; border-radius: 99px; background: rgba(0,0,0,.15); overflow: hidden; min-width: 80px; }
+.bar span { display: block; height: 100%; background: linear-gradient(90deg, #f2c230, #2fa84f); }
+.world-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.world-progress { margin-left: auto; color: #fff; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+.world-progress .bar { width: 140px; background: rgba(255,255,255,.25); }
+.note.good { background: rgba(47,168,79,.85); }
+.europe-layout { display: grid; grid-template-columns: 1fr 300px; gap: 14px; align-items: start; }
+@media (max-width: 900px) { .europe-layout { grid-template-columns: 1fr; } }
+.europe { position: relative; border-radius: var(--radius); overflow: hidden; box-shadow: 0 4px 18px rgba(0,0,0,.3); }
+.europe-map { display: block; width: 100%; height: min(70dvh, 640px); touch-action: none; cursor: grab; background: #2a6db3; }
+.europe-sea { fill: #2f78c2; }
+.europe-other { fill: #4c5560; }
+.eu-country path { stroke: none; transition: fill .3s; }
+.eu-country.open path { fill: #dde2e7; cursor: pointer; filter: url(#glow); }
+.eu-country.open:hover path, .eu-country.selected path { fill: #ffffff; }
+.eu-country.won { cursor: pointer; }
+.eu-country.won:hover path, .eu-country.won.selected path { filter: brightness(1.15); }
+.eu-country.locked path { fill: #6b737c; }
+.eu-country.locked:hover path { fill: #7d858e; }
+.europe-coast { fill: none; stroke: #f3dfa2; stroke-width: 1.3; stroke-linecap: round; pointer-events: none; }
+.europe-borders { fill: none; stroke: #1d2733; stroke-width: 1; stroke-linecap: round; pointer-events: none; }
+.eu-name { font-weight: 900; fill: #1d2733; paint-order: stroke; stroke: rgba(255,255,255,.85); stroke-width: .9px; cursor: pointer; }
+.eu-name.faint { fill: #d0d5da; stroke: rgba(0,0,0,.35); font-weight: 700; pointer-events: none; }
+.europe-zoom { position: absolute; right: 10px; top: 10px; display: grid; gap: 6px; }
+.europe-zoom button { width: 38px; height: 38px; padding: 0; border-radius: 10px; font-size: 1.2rem; }
+.country-panel { position: relative; display: grid; gap: 8px; background: var(--panel); border-radius: var(--radius); padding: 14px; }
+.country-panel .close { position: absolute; right: 8px; top: 8px; }
+.country-panel.hint { opacity: .9; }
+.country-name { font-size: 1.25rem; }
+.status-won { color: var(--ok); font-weight: 800; }
+.country-panel .mapthumb { height: 190px; border-radius: 10px; overflow: hidden; }
+.country-panel .row-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.country-panel .row-btns button { flex: 1; display: grid; }
+.country-panel small { font-weight: 600; opacity: .8; }

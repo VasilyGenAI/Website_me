@@ -1661,6 +1661,479 @@ export function spainSmallMap(): MapDef {
 }
 
 /**
+ * Portugal: Minho forests and pastures, the mountains of Trás-os-Montes and the Serra da Estrela,
+ * Douro vineyards, Alentejo wheat and cork, Aveiro ceramics, the Neves-Corvo mine and the Algarve, with the
+ * Tróia dunes under the flag.
+ */
+export function portugalMap(): MapDef {
+  return drawnMap({
+    name: 'Portugal',
+    flag: { colors: ['#006600', '#ff0000', '#ff0000'], layout: 'vertical' },
+    rows: [
+      '~~~.....',
+      '~~PPWG..',
+      '~~~WPGH.',
+      '~~~WAG..',
+      '~~~HWP..',
+      '~~WGG...',
+      '~~WWAA..',
+      '~HPAP...',
+      '~~PWPA..',
+      '~~DAW...',
+      '~~~AA...',
+      '~~PGH...',
+      '~~~HH...',
+      '~~~~~~..',
+    ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
+    ports: [
+      { row: 1, col: 5, type: 'ore', kind: 'gondola', sides: [0] },
+      { row: 6, col: 5, type: 'any', kind: 'mine', sides: [0] },
+      { row: 9, col: 4, type: 'lumber', kind: 'treehouse', sides: [1] },
+      { row: 11, col: 4, type: 'brick', kind: 'mine', sides: [0] },
+      { row: 12, col: 3, type: 'any', kind: 'harbor', sides: [2] },
+      { row: 7, col: 1, type: 'wool', kind: 'harbor', sides: [3] },
+      { row: 4, col: 3, type: 'grain', kind: 'harbor', sides: [4] },
+      { row: 1, col: 2, type: 'any', kind: 'treehouse', sides: [0] },
+    ],
+    labels: [
+      { row: 8, col: 2, text: 'Lissabon' },
+      { row: 9, col: 2, text: 'Tróia' },
+      { row: 2, col: 3, text: 'Porto' },
+      { row: 1, col: 2, text: 'Braga' },
+      { row: 5, col: 2, text: 'Coimbra' },
+      { row: 12, col: 4, text: 'Faro' },
+      { row: 4, col: 3, text: 'Aveiro' },
+      { row: 9, col: 3, text: 'Évora' },
+      { row: 4, col: 4, text: 'Viseu' },
+      { row: 4, col: 5, text: 'Guarda' },
+      { row: 1, col: 5, text: 'Bragança' },
+      { row: 6, col: 2, text: 'Leiria' },
+      { row: 6, col: 5, text: 'Castelo Branco' },
+      { row: 10, col: 4, text: 'Beja' },
+      { row: 2, col: 4, text: 'Vila Real' },
+      { row: 7, col: 4, text: 'Portalegre' },
+      { row: 12, col: 3, text: 'Lagos' },
+      { row: 5, col: 4, text: 'Serra da Estrela' },
+    ],
+    waters: [{ row: 7, col: 0, text: 'Atlantik' }, { row: 13, col: 4, text: 'Golf von Cádiz' }],
+    seed: 1143,
+  });
+}
+
+/**
+ * Portugal, small: the same outline and regions in at most 21 tiles.
+ */
+export function portugalSmallMap(): MapDef {
+  return drawnMap({
+    name: 'Portugal',
+    flag: { colors: ['#006600', '#ff0000', '#ff0000'], layout: 'vertical' },
+    rows: [
+      '~~....',
+      '~~WPG.',
+      '~~~WA.',
+      '~~HP..',
+      '~~WGG.',
+      '~HWP..',
+      '~~PWA.',
+      '~~DA..',
+      '~~~A..',
+      '~~PH..',
+      '~~~~~~',
+    ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
+    ports: [
+      { row: 1, col: 4, type: 'wool', kind: 'gondola', sides: [0] },
+      { row: 4, col: 4, type: 'any', kind: 'gondola', sides: [0] },
+      { row: 7, col: 3, type: 'brick', kind: 'mine', sides: [1] },
+      { row: 9, col: 3, type: 'ore', kind: 'mine', sides: [0] },
+      { row: 9, col: 2, type: 'any', kind: 'harbor', sides: [2] },
+      { row: 6, col: 2, type: 'lumber', kind: 'harbor', sides: [3] },
+      { row: 3, col: 2, type: 'grain', kind: 'harbor', sides: [4] },
+      { row: 1, col: 2, type: 'any', kind: 'treehouse', sides: [0] },
+    ],
+    labels: [
+      { row: 6, col: 2, text: 'Lissabon' },
+      { row: 7, col: 2, text: 'Tróia' },
+      { row: 2, col: 3, text: 'Porto' },
+      { row: 1, col: 2, text: 'Braga' },
+      { row: 4, col: 3, text: 'Coimbra' },
+      { row: 9, col: 3, text: 'Faro' },
+      { row: 3, col: 2, text: 'Aveiro' },
+      { row: 7, col: 3, text: 'Évora' },
+    ],
+    waters: [{ row: 5, col: 0, text: 'Atlantik' }, { row: 10, col: 4, text: 'Golf von Cádiz' }],
+    seed: 1143,
+  });
+}
+
+/**
+ * Czechia: the Bohemian basin's fields, the Erzgebirge, Giant Mountains and Jeseníky, Ostrava coal, the
+ * Bohemian Forest and Beskids, the Bohemian-Moravian highlands, Pilsen and Most, and the Moravian Sahara.
+ */
+export function czechiaMap(): MapDef {
+  return drawnMap({
+    name: 'Tschechien',
+    flag: { colors: ['#ffffff', '#d7141a', '#11457e'], layout: 'triangle' },
+    rows: [
+      '............',
+      '...WPG......',
+      '.GGPAPA.....',
+      '.PHAGAHGG...',
+      '.AHHWPPAHHW.',
+      '..WPAPWAPW..',
+      '...WW.WAD...',
+      '............',
+    ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
+    ports: [
+      { row: 2, col: 6, type: 'brick', kind: 'mine', sides: [0] },
+      { row: 4, col: 10, type: 'any', kind: 'treehouse', sides: [0] },
+      { row: 6, col: 8, type: 'wool', kind: 'mine', sides: [1] },
+      { row: 6, col: 6, type: 'lumber', kind: 'treehouse', sides: [2] },
+      { row: 6, col: 4, type: 'any', kind: 'treehouse', sides: [1] },
+      { row: 4, col: 1, type: 'grain', kind: 'mine', sides: [2] },
+      { row: 2, col: 1, type: 'ore', kind: 'gondola', sides: [0] },
+      { row: 1, col: 3, type: 'any', kind: 'treehouse', sides: [0] },
+    ],
+    labels: [
+      { row: 3, col: 3, text: 'Prag' },
+      { row: 6, col: 8, text: 'Mährische Sahara' },
+      { row: 5, col: 7, text: 'Brünn' },
+      { row: 4, col: 10, text: 'Ostrau' },
+      { row: 4, col: 2, text: 'Pilsen' },
+      { row: 1, col: 4, text: 'Reichenberg' },
+      { row: 4, col: 8, text: 'Olmütz' },
+      { row: 6, col: 4, text: 'Budweis' },
+      { row: 2, col: 6, text: 'Königgrätz' },
+      { row: 1, col: 3, text: 'Aussig' },
+      { row: 3, col: 5, text: 'Pardubitz' },
+      { row: 5, col: 8, text: 'Zlín' },
+      { row: 5, col: 5, text: 'Jihlava' },
+      { row: 3, col: 1, text: 'Karlsbad' },
+      { row: 1, col: 5, text: 'Schneekoppe' },
+      { row: 6, col: 3, text: 'Böhmerwald' },
+    ],
+    seed: 1993,
+  });
+}
+
+/**
+ * Tschechien, small: the same outline and regions in at most 21 tiles.
+ */
+export function czechiaSmallMap(): MapDef {
+  return drawnMap({
+    name: 'Tschechien',
+    flag: { colors: ['#ffffff', '#d7141a', '#11457e'], layout: 'triangle' },
+    rows: [
+      '........',
+      '..WWG...',
+      '.PAAAGG.',
+      '.HWPPAH.',
+      '..WWPHD.',
+      '........',
+    ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
+    ports: [
+      { row: 1, col: 4, type: 'wool', kind: 'gondola', sides: [0] },
+      { row: 2, col: 6, type: 'any', kind: 'gondola', sides: [0] },
+      { row: 3, col: 6, type: 'brick', kind: 'mine', sides: [0] },
+      { row: 4, col: 5, type: 'grain', kind: 'mine', sides: [2] },
+      { row: 4, col: 3, type: 'any', kind: 'treehouse', sides: [2] },
+      { row: 3, col: 1, type: 'ore', kind: 'mine', sides: [3] },
+      { row: 2, col: 1, type: 'lumber', kind: 'treehouse', sides: [0] },
+      { row: 1, col: 2, type: 'any', kind: 'treehouse', sides: [0] },
+    ],
+    labels: [
+      { row: 2, col: 3, text: 'Prag' },
+      { row: 4, col: 6, text: 'Mährische Sahara' },
+      { row: 4, col: 5, text: 'Brünn' },
+      { row: 3, col: 6, text: 'Ostrau' },
+      { row: 3, col: 1, text: 'Pilsen' },
+      { row: 1, col: 3, text: 'Reichenberg' },
+      { row: 3, col: 5, text: 'Olmütz' },
+      { row: 4, col: 3, text: 'Budweis' },
+    ],
+    seed: 1993,
+  });
+}
+
+/**
+ * Slovakia: the High and Low Tatras, the Slovak Ore Mountains and Banská Štiavnica, Košice steel, the
+ * Danubian and East Slovak lowlands, Liptov and Orava meadows, and the Záhorie sand dunes under the flag.
+ */
+export function slovakiaMap(): MapDef {
+  return drawnMap({
+    name: 'Slowakei',
+    flag: { colors: ['#ffffff', '#0b4ea2', '#ee1c25'], emblem: 'sk' },
+    rows: [
+      '.............',
+      '....AP...P...',
+      '...HAWPGPWWP.',
+      '..HWHWGGWAA..',
+      '..DPAGHH.....',
+      '.PAAG........',
+      '.............',
+    ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
+    ports: [
+      { row: 2, col: 6, type: 'lumber', kind: 'treehouse', sides: [0] },
+      { row: 2, col: 11, type: 'any', kind: 'treehouse', sides: [0] },
+      { row: 3, col: 8, type: 'wool', kind: 'treehouse', sides: [2] },
+      { row: 4, col: 6, type: 'brick', kind: 'mine', sides: [2] },
+      { row: 5, col: 4, type: 'any', kind: 'gondola', sides: [1] },
+      { row: 5, col: 1, type: 'grain', kind: 'treehouse', sides: [2] },
+      { row: 3, col: 2, type: 'ore', kind: 'mine', sides: [4] },
+      { row: 1, col: 4, type: 'any', kind: 'mine', sides: [0] },
+    ],
+    labels: [
+      { row: 5, col: 1, text: 'Bratislava' },
+      { row: 4, col: 2, text: 'Záhorie-Dünen' },
+      { row: 3, col: 8, text: 'Košice' },
+      { row: 2, col: 9, text: 'Prešov' },
+      { row: 1, col: 4, text: 'Žilina' },
+      { row: 4, col: 3, text: 'Nitra' },
+      { row: 3, col: 5, text: 'Banská Bystrica' },
+      { row: 5, col: 2, text: 'Trnava' },
+      { row: 2, col: 3, text: 'Trenčín' },
+      { row: 2, col: 5, text: 'Martin' },
+      { row: 2, col: 7, text: 'Poprad' },
+      { row: 4, col: 5, text: 'Zvolen' },
+      { row: 3, col: 10, text: 'Michalovce' },
+      { row: 5, col: 3, text: 'Komárno' },
+      { row: 1, col: 9, text: 'Bardejov' },
+    ],
+    seed: 1993,
+  });
+}
+
+/**
+ * Slowakei, small: the same outline and regions in at most 21 tiles.
+ */
+export function slovakiaSmallMap(): MapDef {
+  return drawnMap({
+    name: 'Slowakei',
+    flag: { colors: ['#ffffff', '#0b4ea2', '#ee1c25'], emblem: 'sk' },
+    rows: [
+      '..........',
+      '...APGPP..',
+      '..HWWWGWW.',
+      '.DAGHP....',
+      '..AAH.....',
+      '..........',
+    ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
+    ports: [
+      { row: 1, col: 5, type: 'ore', kind: 'gondola', sides: [0] },
+      { row: 1, col: 7, type: 'any', kind: 'treehouse', sides: [0] },
+      { row: 2, col: 7, type: 'lumber', kind: 'treehouse', sides: [2] },
+      { row: 2, col: 8, type: 'wool', kind: 'treehouse', sides: [0] },
+      { row: 3, col: 5, type: 'any', kind: 'treehouse', sides: [1] },
+      { row: 4, col: 3, type: 'brick', kind: 'mine', sides: [2] },
+      { row: 3, col: 1, type: 'grain', kind: 'mine', sides: [3] },
+      { row: 1, col: 3, type: 'any', kind: 'mine', sides: [0] },
+    ],
+    labels: [
+      { row: 3, col: 1, text: 'Bratislava' },
+      { row: 2, col: 2, text: 'Záhorie-Dünen' },
+      { row: 2, col: 7, text: 'Košice' },
+      { row: 1, col: 6, text: 'Prešov' },
+      { row: 1, col: 3, text: 'Žilina' },
+      { row: 3, col: 2, text: 'Nitra' },
+      { row: 2, col: 4, text: 'Banská Bystrica' },
+      { row: 4, col: 2, text: 'Trnava' },
+    ],
+    seed: 1993,
+  });
+}
+
+/**
+ * Slovenia: the Julian and Kamnik Alps, Idrija's mercury mine, Kočevje and Pohorje forests, Karst pastures
+ * of the Lipizzaners, the Prekmurje and Drava plains, and a short Adriatic coast at Koper.
+ */
+export function sloveniaMap(): MapDef {
+  return drawnMap({
+    name: 'Slowenien',
+    flag: { colors: ['#ffffff', '#005da4', '#ed1c24'], emblem: 'si' },
+    rows: [
+      '.........',
+      '....PAA..',
+      '.GG.PWAH.',
+      '.WHGAP...',
+      '.PGPAH...',
+      '.DWWW....',
+      '~........',
+    ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
+    ports: [
+      { row: 1, col: 4, type: 'lumber', kind: 'treehouse', sides: [0] },
+      { row: 1, col: 6, type: 'any', kind: 'mine', sides: [0] },
+      { row: 2, col: 7, type: 'brick', kind: 'mine', sides: [0] },
+      { row: 4, col: 5, type: 'grain', kind: 'mine', sides: [1] },
+      { row: 5, col: 2, type: 'any', kind: 'treehouse', sides: [2] },
+      { row: 4, col: 1, type: 'wool', kind: 'treehouse', sides: [3] },
+      { row: 3, col: 2, type: 'ore', kind: 'mine', sides: [0] },
+      { row: 2, col: 1, type: 'any', kind: 'gondola', sides: [0] },
+    ],
+    labels: [
+      { row: 3, col: 2, text: 'Ljubljana' },
+      { row: 5, col: 1, text: 'Karst' },
+      { row: 1, col: 5, text: 'Maribor' },
+      { row: 3, col: 4, text: 'Celje' },
+      { row: 2, col: 2, text: 'Kranj' },
+      { row: 5, col: 4, text: 'Novo Mesto' },
+      { row: 2, col: 4, text: 'Velenje' },
+      { row: 4, col: 1, text: 'Nova Gorica' },
+      { row: 1, col: 6, text: 'Murska Sobota' },
+      { row: 2, col: 6, text: 'Ptuj' },
+      { row: 3, col: 1, text: 'Bled' },
+      { row: 4, col: 2, text: 'Idrija' },
+      { row: 5, col: 2, text: 'Postojna' },
+      { row: 5, col: 3, text: 'Kočevje' },
+      { row: 2, col: 1, text: 'Triglav' },
+    ],
+    waters: [{ row: 6, col: 0, text: 'Adria' }],
+    seed: 1991,
+  });
+}
+
+/**
+ * Slowenien, small: the same outline and regions in at most 21 tiles.
+ */
+export function sloveniaSmallMap(): MapDef {
+  return drawnMap({
+    name: 'Slowenien',
+    flag: { colors: ['#ffffff', '#005da4', '#ed1c24'], emblem: 'si' },
+    rows: [
+      '........',
+      '....PWA.',
+      '..GPGAA.',
+      '.HGPHH..',
+      '..DWWA..',
+      '~~......',
+    ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
+    ports: [
+      { row: 1, col: 4, type: 'lumber', kind: 'treehouse', sides: [0] },
+      { row: 1, col: 6, type: 'any', kind: 'mine', sides: [0] },
+      { row: 2, col: 6, type: 'brick', kind: 'mine', sides: [1] },
+      { row: 3, col: 5, type: 'wool', kind: 'mine', sides: [1] },
+      { row: 4, col: 2, type: 'any', kind: 'harbor', sides: [3] },
+      { row: 3, col: 1, type: 'grain', kind: 'mine', sides: [3] },
+      { row: 2, col: 2, type: 'ore', kind: 'gondola', sides: [0] },
+      { row: 2, col: 3, type: 'any', kind: 'treehouse', sides: [0] },
+    ],
+    labels: [
+      { row: 3, col: 3, text: 'Ljubljana' },
+      { row: 4, col: 2, text: 'Karst' },
+      { row: 1, col: 5, text: 'Maribor' },
+      { row: 2, col: 5, text: 'Celje' },
+      { row: 2, col: 3, text: 'Kranj' },
+      { row: 4, col: 5, text: 'Novo Mesto' },
+      { row: 2, col: 4, text: 'Velenje' },
+      { row: 3, col: 1, text: 'Nova Gorica' },
+    ],
+    waters: [{ row: 5, col: 1, text: 'Adria' }],
+    seed: 1991,
+  });
+}
+
+/**
+ * Hungary: the Great Plain's wheat, the Hortobágy puszta, the Mátra and Bükk, Mecsek coal and Bakony
+ * bauxite, the Őrség and Gemenc forests, Lake Balaton, and the Kiskunság sands under the flag.
+ */
+export function hungaryMap(): MapDef {
+  return drawnMap({
+    name: 'Ungarn',
+    flag: { colors: ['#ce2939', '#ffffff', '#477050'] },
+    rows: [
+      '............',
+      '.......GPAP.',
+      '...W..PGGPW.',
+      '.HHGHAPPAP..',
+      '..WPGHWAWA..',
+      '.WW~AADAW...',
+      '...HGWPHA...',
+      '....G.......',
+      '............',
+    ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
+    ports: [
+      { row: 1, col: 7, type: 'wool', kind: 'gondola', sides: [0] },
+      { row: 1, col: 10, type: 'any', kind: 'treehouse', sides: [0] },
+      { row: 4, col: 9, type: 'lumber', kind: 'mine', sides: [1] },
+      { row: 6, col: 7, type: 'brick', kind: 'mine', sides: [2] },
+      { row: 7, col: 4, type: 'any', kind: 'gondola', sides: [1] },
+      { row: 5, col: 2, type: 'grain', kind: 'harbor', sides: [1] },
+      { row: 3, col: 1, type: 'ore', kind: 'mine', sides: [0] },
+      { row: 3, col: 5, type: 'any', kind: 'mine', sides: [5] },
+    ],
+    labels: [
+      { row: 3, col: 5, text: 'Budapest' },
+      { row: 5, col: 6, text: 'Kiskunság' },
+      { row: 3, col: 9, text: 'Debrecen' },
+      { row: 6, col: 7, text: 'Szeged' },
+      { row: 1, col: 8, text: 'Miskolc' },
+      { row: 7, col: 4, text: 'Pécs' },
+      { row: 3, col: 3, text: 'Győr' },
+      { row: 2, col: 10, text: 'Nyíregyháza' },
+      { row: 4, col: 7, text: 'Kecskemét' },
+      { row: 4, col: 5, text: 'Székesfehérvár' },
+      { row: 4, col: 2, text: 'Szombathely' },
+      { row: 3, col: 7, text: 'Szolnok' },
+      { row: 2, col: 8, text: 'Eger' },
+      { row: 3, col: 1, text: 'Sopron' },
+      { row: 4, col: 4, text: 'Veszprém' },
+      { row: 1, col: 9, text: 'Tokaj' },
+      { row: 3, col: 8, text: 'Hortobágy' },
+    ],
+    waters: [{ row: 5, col: 3, text: 'Plattensee' }],
+    seed: 1000,
+  });
+}
+
+/**
+ * Ungarn, small: the same outline and regions in at most 21 tiles.
+ */
+export function hungarySmallMap(): MapDef {
+  return drawnMap({
+    name: 'Ungarn',
+    flag: { colors: ['#ce2939', '#ffffff', '#477050'] },
+    rows: [
+      '.........',
+      '.....GPW.',
+      '..HHWGPP.',
+      '.WPWWAA..',
+      '..PHADA..',
+      '...G.....',
+      '.........',
+    ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
+    ports: [
+      { row: 1, col: 5, type: 'ore', kind: 'gondola', sides: [0] },
+      { row: 1, col: 7, type: 'any', kind: 'treehouse', sides: [0] },
+      { row: 2, col: 7, type: 'lumber', kind: 'treehouse', sides: [1] },
+      { row: 4, col: 6, type: 'brick', kind: 'mine', sides: [1] },
+      { row: 5, col: 3, type: 'any', kind: 'gondola', sides: [1] },
+      { row: 3, col: 1, type: 'wool', kind: 'treehouse', sides: [3] },
+      { row: 2, col: 2, type: 'grain', kind: 'mine', sides: [0] },
+      { row: 2, col: 4, type: 'any', kind: 'treehouse', sides: [0] },
+    ],
+    labels: [
+      { row: 2, col: 4, text: 'Budapest' },
+      { row: 4, col: 5, text: 'Kiskunság' },
+      { row: 2, col: 7, text: 'Debrecen' },
+      { row: 4, col: 6, text: 'Szeged' },
+      { row: 1, col: 6, text: 'Miskolc' },
+      { row: 5, col: 3, text: 'Pécs' },
+      { row: 2, col: 3, text: 'Győr' },
+      { row: 1, col: 7, text: 'Nyíregyháza' },
+    ],
+    seed: 1000,
+  });
+}
+
+/**
  * "Goldrausch": a gold field in the centre (it pays any resource), ringed by mountains and hills,
  * then a ring of six lakes with farmland between them, and two broad outer rings of everything.
  * Everyone wants a corner on the gold, so the middle is where the fights happen.
@@ -1731,6 +2204,16 @@ export const PRESET_MAPS = {
   'liechtenstein-klein': liechtensteinSmallMap,
   spanien: spainMap,
   'spanien-klein': spainSmallMap,
+  portugal: portugalMap,
+  'portugal-klein': portugalSmallMap,
+  tschechien: czechiaMap,
+  'tschechien-klein': czechiaSmallMap,
+  slowakei: slovakiaMap,
+  'slowakei-klein': slovakiaSmallMap,
+  slowenien: sloveniaMap,
+  'slowenien-klein': sloveniaSmallMap,
+  ungarn: hungaryMap,
+  'ungarn-klein': hungarySmallMap,
   nebelwald: fogForestMap,
   goldrausch: goldRushMap,
 } as const;

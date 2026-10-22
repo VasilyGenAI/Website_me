@@ -27,11 +27,16 @@ type Country =
   | 'frankreich'
   | 'italien'
   | 'spanien'
+  | 'portugal'
   | 'polen'
   | 'niederlande'
   | 'belgien'
   | 'luxemburg'
   | 'liechtenstein'
+  | 'tschechien'
+  | 'slowakei'
+  | 'slowenien'
+  | 'ungarn'
   | 'oesterreich'
   | 'schweiz'
   | 'uk'
@@ -57,11 +62,16 @@ export const PRESET_CHOICES: BoardChoice[] = [
   ...country('frankreich', 'Paris', ['Marseille', 'Lyon']),
   ...country('italien', 'Rom', ['Mailand', 'Neapel']),
   ...country('spanien', 'Madrid', ['Barcelona', 'Valencia']),
+  ...country('portugal', 'Lissabon', ['Porto', 'Braga']),
   ...country('polen', 'Warschau', ['Krakau', 'Łódź']),
   ...country('niederlande', 'Amsterdam', ['Rotterdam', 'Den Haag']),
   ...country('belgien', 'Brüssel', ['Antwerpen', 'Gent']),
   ...country('luxemburg', 'Luxemburg', ['Esch-sur-Alzette', 'Differdingen']),
   ...country('liechtenstein', 'Vaduz', ['Schaan', 'Triesen']),
+  ...country('tschechien', 'Prag', ['Brünn', 'Ostrau']),
+  ...country('slowakei', 'Bratislava', ['Košice', 'Prešov']),
+  ...country('slowenien', 'Ljubljana', ['Maribor', 'Celje']),
+  ...country('ungarn', 'Budapest', ['Debrecen', 'Szeged']),
   ...country('oesterreich', 'Wien', ['Graz', 'Linz']),
   ...country('schweiz', 'Bern', ['Zürich', 'Genf']),
   ...country('uk', 'London', ['Birmingham', 'Glasgow']),

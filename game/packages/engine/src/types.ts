@@ -96,12 +96,14 @@ export interface MapDef {
 
 /**
  * A flag as stripes of colour: horizontal top to bottom (default), vertical left to right,
- * 'cross' for a centred cross in colors[1] on colors[0] (Switzerland), or 'union' for the
- * Union Jack (colors: field, white, red).
+ * 'cross' for a centred cross in colors[1] on colors[0] (Switzerland), 'union' for the
+ * Union Jack (colors: field, white, red), or 'triangle' for two stripes with a triangle at
+ * the hoist (Czechia: top, bottom, triangle). `emblem` adds a small coat of arms.
  */
 export interface FlagDef {
   colors: string[];
-  layout?: 'horizontal' | 'vertical' | 'cross' | 'union';
+  layout?: 'horizontal' | 'vertical' | 'cross' | 'union' | 'triangle';
+  emblem?: 'sk' | 'si';
 }
 
 export type DevCardType = 'knight' | 'roadBuilding' | 'yearOfPlenty' | 'monopoly' | 'victoryPoint';

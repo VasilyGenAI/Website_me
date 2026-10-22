@@ -118,7 +118,7 @@ export function validateMap(map: MapDef): string[] {
   if (flag !== undefined) {
     const colours = Array.isArray(flag?.colors) ? flag.colors : [];
     if (colours.length < 1 || colours.length > 5 || !colours.every((c) => /^#[0-9a-fA-F]{6}$/.test(c))) errors.push('Flag must be one to five colours like #ffcc00');
-    if (flag.layout !== undefined && !['horizontal', 'vertical', 'cross', 'union'].includes(flag.layout)) errors.push('Unknown flag layout');
+    if (flag.layout !== undefined && !['horizontal', 'vertical', 'cross', 'union', 'triangle'].includes(flag.layout)) errors.push('Unknown flag layout');
   }
   for (const w of map.waterLabels ?? []) {
     if (typeof w.text !== 'string' || w.text.length > 30) errors.push('Water names must be at most 30 characters');

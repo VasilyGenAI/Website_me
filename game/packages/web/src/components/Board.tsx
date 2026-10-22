@@ -633,6 +633,15 @@ function City({ color }: { color: string }) {
  */
 export function FlagCloth({ flag, x, y, w, h }: { flag: FlagDef; x: number; y: number; w: number; h: number }) {
   const { colors, layout = 'horizontal' } = flag;
+  if (layout === 'triangle') {
+    return (
+      <>
+        <rect x={x} y={y} width={w} height={h / 2 + 0.3} fill={colors[0]} />
+        <rect x={x} y={y + h / 2} width={w} height={h / 2} fill={colors[1]} />
+        <path d={`M${x},${y} L${x + w / 2},${y + h / 2} L${x},${y + h} Z`} fill={colors[2]} />
+      </>
+    );
+  }
   if (layout === 'union') {
     const [field, white = '#ffffff', red = '#c8102e'] = colors;
     const diag = (stroke: string, width: number) => (
@@ -668,7 +677,33 @@ export function FlagCloth({ flag, x, y, w, h }: { flag: FlagDef; x: number; y: n
           <rect key={i} x={x} y={y + (i * h) / n} width={w} height={h / n + 0.3} fill={c} />
         ),
       )}
+      {flag.emblem && <Emblem kind={flag.emblem} x={x + w * 0.3} y={y + h * 0.5} size={h * 0.5} />}
     </>
+  );
+}
+
+/** Small coats of arms that tell apart flags with the same stripes (Slovakia, Slovenia). */
+function Emblem({ kind, x, y, size }: { kind: 'sk' | 'si'; x: number; y: number; size: number }) {
+  const s = size / 10;
+  const shield = `M${-4 * s},${-5 * s} H${4 * s} V${1 * s} Q${4 * s},${5 * s} 0,${6 * s} Q${-4 * s},${5 * s} ${-4 * s},${1 * s} Z`;
+  return (
+    <g transform={`translate(${x} ${y})`}>
+      {kind === 'sk' ? (
+        <>
+          <path d={shield} fill="#ee1c25" stroke="#ffffff" strokeWidth={0.8 * s} />
+          <path d={`M0,${-4 * s} V${3 * s} M${-2 * s},${-2 * s} H${2 * s} M${-2.6 * s},${0} H${2.6 * s}`} stroke="#ffffff" strokeWidth={0.9 * s} />
+          <path d={`M${-3.6 * s},${3 * s} Q0,${0.8 * s} ${3.6 * s},${3 * s} L0,${5.8 * s} Z`} fill="#0b4ea2" />
+        </>
+      ) : (
+        <>
+          <path d={shield} fill="#005da4" stroke="#ed1c24" strokeWidth={0.8 * s} />
+          <path d={`M${-3.4 * s},${2 * s} L${-1.5 * s},${-0.5 * s} L0,${-2.5 * s} L${1.5 * s},${-0.5 * s} L${3.4 * s},${2 * s} Z`} fill="#ffffff" />
+          {[-1.6, 0, 1.6].map((dx) => (
+            <circle key={dx} cx={dx * s} cy={-3.6 * s} r={0.55 * s} fill="#ffdd00" />
+          ))}
+        </>
+      )}
+    </g>
   );
 }
 

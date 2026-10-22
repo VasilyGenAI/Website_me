@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { CAN_CREATE_MAPS } from '@kontinentalist/engine';
 import { Shell } from './components/Shell';
+import { countryOf, recordWin } from './campaign/progress';
 import { recordGame } from './library';
 import { OFFLINE, useLocalConnection } from './local';
 import { navigate, useRoute } from './nav';
@@ -15,6 +16,7 @@ import { More } from './screens/More';
 import { Play } from './screens/Play';
 import { Pro } from './screens/Pro';
 import { Rooms } from './screens/Rooms';
+import { World } from './screens/World';
 
 export function App() {
   const [name, setName] = useState(savedName);
@@ -53,6 +55,9 @@ export function App() {
       { at: Date.now(), map: room.mapName, won: g.phase.winner === room.you, points: g.myPoints, players: room.seats.length, bots },
       bots === room.seats.length - 1,
     );
+    // A won country board conquers that country on the campaign map.
+    const country = g.phase.winner === room.you ? countryOf(room.mapName, g.map.tiles.length) : null;
+    if (country) recordWin(country.id, country.size);
   }, [room?.game?.phase.type]);
 
   const canMaps = conn.role !== null && CAN_CREATE_MAPS[conn.role];
@@ -62,6 +67,7 @@ export function App() {
   else {
     let page;
     if (route.startsWith('#/rooms')) page = <Rooms conn={conn} />;
+    else if (route.startsWith('#/welt')) page = <World conn={conn} />;
     else if (route.startsWith('#/maps')) page = <Maps conn={conn} />;
     else if (route.startsWith('#/leaderboard')) page = <Leaderboard />;
     else if (route.startsWith('#/pro')) page = <Pro conn={conn} />;

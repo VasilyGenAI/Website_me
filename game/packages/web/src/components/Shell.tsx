@@ -6,6 +6,7 @@ export const ROLE_LABEL = { admin: 'Admin', pro: 'Pro', basic: 'Basic' } as cons
 
 const NAV = [
   { route: '#/', icon: '🎲', label: 'Spielen' },
+  { route: '#/welt', icon: '🌍', label: 'Welt' },
   { route: '#/rooms', icon: '🏘️', label: 'Räume' },
   { route: '#/maps', icon: '🗺️', label: 'Karten' },
   { route: '#/leaderboard', icon: '🏆', label: 'Bestenliste' },
