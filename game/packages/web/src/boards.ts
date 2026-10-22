@@ -20,7 +20,7 @@ function counts(map: MapDef): string {
 }
 
 /** A country board: its three largest cities, the capital first, then the counts. */
-function country(id: 'deutschland' | 'ukraine', capital: string, cities: [string, string]): BoardChoice {
+function country(id: Exclude<PresetId, 'standard' | 'nebelwald'>, capital: string, cities: [string, string]): BoardChoice {
   const map = PRESET_MAPS[id]();
   return { key: `p:${id}`, title: map.name, subtitle: `${capital} (Hauptstadt), ${cities.join(', ')} · ${counts(map)}`, map, preset: id };
 }
@@ -32,6 +32,11 @@ export const PRESET_CHOICES: BoardChoice[] = [
   { key: 'p:standard', title: 'Klassisch', subtitle: `Jedes Mal neu gemischt · ${counts(standard)}`, map: standard, preset: 'standard' },
   country('deutschland', 'Berlin', ['Hamburg', 'München']),
   country('ukraine', 'Kyjiw', ['Charkiw', 'Odesa']),
+  country('frankreich', 'Paris', ['Marseille', 'Lyon']),
+  country('italien', 'Rom', ['Mailand', 'Neapel']),
+  country('polen', 'Warschau', ['Krakau', 'Łódź']),
+  country('oesterreich', 'Wien', ['Graz', 'Linz']),
+  country('schweiz', 'Bern', ['Zürich', 'Genf']),
   { key: 'p:nebelwald', title: 'Nebelwald', subtitle: `Waldring am See, Nebel deckt Neues auf · ${counts(fogForest)}`, map: fogForest, preset: 'nebelwald' },
 ];
 

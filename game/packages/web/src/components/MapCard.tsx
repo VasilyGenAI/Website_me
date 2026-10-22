@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import type { MapDef } from '@kontinentalist/engine';
-import { Board } from './Board';
+import type { FlagDef, MapDef } from '@kontinentalist/engine';
+import { Board, FlagCloth } from './Board';
 
 /** Board thumbnail with a title and optional details/actions underneath. */
 export function MapCard({ map, title, subtitle, selected, onSelect, children }: {
@@ -19,7 +19,7 @@ export function MapCard({ map, title, subtitle, selected, onSelect, children }: 
       <div className="mapinfo">
         <b>
           {title}
-          {map.flag && <MiniFlag stripes={map.flag} />}
+          {map.flag && <MiniFlag flag={map.flag} />}
         </b>
         {subtitle && <div className="muted">{subtitle}</div>}
         {children}
@@ -32,12 +32,10 @@ export function MapCard({ map, title, subtitle, selected, onSelect, children }: 
  * The country's flag at emoji size. Drawn rather than an emoji: Windows has no flag emojis and
  * would show the letters "DE" or "UA" instead.
  */
-export function MiniFlag({ stripes }: { stripes: string[] }) {
+export function MiniFlag({ flag }: { flag: FlagDef }) {
   return (
-    <span className="mini-flag" role="img" aria-label="Flagge">
-      {stripes.map((c, i) => (
-        <span key={i} style={{ background: c }} />
-      ))}
-    </span>
+    <svg className="mini-flag" viewBox="0 0 30 20" role="img" aria-label="Flagge">
+      <FlagCloth flag={flag} x={0} y={0} w={30} h={20} />
+    </svg>
   );
 }

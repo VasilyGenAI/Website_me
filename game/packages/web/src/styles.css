@@ -480,6 +480,5 @@ details p { margin: 0 0 8px; }
 .rail { stroke: #4a4a50; stroke-width: 1.3; stroke-linecap: round; }
 
 /* Country flag next to a board's name */
-.mini-flag { display: inline-flex; flex-direction: column; width: 1.35em; height: .9em; margin-left: .4em; vertical-align: .08em;
-  border-radius: 2px; overflow: hidden; box-shadow: 0 0 0 1px rgba(0,0,0,.35); }
-.mini-flag span { flex: 1; }
+.mini-flag { display: inline-block; width: 1.35em; height: .9em; margin-left: .4em; vertical-align: .08em;
+  border-radius: 2px; box-shadow: 0 0 0 1px rgba(0,0,0,.35); }

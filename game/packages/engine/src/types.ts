@@ -84,8 +84,17 @@ export interface MapDef {
    * these take the kind of the nearest listed cell; without this everything around is water.
    */
   surroundings?: { sea: TileId[]; land: TileId[] };
-  /** The country's flag as horizontal stripes, top to bottom; it flies over the desert. */
-  flag?: string[];
+  /** The country's flag; it flies over the desert and sits next to the board's name. */
+  flag?: FlagDef;
+}
+
+/**
+ * A flag as stripes of colour: horizontal top to bottom (default), vertical left to right, or
+ * 'cross' for a centred cross in colors[1] on colors[0] (Switzerland).
+ */
+export interface FlagDef {
+  colors: string[];
+  layout?: 'horizontal' | 'vertical' | 'cross';
 }
 
 export type DevCardType = 'knight' | 'roadBuilding' | 'yearOfPlenty' | 'monopoly' | 'victoryPoint';

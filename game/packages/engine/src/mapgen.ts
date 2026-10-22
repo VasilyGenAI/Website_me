@@ -120,8 +120,11 @@ export function validateMap(map: MapDef): string[] {
     if (p.kind !== undefined && !['harbor', 'gondola', 'treehouse', 'mine'].includes(p.kind)) errors.push(`Port at ${p.q},${p.r}: unknown kind`);
     usedEdges.add(key);
   }
-  if (map.flag !== undefined && (!Array.isArray(map.flag) || map.flag.length > 5 || !map.flag.every((c) => /^#[0-9a-fA-F]{6}$/.test(c)))) {
-    errors.push('Flag must be up to five colours like #ffcc00');
+  const flag = map.flag;
+  if (flag !== undefined) {
+    const colours = Array.isArray(flag?.colors) ? flag.colors : [];
+    if (colours.length < 1 || colours.length > 5 || !colours.every((c) => /^#[0-9a-fA-F]{6}$/.test(c))) errors.push('Flag must be one to five colours like #ffcc00');
+    if (flag.layout !== undefined && !['horizontal', 'vertical', 'cross'].includes(flag.layout)) errors.push('Unknown flag layout');
   }
   const corners = new Set(topology(map).vertices);
   for (const [a, b] of map.bridges ?? []) {

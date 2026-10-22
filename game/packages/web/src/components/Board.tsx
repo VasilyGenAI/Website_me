@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { hexCorners, pips, tileId, topology, vertexPoint } from '@kontinentalist/engine';
-import type { Building, EdgeId, FogTile, MapDef, PortKind, PortType, TileId, VertexId } from '@kontinentalist/engine';
+import type { Building, EdgeId, FlagDef, FogTile, MapDef, PortKind, PortType, TileId, VertexId } from '@kontinentalist/engine';
 import { FOREIGN_IMAGE, RESOURCE_STYLE, SEA_IMAGE, SHORE, TERRAIN_STYLE, portLabel, portStyle } from '../theme';
 
 const S = 50; // hex size in SVG units
@@ -366,7 +366,7 @@ export function Board(props: BoardProps) {
             )}
             <polygon className="tile-light" points={polygon(t.q, t.r, INNER)} />
             <polygon className="tile-bevel" points={polygon(t.q, t.r, INNER)} />
-            {map.flag && shown.terrain === 'desert' && <Flag x={c.x - S * 0.38} y={c.y + S * 0.34} stripes={map.flag} />}
+            {map.flag && shown.terrain === 'desert' && <Flag x={c.x - S * 0.38} y={c.y + S * 0.34} flag={map.flag} />}
             {shown.number !== null && (
               <g filter="url(#shadow)">
                 <circle cx={c.x} cy={c.y + S * 0.12} r={S * 0.34} fill="url(#wood)" stroke="#9c7a45" strokeWidth={1.5} />
@@ -586,20 +586,47 @@ function City({ color }: { color: string }) {
   );
 }
 
+/**
+ * The colours of a flag filling the box (x, y, w, h): stripes across or down, or a centred cross
+ * (Switzerland). Used on the board's flagpole and next to the board's name.
+ */
+export function FlagCloth({ flag, x, y, w, h }: { flag: FlagDef; x: number; y: number; w: number; h: number }) {
+  const { colors, layout = 'horizontal' } = flag;
+  if (layout === 'cross') {
+    const arm = h * 0.2;
+    return (
+      <>
+        <rect x={x} y={y} width={w} height={h} fill={colors[0]} />
+        <rect x={x + w / 2 - arm / 2} y={y + h * 0.2} width={arm} height={h * 0.6} fill={colors[1] ?? '#ffffff'} />
+        <rect x={x + w / 2 - h * 0.3} y={y + h / 2 - arm / 2} width={h * 0.6} height={arm} fill={colors[1] ?? '#ffffff'} />
+      </>
+    );
+  }
+  const n = colors.length;
+  return (
+    <>
+      {colors.map((c, i) =>
+        layout === 'vertical' ? (
+          <rect key={i} x={x + (i * w) / n} y={y} width={w / n + 0.3} height={h} fill={c} />
+        ) : (
+          <rect key={i} x={x} y={y + (i * h) / n} width={w} height={h / n + 0.3} fill={c} />
+        ),
+      )}
+    </>
+  );
+}
+
 /** A flagpole on a stone base with the country's flag waving from the top; (x, y) is the foot. */
-function Flag({ x, y, stripes }: { x: number; y: number; stripes: string[] }) {
-  // Stripes cover the whole waving outline (it bulges 3 units above and below the 16-high cloth).
-  const h = 22 / stripes.length;
+function Flag({ x, y, flag }: { x: number; y: number; flag: FlagDef }) {
   return (
     <g transform={`translate(${x} ${y})`} filter="url(#shadow)" className="flag" pointerEvents="none">
       <ellipse cx={0} cy={0} rx={6} ry={2.4} fill="#8f8574" stroke={INK} strokeWidth={0.9} />
       <line x1={0} y1={0} x2={0} y2={-34} stroke="#5c3b1a" strokeWidth={2.2} strokeLinecap="round" />
       <circle cx={0} cy={-35} r={1.9} fill="#e0b84a" stroke={INK} strokeWidth={0.7} />
       <g transform="translate(1 -33)">
+        {/* The cloth bulges 3 units above and below its 16-unit height as it waves. */}
         <g clipPath="url(#flagWave)">
-          {stripes.map((c, i) => (
-            <rect key={i} x={0} y={-3 + i * h} width={25} height={h + 0.3} fill={c} />
-          ))}
+          <FlagCloth flag={flag} x={0} y={-3} w={25} h={22} />
         </g>
         <path d="M0,0 C8,-3 16,3 25,0 L25,16 C16,19 8,13 0,16 Z" fill="none" stroke={INK} strokeWidth={0.9} strokeLinejoin="round" />
       </g>

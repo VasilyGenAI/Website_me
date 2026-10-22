@@ -3,7 +3,7 @@ import type { GameView } from './view';
 
 export type Role = 'admin' | 'pro' | 'basic';
 
-export type PresetId = 'standard' | 'deutschland' | 'ukraine' | 'nebelwald';
+export type PresetId = 'standard' | 'deutschland' | 'ukraine' | 'polen' | 'italien' | 'frankreich' | 'oesterreich' | 'schweiz' | 'nebelwald';
 
 export const CAN_CREATE_MAPS: Record<Role, boolean> = { admin: true, pro: true, basic: false };
 

@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { AXIAL_NEIGHBORS, actingPlayers, applyAction, botAction, createGame, germanyMap, topology, ukraineMap, validateMap } from '../src/index';
+import { AXIAL_NEIGHBORS, PRESET_MAPS, actingPlayers, applyAction, botAction, createGame, italyMap, topology, ukraineMap, validateMap } from '../src/index';
 import type { GameState, MapDef } from '../src/index';
+
+const { nebelwald: _fog, ...countries } = PRESET_MAPS;
+const COUNTRIES = Object.values(countries);
 
 const PLAYERS = ['Ana', 'Ben', 'Cem', 'Dag'].map((name, i) => ({ id: `p${i}`, name, color: `c${i}`, isBot: true }));
 
@@ -17,7 +20,8 @@ function playOut(map: MapDef, seed: number): GameState {
 
 describe('country boards', () => {
   it('are valid, with every resource and eight trading posts on the right borders', () => {
-    for (const map of [germanyMap(), ukraineMap()]) {
+    for (const make of COUNTRIES) {
+      const map = make();
       expect(validateMap(map)).toEqual([]);
       for (const t of ['forest', 'hills', 'pasture', 'fields', 'mountains']) expect(map.tiles.some((x) => x.terrain === t)).toBe(true);
       expect(map.ports).toHaveLength(8);
@@ -32,7 +36,7 @@ describe('country boards', () => {
       }
       expect(map.surroundings!.sea.length).toBeGreaterThan(0);
       expect(map.surroundings!.land.length).toBeGreaterThan(0);
-      expect(map.flag!.length).toBeGreaterThan(1);
+      expect(map.flag!.colors.length).toBeGreaterThan(1);
       expect(map.tiles.some((t) => t.terrain === 'desert')).toBe(true); // where the flag flies
     }
   });
@@ -56,8 +60,30 @@ describe('country boards', () => {
     expect([...seen].some((id) => map.tiles.find((x) => `${x.q},${x.r}` === id)!.terrain === 'mountains')).toBe(true);
   });
 
-  it('bots finish games on both boards', () => {
-    expect(playOut(germanyMap(), 2).phase.type).toBe('ended');
-    expect(playOut(ukraineMap(), 3).phase.type).toBe('ended');
-  }, 60000);
+  it('Sicily is joined to Calabria by one bridge; Sardinia is an island of its own', () => {
+    const map = italyMap();
+    expect(map.bridges).toHaveLength(1);
+    const t = topology(map);
+    // Land masses when only tile sides count (bridges left out).
+    const groups: number[] = [];
+    const seen = new Set<string>();
+    for (const start of t.tiles) {
+      if (seen.has(start)) continue;
+      let n = 0;
+      const stack = [start];
+      while (stack.length) {
+        const id = stack.pop()!;
+        if (seen.has(id)) continue;
+        seen.add(id);
+        n++;
+        for (const v of t.tileVertices[id]) for (const x of t.vertexTiles[v]) stack.push(x);
+      }
+      groups.push(n);
+    }
+    expect(groups.sort((a, b) => b - a).slice(1)).toEqual([5, 5]); // Sicily and Sardinia
+  });
+
+  it('bots finish games on every country board', () => {
+    COUNTRIES.forEach((make, i) => expect(playOut(make(), i + 2).phase.type).toBe('ended'));
+  }, 120000);
 });
