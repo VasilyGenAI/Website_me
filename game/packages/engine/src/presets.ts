@@ -167,8 +167,8 @@ export function germanyMap(): MapDef {
       '.WAPHH....', //  Pfälzerwald, Pfalz, Würzburg, Nürnberg, Oberpfalz
       '.GWPGHW...', //  Saarland, Nordschwarzwald, Stuttgart, Schwäbische Alb, Regensburg, Bayerischer Wald
       '..WPAAP...', //  Schwarzwald, Alb, Augsburg, München, Passau
-      '..W~GGG...', //  Freiburg, Bodensee, Allgäu, Zugspitze, Berchtesgaden
-      '...~~.....', //  Bodensee mit der Schweiz und Österreich
+      '..W~GGG...', //  Freiburg, Bodensee (der einzige See im Süden), Allgäu, Zugspitze, Berchtesgaden
+      '..........', //  Schweiz, Österreich
     ],
     ports: [
       { row: 1, col: 3, type: 'wool', sides: [4, 5, 0] }, // Sylt, Schafe auf dem Deich
@@ -178,8 +178,8 @@ export function germanyMap(): MapDef {
       { row: 2, col: 4, type: 'lumber', sides: [1, 0] }, // Kiel
       { row: 2, col: 6, type: 'any', sides: [0, 5, 4] }, // Rostock
       { row: 2, col: 7, type: 'brick', sides: [0, 5] }, // Stralsund, Backsteingotik
-      { row: 12, col: 4, type: 'ore', sides: [3, 4] }, // Lindau am Bodensee
-      { row: 12, col: 2, type: 'any', sides: [1] }, // Konstanz
+      { row: 12, col: 4, type: 'ore', sides: [4] }, // Lindau am Bodensee
+      { row: 1, col: 3, type: 'any', sides: [1] }, // Flensburg
     ],
     labels: [
       { row: 2, col: 4, text: 'Kiel' },

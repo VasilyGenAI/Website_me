@@ -355,7 +355,7 @@ details p { margin: 0 0 8px; }
 .sea { pointer-events: none; }
 .piece { transition: transform .12s ease-out; }
 
-.sea-texture { opacity: .5; }
+.sea-texture { opacity: .42; }
 
 /* Raised tiles with sandy paths between them */
 .tile-base { filter: drop-shadow(0 2px 1.5px rgba(60, 40, 10, .45)); }
@@ -463,7 +463,10 @@ details p { margin: 0 0 8px; }
 
 /* Neighbouring countries and bridges */
 .abroad { pointer-events: none; }
-.abroad-tint { fill: #6b4a1a; fill-opacity: .1; stroke: none; }
+/* Deep, muted earth brown: dark enough that the resource tiles carry the colour, warm enough to
+   sit with the sandy shore, and unlike a cool grey it keeps the grey mountain tiles readable. */
+.abroad-land { filter: saturate(.45) brightness(.6); }
+.abroad-tint { fill: #2a1c0e; fill-opacity: .35; stroke: none; }
 .bridge { pointer-events: none; }
 .bridge-edge { stroke: #3d2610; stroke-width: 15; stroke-linecap: round; }
 .bridge-wood { stroke: #b07a3f; stroke-width: 11.5; stroke-linecap: round; }

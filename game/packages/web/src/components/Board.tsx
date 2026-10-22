@@ -308,7 +308,7 @@ export function Board(props: BoardProps) {
       {/* Foreign land over the surf, so foam only shows where the board meets the sea. */}
       {abroad.map((pts, i) => (
         <g key={`a${i}`} className="abroad">
-          <polygon points={pts} fill="url(#landTex)" stroke="url(#landTex)" strokeWidth={2} />
+          <polygon className="abroad-land" points={pts} fill="url(#landTex)" stroke="url(#landTex)" strokeWidth={2} />
           <polygon points={pts} className="abroad-tint" />
         </g>
       ))}
