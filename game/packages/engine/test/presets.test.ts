@@ -39,7 +39,6 @@ describe('country boards', () => {
         const n = AXIAL_NEIGHBORS[p.side];
         expect((p.kind === 'harbor' ? sea : abroad).has(`${p.q + n[0]},${p.r + n[1]}`)).toBe(true);
       }
-      expect(map.surroundings!.sea.length).toBeGreaterThan(0);
       expect(map.surroundings!.land.length).toBeGreaterThan(0);
       expect(map.flag!.colors.length).toBeGreaterThan(1);
       expect(map.tiles.some((t) => t.terrain === 'desert')).toBe(true); // where the flag flies
@@ -152,7 +151,9 @@ describe('water names', () => {
     for (const make of [...COUNTRIES, PRESET_MAPS.nebelwald]) {
       const map = make();
       const land = new Set(map.tiles.map((t) => `${t.q},${t.r}`));
-      expect(map.waterLabels?.length ?? 0).toBeGreaterThan(0);
+      // Landlocked countries (Luxembourg, Liechtenstein) have no water to name.
+      if (map.surroundings && map.surroundings.sea.length === 0) continue;
+      expect(map.waterLabels?.length ?? 0, map.name).toBeGreaterThan(0);
       for (const w of map.waterLabels!) expect(land.has(`${w.q},${w.r}`), `${map.name}: ${w.text}`).toBe(false);
       if (map.surroundings) for (const w of map.waterLabels!) expect(map.surroundings.land.includes(`${w.q},${w.r}`), `${map.name}: ${w.text}`).toBe(false);
     }

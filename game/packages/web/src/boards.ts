@@ -21,7 +21,21 @@ function counts(map: MapDef): string {
   return `${map.tiles.length} Felder${fog ? ` (${fog} im Nebel)` : ''} · ${map.ports.length} Tauschstellen`;
 }
 
-type Country = 'deutschland' | 'ukraine' | 'frankreich' | 'italien' | 'polen' | 'oesterreich' | 'schweiz' | 'uk' | 'irland';
+type Country =
+  | 'deutschland'
+  | 'ukraine'
+  | 'frankreich'
+  | 'italien'
+  | 'spanien'
+  | 'polen'
+  | 'niederlande'
+  | 'belgien'
+  | 'luxemburg'
+  | 'liechtenstein'
+  | 'oesterreich'
+  | 'schweiz'
+  | 'uk'
+  | 'irland';
 
 /** A country board in both sizes: its three largest cities, the capital first, then the counts. */
 function country(id: Country, capital: string, cities: [string, string]): BoardChoice[] {
@@ -42,7 +56,12 @@ export const PRESET_CHOICES: BoardChoice[] = [
   ...country('ukraine', 'Kyjiw', ['Charkiw', 'Odesa']),
   ...country('frankreich', 'Paris', ['Marseille', 'Lyon']),
   ...country('italien', 'Rom', ['Mailand', 'Neapel']),
+  ...country('spanien', 'Madrid', ['Barcelona', 'Valencia']),
   ...country('polen', 'Warschau', ['Krakau', 'Łódź']),
+  ...country('niederlande', 'Amsterdam', ['Rotterdam', 'Den Haag']),
+  ...country('belgien', 'Brüssel', ['Antwerpen', 'Gent']),
+  ...country('luxemburg', 'Luxemburg', ['Esch-sur-Alzette', 'Differdingen']),
+  ...country('liechtenstein', 'Vaduz', ['Schaan', 'Triesen']),
   ...country('oesterreich', 'Wien', ['Graz', 'Linz']),
   ...country('schweiz', 'Bern', ['Zürich', 'Genf']),
   ...country('uk', 'London', ['Birmingham', 'Glasgow']),

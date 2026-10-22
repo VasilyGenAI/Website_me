@@ -1158,6 +1158,509 @@ export function irelandSmallMap(): MapDef {
 }
 
 /**
+ * The Netherlands: Frisian pastures, Groningen farmland and gas, the Veluwe and Drenthe woods,
+ * river-clay brickworks along the Rhine and Waal, IJmuiden steel and Limburg coal, the IJsselmeer, and the
+ * Loonse Duinen sand dunes under the flag.
+ */
+export function netherlandsMap(): MapDef {
+  return drawnMap({
+    name: 'Niederlande',
+    flag: { colors: ['#ae1c28', '#ffffff', '#21468b'] },
+    rows: [
+      '~~~~~~~~~~',
+      '~~~~~PPAA.',
+      '~~~~PHPWW.',
+      '~~~~~AGW..',
+      '~~~~GAWP..',
+      '~~~PPWWP..',
+      '~~~HPHH...',
+      '~AAGDWA...',
+      '..A...H...',
+      '..........',
+    ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
+    ports: [
+      { row: 1, col: 5, type: 'wool', kind: 'harbor', sides: [0] },
+      { row: 1, col: 8, type: 'any', kind: 'harbor', sides: [0] },
+      { row: 5, col: 7, type: 'lumber', kind: 'treehouse', sides: [0] },
+      { row: 8, col: 6, type: 'brick', kind: 'mine', sides: [1] },
+      { row: 7, col: 3, type: 'any', kind: 'gondola', sides: [2] },
+      { row: 7, col: 1, type: 'grain', kind: 'harbor', sides: [0] },
+      { row: 5, col: 3, type: 'ore', kind: 'harbor', sides: [4] },
+      { row: 4, col: 5, type: 'any', kind: 'harbor', sides: [5] },
+    ],
+    labels: [
+      { row: 4, col: 4, text: 'Amsterdam' },
+      { row: 7, col: 4, text: 'Loonse Duinen' },
+      { row: 6, col: 3, text: 'Rotterdam' },
+      { row: 5, col: 3, text: 'Den Haag' },
+      { row: 5, col: 4, text: 'Utrecht' },
+      { row: 7, col: 5, text: 'Eindhoven' },
+      { row: 1, col: 7, text: 'Groningen' },
+      { row: 4, col: 5, text: 'Almere' },
+      { row: 7, col: 3, text: 'Breda' },
+      { row: 6, col: 6, text: 'Nijmegen' },
+      { row: 5, col: 6, text: 'Arnhem' },
+      { row: 5, col: 7, text: 'Enschede' },
+      { row: 3, col: 6, text: 'Zwolle' },
+      { row: 1, col: 5, text: 'Leeuwarden' },
+      { row: 2, col: 4, text: 'Den Helder' },
+      { row: 7, col: 1, text: 'Middelburg' },
+      { row: 5, col: 5, text: 'Veluwe' },
+      { row: 2, col: 7, text: 'Assen' },
+    ],
+    waters: [{ row: 3, col: 2, text: 'Nordsee' }, { row: 0, col: 5, text: 'Wattenmeer' }, { row: 3, col: 4, text: 'IJsselmeer' }],
+    seed: 1648,
+  });
+}
+
+/**
+ * Niederlande, small: the same outline and regions in at most 21 tiles.
+ */
+export function netherlandsSmallMap(): MapDef {
+  return drawnMap({
+    name: 'Niederlande',
+    flag: { colors: ['#ae1c28', '#ffffff', '#21468b'] },
+    rows: [
+      '~~~~~~~',
+      '~~~PAA.',
+      '~~~HPW.',
+      '~~GAP..',
+      '~~PWWA.',
+      '~HDH...',
+      '~A.GW..',
+      '.......',
+    ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
+    ports: [
+      { row: 1, col: 3, type: 'grain', kind: 'harbor', sides: [0] },
+      { row: 1, col: 4, type: 'any', kind: 'harbor', sides: [0] },
+      { row: 1, col: 5, type: 'lumber', kind: 'mine', sides: [1] },
+      { row: 4, col: 5, type: 'brick', kind: 'mine', sides: [0] },
+      { row: 6, col: 4, type: 'any', kind: 'treehouse', sides: [0] },
+      { row: 6, col: 3, type: 'wool', kind: 'gondola', sides: [2] },
+      { row: 6, col: 1, type: 'ore', kind: 'mine', sides: [1] },
+      { row: 4, col: 2, type: 'any', kind: 'harbor', sides: [4] },
+    ],
+    labels: [
+      { row: 3, col: 2, text: 'Amsterdam' },
+      { row: 5, col: 2, text: 'Loonse Duinen' },
+      { row: 4, col: 2, text: 'Rotterdam' },
+      { row: 5, col: 1, text: 'Den Haag' },
+      { row: 4, col: 3, text: 'Utrecht' },
+      { row: 6, col: 3, text: 'Eindhoven' },
+      { row: 1, col: 4, text: 'Groningen' },
+      { row: 5, col: 3, text: 'Tilburg' },
+    ],
+    waters: [{ row: 3, col: 0, text: 'Nordsee' }, { row: 0, col: 3, text: 'Wattenmeer' }],
+    seed: 1648,
+  });
+}
+
+/**
+ * Belgium: Flemish fields and pastures, the Boom clay brickworks on the Rupel, Campine and Walloon coal
+ * (Genk, Charleroi, Liège), the Ardennes forests and the Hautes Fagnes, and the Kalmthout heath under the flag.
+ */
+export function belgiumMap(): MapDef {
+  return drawnMap({
+    name: 'Belgien',
+    flag: { colors: ['#000000', '#fdda24', '#ef3340'], layout: 'vertical' },
+    rows: [
+      '~~~......',
+      '~P.HDP...',
+      '.PHAHWG..',
+      '.HAWAAG..',
+      '..AGGAPG.',
+      '....WPPW.',
+      '.....HW..',
+      '.....WW..',
+      '.........',
+    ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
+    ports: [
+      { row: 1, col: 5, type: 'lumber', kind: 'treehouse', sides: [0] },
+      { row: 3, col: 6, type: 'any', kind: 'gondola', sides: [0] },
+      { row: 5, col: 7, type: 'wool', kind: 'treehouse', sides: [0] },
+      { row: 7, col: 5, type: 'ore', kind: 'treehouse', sides: [2] },
+      { row: 5, col: 4, type: 'any', kind: 'treehouse', sides: [3] },
+      { row: 4, col: 2, type: 'brick', kind: 'mine', sides: [2] },
+      { row: 1, col: 1, type: 'grain', kind: 'harbor', sides: [0] },
+      { row: 1, col: 3, type: 'any', kind: 'mine', sides: [0] },
+    ],
+    labels: [
+      { row: 3, col: 3, text: 'Brüssel' },
+      { row: 1, col: 4, text: 'Kalmthout' },
+      { row: 1, col: 3, text: 'Antwerpen' },
+      { row: 2, col: 3, text: 'Gent' },
+      { row: 4, col: 4, text: 'Charleroi' },
+      { row: 3, col: 6, text: 'Lüttich' },
+      { row: 1, col: 1, text: 'Brügge' },
+      { row: 4, col: 5, text: 'Namur' },
+      { row: 3, col: 4, text: 'Löwen' },
+      { row: 4, col: 3, text: 'Mons' },
+      { row: 2, col: 6, text: 'Hasselt' },
+      { row: 2, col: 4, text: 'Mechelen' },
+      { row: 2, col: 1, text: 'Ostende' },
+      { row: 3, col: 1, text: 'Kortrijk' },
+      { row: 7, col: 6, text: 'Arlon' },
+      { row: 5, col: 6, text: 'Bastogne' },
+      { row: 4, col: 7, text: 'Spa' },
+      { row: 5, col: 4, text: 'Dinant' },
+    ],
+    waters: [{ row: 1, col: 0, text: 'Nordsee' }],
+    seed: 1830,
+  });
+}
+
+/**
+ * Belgien, small: the same outline and regions in at most 21 tiles.
+ */
+export function belgiumSmallMap(): MapDef {
+  return drawnMap({
+    name: 'Belgien',
+    flag: { colors: ['#000000', '#fdda24', '#ef3340'], layout: 'vertical' },
+    rows: [
+      '~~.....',
+      '~PHDP..',
+      '.PAHAH.',
+      '.AGAGG.',
+      '...WPW.',
+      '....W..',
+      '.......',
+    ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
+    ports: [
+      { row: 1, col: 4, type: 'lumber', kind: 'treehouse', sides: [0] },
+      { row: 3, col: 5, type: 'any', kind: 'gondola', sides: [0] },
+      { row: 5, col: 4, type: 'brick', kind: 'treehouse', sides: [1] },
+      { row: 4, col: 3, type: 'wool', kind: 'treehouse', sides: [2] },
+      { row: 3, col: 1, type: 'any', kind: 'mine', sides: [2] },
+      { row: 2, col: 1, type: 'ore', kind: 'treehouse', sides: [3] },
+      { row: 1, col: 1, type: 'grain', kind: 'harbor', sides: [4] },
+      { row: 1, col: 2, type: 'any', kind: 'mine', sides: [0] },
+    ],
+    labels: [
+      { row: 2, col: 3, text: 'Brüssel' },
+      { row: 1, col: 3, text: 'Kalmthout' },
+      { row: 1, col: 2, text: 'Antwerpen' },
+      { row: 2, col: 2, text: 'Gent' },
+      { row: 3, col: 3, text: 'Charleroi' },
+      { row: 3, col: 4, text: 'Lüttich' },
+      { row: 1, col: 1, text: 'Brügge' },
+      { row: 4, col: 4, text: 'Namur' },
+    ],
+    waters: [{ row: 1, col: 0, text: 'Nordsee' }],
+    seed: 1830,
+  });
+}
+
+/**
+ * Luxembourg: the Ösling forests of the Ardennes in the north, Gutland farmland, Moselle vineyards, the
+ * Mullerthal sandstone, the Minett iron-ore basin, and the Remerschen gravel pits under the flag.
+ */
+export function luxembourgMap(): MapDef {
+  return drawnMap({
+    name: 'Luxemburg',
+    flag: { colors: ['#ed2939', '#ffffff', '#00a1de'] },
+    rows: [
+      '........',
+      '...G....',
+      '...W....',
+      '.PWP....',
+      '..PWGW..',
+      '.PAPWH..',
+      '..HPAAH.',
+      '..AWHA..',
+      '..GGHD..',
+      '...A....',
+      '........',
+    ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
+    ports: [
+      { row: 4, col: 5, type: 'lumber', kind: 'treehouse', sides: [0] },
+      { row: 6, col: 6, type: 'any', kind: 'mine', sides: [0] },
+      { row: 8, col: 5, type: 'brick', kind: 'mine', sides: [1] },
+      { row: 9, col: 3, type: 'ore', kind: 'mine', sides: [1] },
+      { row: 8, col: 2, type: 'any', kind: 'gondola', sides: [2] },
+      { row: 5, col: 1, type: 'wool', kind: 'treehouse', sides: [3] },
+      { row: 3, col: 1, type: 'grain', kind: 'treehouse', sides: [0] },
+      { row: 1, col: 3, type: 'any', kind: 'gondola', sides: [0] },
+    ],
+    labels: [
+      { row: 7, col: 3, text: 'Luxemburg' },
+      { row: 8, col: 5, text: 'Remerschen' },
+      { row: 8, col: 3, text: 'Esch-sur-Alzette' },
+      { row: 8, col: 2, text: 'Differdingen' },
+      { row: 9, col: 3, text: 'Düdelingen' },
+      { row: 4, col: 4, text: 'Ettelbrück' },
+      { row: 3, col: 2, text: 'Wiltz' },
+      { row: 5, col: 5, text: 'Echternach' },
+      { row: 6, col: 6, text: 'Grevenmacher' },
+      { row: 2, col: 3, text: 'Clerf' },
+      { row: 3, col: 3, text: 'Vianden' },
+      { row: 5, col: 3, text: 'Mersch' },
+      { row: 7, col: 5, text: 'Remich' },
+      { row: 1, col: 3, text: 'Ulflingen' },
+    ],
+    seed: 1867,
+  });
+}
+
+/**
+ * Luxemburg, small: the same outline and regions in at most 21 tiles.
+ */
+export function luxembourgSmallMap(): MapDef {
+  return drawnMap({
+    name: 'Luxemburg',
+    flag: { colors: ['#ed2939', '#ffffff', '#00a1de'] },
+    rows: [
+      '.......',
+      '..A....',
+      '..WW...',
+      '.PWG...',
+      '..HPAH.',
+      '..PAA..',
+      '..GHD..',
+      '..G....',
+      '.......',
+    ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
+    ports: [
+      { row: 3, col: 3, type: 'wool', kind: 'gondola', sides: [0] },
+      { row: 4, col: 5, type: 'any', kind: 'mine', sides: [0] },
+      { row: 6, col: 4, type: 'brick', kind: 'mine', sides: [1] },
+      { row: 7, col: 2, type: 'ore', kind: 'gondola', sides: [1] },
+      { row: 5, col: 2, type: 'any', kind: 'treehouse', sides: [4] },
+      { row: 3, col: 1, type: 'lumber', kind: 'treehouse', sides: [3] },
+      { row: 2, col: 2, type: 'grain', kind: 'treehouse', sides: [4] },
+      { row: 1, col: 2, type: 'any', kind: 'mine', sides: [0] },
+    ],
+    labels: [
+      { row: 6, col: 3, text: 'Luxemburg' },
+      { row: 6, col: 4, text: 'Remerschen' },
+      { row: 7, col: 2, text: 'Esch-sur-Alzette' },
+      { row: 6, col: 2, text: 'Differdingen' },
+      { row: 3, col: 3, text: 'Ettelbrück' },
+      { row: 4, col: 3, text: 'Diekirch' },
+      { row: 2, col: 2, text: 'Wiltz' },
+      { row: 4, col: 5, text: 'Echternach' },
+    ],
+    seed: 1867,
+  });
+}
+
+/**
+ * Liechtenstein: Rhine valley farmland in the west, the Unterland hills, forested slopes, and the Alps from
+ * Malbun to the Naafkopf; the flag stands on the Rhine gravel at Balzers.
+ */
+export function liechtensteinMap(): MapDef {
+  return drawnMap({
+    name: 'Liechtenstein',
+    flag: { colors: ['#002b7f', '#ce1126'] },
+    rows: [
+      '.......',
+      '..AA...',
+      '..HWP..',
+      '.AAWA..',
+      '..HHW..',
+      '..HPG..',
+      '..APGG.',
+      '.PWWP..',
+      '..DPG..',
+      '.......',
+    ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
+    ports: [
+      { row: 1, col: 3, type: 'lumber', kind: 'mine', sides: [0] },
+      { row: 3, col: 4, type: 'any', kind: 'mine', sides: [0] },
+      { row: 6, col: 5, type: 'wool', kind: 'gondola', sides: [0] },
+      { row: 8, col: 4, type: 'ore', kind: 'gondola', sides: [1] },
+      { row: 8, col: 2, type: 'any', kind: 'mine', sides: [2] },
+      { row: 6, col: 2, type: 'brick', kind: 'mine', sides: [4] },
+      { row: 3, col: 1, type: 'grain', kind: 'mine', sides: [3] },
+      { row: 1, col: 2, type: 'any', kind: 'mine', sides: [0] },
+    ],
+    labels: [
+      { row: 5, col: 2, text: 'Vaduz' },
+      { row: 8, col: 2, text: 'Balzers' },
+      { row: 4, col: 2, text: 'Schaan' },
+      { row: 7, col: 2, text: 'Triesen' },
+      { row: 3, col: 2, text: 'Eschen' },
+      { row: 2, col: 3, text: 'Mauren' },
+      { row: 6, col: 3, text: 'Triesenberg' },
+      { row: 1, col: 2, text: 'Ruggell' },
+      { row: 2, col: 2, text: 'Gamprin' },
+      { row: 1, col: 3, text: 'Schellenberg' },
+      { row: 4, col: 3, text: 'Planken' },
+      { row: 7, col: 4, text: 'Malbun' },
+      { row: 8, col: 4, text: 'Naafkopf' },
+    ],
+    seed: 1719,
+  });
+}
+
+/**
+ * Liechtenstein, small: the same outline and regions in at most 21 tiles.
+ */
+export function liechtensteinSmallMap(): MapDef {
+  return drawnMap({
+    name: 'Liechtenstein',
+    flag: { colors: ['#002b7f', '#ce1126'] },
+    rows: [
+      '.....',
+      '.A...',
+      '.AP..',
+      '.WW..',
+      '.HP..',
+      '.AGH.',
+      '.PWG.',
+      '.DH..',
+      '.....',
+    ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
+    ports: [
+      { row: 2, col: 2, type: 'lumber', kind: 'treehouse', sides: [0] },
+      { row: 4, col: 2, type: 'any', kind: 'treehouse', sides: [1] },
+      { row: 5, col: 3, type: 'brick', kind: 'mine', sides: [0] },
+      { row: 7, col: 2, type: 'grain', kind: 'mine', sides: [1] },
+      { row: 7, col: 1, type: 'any', kind: 'mine', sides: [2] },
+      { row: 6, col: 1, type: 'wool', kind: 'treehouse', sides: [3] },
+      { row: 2, col: 1, type: 'ore', kind: 'mine', sides: [3] },
+      { row: 1, col: 1, type: 'any', kind: 'mine', sides: [0] },
+    ],
+    labels: [
+      { row: 4, col: 1, text: 'Vaduz' },
+      { row: 6, col: 1, text: 'Balzers' },
+      { row: 3, col: 1, text: 'Schaan' },
+      { row: 5, col: 1, text: 'Triesen' },
+      { row: 2, col: 1, text: 'Eschen' },
+      { row: 2, col: 2, text: 'Mauren' },
+      { row: 6, col: 2, text: 'Triesenberg' },
+      { row: 1, col: 1, text: 'Ruggell' },
+    ],
+    seed: 1719,
+  });
+}
+
+/**
+ * Spain: Galician and Cantabrian pastures, the Pyrenees, Picos de Europa and Sierra Nevada, the wheat
+ * of Castile and La Mancha, Extremadura's dehesa, Valencian and Catalan clay, the Río Tinto mines, Mallorca,
+ * and the Tabernas desert under the flag.
+ */
+export function spainMap(): MapDef {
+  return drawnMap({
+    name: 'Spanien',
+    flag: { colors: ['#aa151b', '#f1bf00', '#f1bf00', '#aa151b'] },
+    rows: [
+      '~~~~~~~~~......',
+      '~WPPGGPWW......',
+      '~~WWAHAHAWGG...',
+      '~~..WAAPAAGHW~~',
+      '~~..PPGPGPP~~~~',
+      '~~.AAGHWWA~~~~~',
+      '~~..PHGAWH~~~P~',
+      '~..PPWAAPH~~~~~',
+      '~~..WAHHWH~~~~~',
+      '~~.GAAHGP~~~~~~',
+      '~~~~HWPGD~~~~~~',
+      '~~~~~~~~~~~~~~~',
+    ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
+    ports: [
+      { row: 1, col: 8, type: 'lumber', kind: 'treehouse', sides: [0] },
+      { row: 3, col: 12, type: 'any', kind: 'treehouse', sides: [0] },
+      { row: 6, col: 13, type: 'wool', kind: 'harbor', sides: [0] },
+      { row: 10, col: 7, type: 'grain', kind: 'harbor', sides: [2] },
+      { row: 10, col: 4, type: 'any', kind: 'harbor', sides: [2] },
+      { row: 5, col: 3, type: 'brick', kind: 'mine', sides: [3] },
+      { row: 1, col: 1, type: 'ore', kind: 'harbor', sides: [0] },
+      { row: 1, col: 3, type: 'any', kind: 'harbor', sides: [0] },
+    ],
+    labels: [
+      { row: 5, col: 6, text: 'Madrid' },
+      { row: 10, col: 8, text: 'Tabernas' },
+      { row: 3, col: 12, text: 'Barcelona' },
+      { row: 7, col: 9, text: 'Valencia' },
+      { row: 9, col: 4, text: 'Sevilla' },
+      { row: 3, col: 9, text: 'Zaragoza' },
+      { row: 10, col: 6, text: 'Málaga' },
+      { row: 8, col: 9, text: 'Murcia' },
+      { row: 6, col: 13, text: 'Palma' },
+      { row: 1, col: 7, text: 'Bilbao' },
+      { row: 9, col: 5, text: 'Córdoba' },
+      { row: 3, col: 5, text: 'Valladolid' },
+      { row: 2, col: 2, text: 'Vigo' },
+      { row: 1, col: 4, text: 'Gijón' },
+      { row: 1, col: 2, text: 'A Coruña' },
+      { row: 9, col: 6, text: 'Granada' },
+      { row: 6, col: 6, text: 'Toledo' },
+      { row: 4, col: 5, text: 'Salamanca' },
+      { row: 1, col: 1, text: 'Santiago' },
+      { row: 1, col: 8, text: 'Pamplona' },
+      { row: 1, col: 6, text: 'Santander' },
+      { row: 10, col: 7, text: 'Almería' },
+      { row: 10, col: 4, text: 'Cádiz' },
+      { row: 9, col: 3, text: 'Huelva' },
+      { row: 7, col: 3, text: 'Badajoz' },
+      { row: 6, col: 4, text: 'Cáceres' },
+      { row: 2, col: 7, text: 'Burgos' },
+      { row: 2, col: 5, text: 'León' },
+      { row: 3, col: 11, text: 'Tarragona' },
+      { row: 3, col: 10, text: 'Lleida' },
+      { row: 7, col: 8, text: 'Albacete' },
+      { row: 8, col: 4, text: 'Río Tinto' },
+      { row: 9, col: 7, text: 'Sierra Nevada' },
+      { row: 2, col: 11, text: 'Pyrenäen' },
+      { row: 6, col: 8, text: 'Cuenca' },
+    ],
+    waters: [{ row: 4, col: 0, text: 'Atlantik' }, { row: 0, col: 6, text: 'Golf von Biskaya' }, { row: 5, col: 11, text: 'Balearisches Meer' }, { row: 8, col: 11, text: 'Mittelmeer' }, { row: 11, col: 6, text: 'Alborán-Meer' }, { row: 10, col: 3, text: 'Golf von Cádiz' }],
+    seed: 1492,
+  });
+}
+
+/**
+ * Spanien, small: the same outline and regions in at most 21 tiles.
+ */
+export function spainSmallMap(): MapDef {
+  return drawnMap({
+    name: 'Spanien',
+    flag: { colors: ['#aa151b', '#f1bf00', '#f1bf00', '#aa151b'] },
+    rows: [
+      '~~~~~....',
+      '~WHGWW...',
+      '~~.PAWH~~',
+      '~.PGAH~P~',
+      '~~.PWA~~~',
+      '~.GAD~~~~',
+      '~~~~~~~~~',
+    ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
+    ports: [
+      { row: 1, col: 5, type: 'lumber', kind: 'treehouse', sides: [0] },
+      { row: 3, col: 7, type: 'any', kind: 'harbor', sides: [0] },
+      { row: 3, col: 5, type: 'brick', kind: 'harbor', sides: [1] },
+      { row: 5, col: 4, type: 'grain', kind: 'harbor', sides: [1] },
+      { row: 5, col: 2, type: 'any', kind: 'harbor', sides: [2] },
+      { row: 3, col: 2, type: 'wool', kind: 'treehouse', sides: [3] },
+      { row: 1, col: 1, type: 'ore', kind: 'harbor', sides: [0] },
+      { row: 1, col: 3, type: 'any', kind: 'harbor', sides: [0] },
+    ],
+    labels: [
+      { row: 3, col: 4, text: 'Madrid' },
+      { row: 5, col: 4, text: 'Tabernas' },
+      { row: 3, col: 5, text: 'Valencia' },
+      { row: 5, col: 2, text: 'Sevilla' },
+      { row: 2, col: 5, text: 'Zaragoza' },
+      { row: 5, col: 3, text: 'Málaga' },
+      { row: 4, col: 5, text: 'Murcia' },
+      { row: 3, col: 7, text: 'Palma' },
+    ],
+    waters: [{ row: 2, col: 1, text: 'Atlantik' }, { row: 0, col: 4, text: 'Golf von Biskaya' }, { row: 3, col: 6, text: 'Balearisches Meer' }, { row: 4, col: 6, text: 'Mittelmeer' }, { row: 6, col: 4, text: 'Alborán-Meer' }, { row: 6, col: 2, text: 'Golf von Cádiz' }],
+    seed: 1492,
+  });
+}
+
+/**
  * "Goldrausch": a gold field in the centre (it pays any resource), ringed by mountains and hills,
  * then a ring of six lakes with farmland between them, and two broad outer rings of everything.
  * Everyone wants a corner on the gold, so the middle is where the fights happen.
@@ -1218,6 +1721,16 @@ export const PRESET_MAPS = {
   'schweiz-klein': switzerlandSmallMap,
   'uk-klein': unitedKingdomSmallMap,
   'irland-klein': irelandSmallMap,
+  niederlande: netherlandsMap,
+  'niederlande-klein': netherlandsSmallMap,
+  belgien: belgiumMap,
+  'belgien-klein': belgiumSmallMap,
+  luxemburg: luxembourgMap,
+  'luxemburg-klein': luxembourgSmallMap,
+  liechtenstein: liechtensteinMap,
+  'liechtenstein-klein': liechtensteinSmallMap,
+  spanien: spainMap,
+  'spanien-klein': spainSmallMap,
   nebelwald: fogForestMap,
   goldrausch: goldRushMap,
 } as const;
