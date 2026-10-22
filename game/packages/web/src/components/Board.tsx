@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { hexCorners, pips, tileId, topology, vertexPoint } from '@kontinentalist/engine';
 import type { Building, EdgeId, FogTile, MapDef, PortType, TileId, VertexId } from '@kontinentalist/engine';
-import { RESOURCE_STYLE, SEA_IMAGE, SHORE, TERRAIN_STYLE, portLabel, portStyle } from '../theme';
+import { FOREIGN_IMAGE, RESOURCE_STYLE, SEA_IMAGE, SHORE, TERRAIN_STYLE, portLabel, portStyle } from '../theme';
 
 const S = 50; // hex size in SVG units
 const SEA_TILE = 260; // size of one repeat of the water texture
@@ -23,6 +23,52 @@ const polygon = (q: number, r: number, scale = 1) => {
     })
     .join(' ');
 };
+
+/** The hex cell (axial) containing the SVG point (x, y). */
+function cellAt(x: number, y: number): { q: number; r: number } {
+  const fq = ((Math.sqrt(3) / 3) * x - y / 3) / S;
+  const fr = ((2 / 3) * y) / S;
+  const fs = -fq - fr;
+  let q = Math.round(fq);
+  let r = Math.round(fr);
+  const s = Math.round(fs);
+  const dq = Math.abs(q - fq);
+  const dr = Math.abs(r - fr);
+  if (dq > dr && dq > Math.abs(s - fs)) q = -r - s;
+  else if (dr > Math.abs(s - fs)) r = -q - s;
+  return { q, r };
+}
+
+/**
+ * Whether a cell off the board is foreign land (true) or water (false). Listed cells say so
+ * themselves; any other takes the kind of the nearest listed cell, so the sea and the
+ * neighbouring countries carry on past the edge of the drawing.
+ */
+function foreignLand(map: MapDef): (q: number, r: number) => boolean {
+  const s = map.surroundings;
+  if (!s || s.land.length === 0) return () => false;
+  const listed = [...s.sea.map((id) => [id, false] as const), ...s.land.map((id) => [id, true] as const)].map(([id, land]) => {
+    const [q, r] = id.split(',').map(Number);
+    return { q, r, land };
+  });
+  const known = new Map(listed.map((c) => [tileId(c.q, c.r), c.land]));
+  return (q, r) => {
+    const id = tileId(q, r);
+    let hit = known.get(id);
+    if (hit === undefined) {
+      let best = Infinity;
+      for (const c of listed) {
+        const d = Math.abs(c.q - q) + Math.abs(c.r - r) + Math.abs(c.q + c.r - q - r);
+        if (d < best) {
+          best = d;
+          hit = c.land;
+        }
+      }
+      known.set(id, hit!);
+    }
+    return hit!;
+  };
+}
 
 /** Is (x, y) inside the pointy-top hexagon around (cx, cy) with corner radius `radius`? */
 function inHex(x: number, y: number, cx: number, cy: number, radius: number) {
@@ -53,7 +99,7 @@ interface HarborSpot {
  * boat takes the first spot nearby that is open water: clear of the surf and sand around every
  * tile, of all banks and of all walkways, so it never sits on the beach or hides behind anything.
  */
-function placeHarbors(map: MapDef): HarborSpot[] {
+function placeHarbors(map: MapDef, foreign: (q: number, r: number) => boolean): HarborSpot[] {
   const spots = map.ports.map((p) => {
     const cs = hexCorners(p.q, p.r);
     const a = pt(cs[p.side]);
@@ -67,7 +113,10 @@ function placeHarbors(map: MapDef): HarborSpot[] {
     return { ...p, ends: [a, b], mx, my, dx, dy, bank: { x: mx + dx * S * 0.86, y: my + dy * S * 0.86 } };
   });
   const centers = map.tiles.map((t) => center(t.q, t.r));
-  const onLand = (x: number, y: number) => centers.some((c) => inHex(x, y, c.x, c.y, S * 1.24));
+  const onLand = (x: number, y: number) => {
+    const cell = cellAt(x, y);
+    return centers.some((c) => inHex(x, y, c.x, c.y, S * 1.24)) || foreign(cell.q, cell.r);
+  };
   const walkways = spots.flatMap((h) => h.ends.map((e) => [e, { x: h.bank.x, y: h.bank.y + 4 }] as const));
   const boats: { x: number; y: number }[] = [];
   const free = (x: number, y: number) =>
@@ -129,7 +178,8 @@ export interface BoardProps {
 export function Board(props: BoardProps) {
   const { map, revealed = {}, buildings = {}, roads = {}, colors = [], robber = null } = props;
   const topo = useMemo(() => topology(map), [map]);
-  const harbors = useMemo(() => placeHarbors(map), [map]);
+  const foreign = useMemo(() => foreignLand(map), [map]);
+  const harbors = useMemo(() => placeHarbors(map, foreign), [map, foreign]);
 
   const viewBox = useMemo(() => {
     const cells = [...map.tiles, ...(props.ghostCells ?? [])];
@@ -157,6 +207,39 @@ export function Board(props: BoardProps) {
   }, [map, harbors, props.ghostCells]);
 
   const vb = viewBox.split(' ').map(Number);
+
+  // Neighbouring countries: runs of foreign land cells per hex row, out past every screen edge.
+  const abroad = useMemo(() => {
+    if (!map.surroundings?.land.length) return [];
+    const onBoard = new Set(map.tiles.map((t) => tileId(t.q, t.r)));
+    const [x0, y0, w, h] = viewBox.split(' ').map(Number);
+    const rowH = S * 1.5;
+    const colW = S * Math.sqrt(3);
+    const runs: string[] = [];
+    for (let r = Math.floor((y0 - h * 1.5) / rowH); r <= Math.ceil((y0 + h * 2.5) / rowH); r++) {
+      const qFrom = Math.floor((x0 - w * 1.5) / colW - r / 2);
+      const qTo = Math.ceil((x0 + w * 2.5) / colW - r / 2);
+      let start: number | null = null;
+      for (let q = qFrom; q <= qTo + 1; q++) {
+        const land = q <= qTo && !onBoard.has(tileId(q, r)) && foreign(q, r);
+        if (land && start === null) start = q;
+        if (!land && start !== null) {
+          const end = q - 1;
+          const c = (qq: number, i: number) => {
+            const p = pt(hexCorners(qq, r)[i]);
+            return `${p.x},${p.y}`;
+          };
+          const pts = [c(start, 5)];
+          for (let k = start; k <= end; k++) pts.push(c(k, 0), c(k, 1));
+          pts.push(c(end, 2));
+          for (let k = end; k >= start; k--) pts.push(c(k, 3), c(k, 4));
+          runs.push(pts.join(' '));
+          start = null;
+        }
+      }
+    }
+    return runs;
+  }, [map, viewBox, foreign]);
   const hintV = new Set(props.hintVertices ?? []);
   const hintE = new Set(props.hintEdges ?? []);
   const hintT = new Set(props.hintTiles ?? []);
@@ -195,6 +278,9 @@ export function Board(props: BoardProps) {
         <pattern id="seaTex" width={SEA_TILE} height={SEA_TILE} patternUnits="userSpaceOnUse">
           <image href={SEA_IMAGE} width={SEA_TILE} height={SEA_TILE} />
         </pattern>
+        <pattern id="landTex" width={SEA_TILE * 1.4} height={SEA_TILE * 1.4} patternUnits="userSpaceOnUse">
+          <image href={FOREIGN_IMAGE} width={SEA_TILE * 1.4} height={SEA_TILE * 1.4} />
+        </pattern>
         {map.tiles.map((t) => (
           <clipPath key={`k${t.q},${t.r}`} id={`hex${t.q}_${t.r}`}>
             <polygon points={polygon(t.q, t.r, INNER)} />
@@ -218,6 +304,13 @@ export function Board(props: BoardProps) {
       {/* Surf, then a sandy shore under the land, so the coastline reads at a glance. */}
       {map.tiles.map((t) => (
         <polygon key={`f${t.q},${t.r}`} points={polygon(t.q, t.r, 1.2)} className="surf" />
+      ))}
+      {/* Foreign land over the surf, so foam only shows where the board meets the sea. */}
+      {abroad.map((pts, i) => (
+        <g key={`a${i}`} className="abroad">
+          <polygon points={pts} fill="url(#landTex)" stroke="url(#landTex)" strokeWidth={2} />
+          <polygon points={pts} className="abroad-tint" />
+        </g>
       ))}
       {map.tiles.map((t) => (
         <polygon key={`s${t.q},${t.r}`} points={polygon(t.q, t.r, 1.12)} fill="url(#sand)" stroke={SHORE} strokeWidth={1} />
@@ -291,6 +384,22 @@ export function Board(props: BoardProps) {
               </g>
             )}
             {hintT.has(id) && <polygon className="hint-tile" points={polygon(t.q, t.r, 0.9)} />}
+          </g>
+        );
+      })}
+
+      {/* Bridges across the water, e.g. to an island: a wide wooden walkway, built on like any edge. */}
+      {map.bridges?.map(([a, b]) => {
+        const p = pt(a);
+        const q = pt(b);
+        return (
+          <g key={`br${a}-${b}`} className="bridge">
+            <line className="bridge-edge" x1={p.x} y1={p.y} x2={q.x} y2={q.y} />
+            <line className="bridge-wood" x1={p.x} y1={p.y} x2={q.x} y2={q.y} />
+            <line className="bridge-planks" x1={p.x} y1={p.y} x2={q.x} y2={q.y} />
+            {[p, q].map((e, k) => (
+              <circle key={k} className="walkway-post" cx={e.x} cy={e.y} r={4.5} />
+            ))}
           </g>
         );
       })}

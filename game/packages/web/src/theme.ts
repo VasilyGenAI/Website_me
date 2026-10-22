@@ -2,6 +2,7 @@ import type { PortType, Resource, Terrain } from '@kontinentalist/engine';
 import acker1 from './art/acker-1.webp';
 import gebirge1 from './art/gebirge-1.webp';
 import huegel1 from './art/huegel-1.webp';
+import duenen from './art/duenen.webp';
 import meer1 from './art/meer-1.webp';
 import nebel1 from './art/nebel-1.webp';
 import wald1 from './art/wald-1.webp';
@@ -44,4 +45,6 @@ export function portLabel(type: PortType): string {
 export const SEA = '#1565c0';
 /** Seamless water texture tiled behind the board. */
 export const SEA_IMAGE = meer1;
+/** Calm dunes for the neighbouring countries around a board, where there is land rather than sea. */
+export const FOREIGN_IMAGE = duenen;
 export const SHORE = '#f3dfa2';

@@ -66,6 +66,16 @@ export interface MapDef {
   fogPool?: FogTile[];
   /** Whether revealing a fog tile pays one card of its resource to the revealing player (default true). */
   fogReward?: boolean;
+  /**
+   * Extra edges across water, drawn as bridges: each joins two land corners one edge-length apart
+   * (e.g. an island to the mainland). Roads can be built on them like on any other edge.
+   */
+  bridges?: [VertexId, VertexId][];
+  /**
+   * What lies around the board, for drawing only: water cells and foreign land cells. Cells beyond
+   * these take the kind of the nearest listed cell; without this everything around is water.
+   */
+  surroundings?: { sea: TileId[]; land: TileId[] };
 }
 
 export type DevCardType = 'knight' | 'roadBuilding' | 'yearOfPlenty' | 'monopoly' | 'victoryPoint';

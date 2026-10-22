@@ -1,6 +1,6 @@
-import { AXIAL_NEIGHBORS, tileId, topology } from './geometry';
-import { STANDARD_NUMBERS, STANDARD_PORTS, hexagonCoords, redNumbersAdjacent } from './mapgen';
-import { shuffle } from './rng';
+import { AXIAL_NEIGHBORS, hexCorners, tileId } from './geometry';
+import { STANDARD_NUMBERS, hexagonCoords, redNumbersAdjacent } from './mapgen';
+import { randInt, shuffle } from './rng';
 import type { MapDef, MapPort, MapTile, PortType, Terrain } from './types';
 
 const ring = (q: number, r: number) => (Math.abs(q) + Math.abs(r) + Math.abs(q + r)) / 2;
@@ -55,91 +55,43 @@ export function fogForestMap(): MapDef {
 
 type Land = Exclude<Terrain, 'fog'>;
 
-interface ShapeSpec {
-  name: string;
-  /** Rows north to south in odd-r offset layout: 'X' is land, anything else is water. */
-  rows: string[];
-  counts: Record<Land, number>;
-  /** Preferred terrains for a cell, best first; row and col are 0..1 across the shape. */
-  prefer(row: number, col: number): Land[];
-  seed: number;
-}
-
-/**
- * Builds a fixed board in the outline of a real place. Terrain follows the region
- * (preferences), numbers are shuffled with a fixed seed so 6 and 8 never touch,
- * and nine harbours are spread evenly along the coast.
- */
-function shapeMap(spec: ShapeSpec): MapDef {
-  const cells: { q: number; r: number; row: number; col: number }[] = [];
-  const height = spec.rows.length;
-  const width = Math.max(...spec.rows.map((r) => r.length));
-  spec.rows.forEach((line, row) => {
-    [...line].forEach((ch, col) => {
-      if (ch !== 'X') return;
-      const r = row - Math.floor(height / 2);
-      const c = col - Math.floor(width / 2);
-      cells.push({ q: c - (r - (r & 1)) / 2, r, row: row / Math.max(1, height - 1), col: col / Math.max(1, width - 1) });
-    });
-  });
-
-  const rng = { rng: spec.seed };
-  const left = { ...spec.counts };
-  const order = shuffle(rng, cells.map((_, i) => i));
-  const terrain: Land[] = Array(cells.length);
-  for (const i of order) {
-    const want = spec.prefer(cells[i].row, cells[i].col).find((t) => left[t] > 0) ?? (Object.keys(left) as Land[]).find((t) => left[t] > 0)!;
-    terrain[i] = want;
-    left[want]--;
-  }
-
-  const numbered = terrain.filter((t) => t !== 'desert').length;
-  let tiles: MapTile[];
-  do {
-    const numbers = shuffle(rng, Array.from({ length: numbered }, (_, i) => STANDARD_NUMBERS[i % STANDARD_NUMBERS.length]));
-    let n = 0;
-    tiles = cells.map((c, i) => ({ q: c.q, r: c.r, terrain: terrain[i], number: terrain[i] === 'desert' ? null : numbers[n++] }));
-  } while (redNumbersAdjacent(tiles));
-
-  const coast = topology({ name: '', tiles, ports: [] }).coastalEdges;
-  const types = shuffle(rng, STANDARD_PORTS);
-  const ports: MapPort[] = types.map((type, i) => {
-    const c = coast[Math.floor((i * coast.length) / types.length)];
-    return { q: c.q, r: c.r, side: c.side, type };
-  });
-  return { name: spec.name, tiles, ports };
-}
-
-/** Germany: coast and pasture in the north, Ruhr hills in the west, Black Forest and Alps in the south. */
-export function germanyMap(): MapDef {
-  return shapeMap({
-    name: 'Deutschland',
-    rows: ['..X....', '.XXXX..', '.XXXXX.', 'XXXXXX.', '.XXXXX.', '.XXXXX.', '..XXXX.'],
-    counts: { forest: 7, pasture: 6, fields: 6, hills: 5, mountains: 5, desert: 1 },
-    prefer(row, col) {
-      if (row > 0.9) return ['mountains', 'forest'];
-      if (row > 0.75) return col < 0.45 ? ['forest', 'mountains'] : ['mountains', 'fields'];
-      if (row < 0.2) return ['pasture', 'fields'];
-      if (row < 0.4) return col > 0.4 && col < 0.6 ? ['desert', 'pasture'] : ['fields', 'pasture'];
-      return col < 0.4 ? ['hills', 'forest'] : ['forest', 'fields', 'hills'];
-    },
-    seed: 49,
-  });
-}
-
 const LETTER: Record<string, Land> = { W: 'forest', H: 'hills', P: 'pasture', A: 'fields', G: 'mountains', D: 'desert' };
 
 interface DrawnSpec {
   name: string;
   /**
    * Rows north to south in odd-r offset layout (odd rows sit half a hex to the right).
-   * W Wald, H Hügel, P Weide, A Acker, G Gebirge, D Wüste, anything else is water.
+   * W Wald, H Hügel, P Weide, A Acker, G Gebirge, D Wüste are tiles; around them `~` is sea
+   * (or a lake) and `.` is the land of the neighbouring countries.
    */
   rows: string[];
-  /** Harbours at a cell; the first listed side that faces water is used (0 NE, 1 E, 2 SE, 3 SW, 4 W, 5 NW). */
+  /** Harbours at a cell; the first listed side that faces the sea is used (0 NE, 1 E, 2 SE, 3 SW, 4 W, 5 NW). */
   ports: { row: number; col: number; type: PortType; sides: number[] }[];
   labels: { row: number; col: number; text: string }[];
+  /** Bridges from a cell (on an even row) straight down across one row of sea to the cell two rows below. */
+  bridges?: { row: number; col: number }[];
   seed: number;
+}
+
+/**
+ * On a big board a plain reshuffle almost never keeps every 6 and 8 apart, so instead move each
+ * red number that touches another onto a random tile where it touches none.
+ */
+function separateRedNumbers(tiles: MapTile[], rng: { rng: number }, name: string) {
+  const byId = new Map(tiles.map((t) => [tileId(t.q, t.r), t]));
+  const red = (t: MapTile | undefined) => t?.number === 6 || t?.number === 8;
+  const touchesRed = (t: MapTile, except?: MapTile) =>
+    AXIAL_NEIGHBORS.some(([dq, dr]) => {
+      const nb = byId.get(tileId(t.q + dq, t.r + dr));
+      return nb !== except && red(nb);
+    });
+  for (let guard = 0; redNumbersAdjacent(tiles); guard++) {
+    if (guard > 2000) throw new Error(`${name}: could not place numbers`);
+    const bad = tiles.find((t) => red(t) && touchesRed(t))!;
+    const spots = tiles.filter((t) => t.number !== null && !red(t) && !touchesRed(t, bad));
+    const spot = spots[randInt(rng, spots.length)];
+    [bad.number, spot.number] = [spot.number, bad.number];
+  }
 }
 
 /** A hand-drawn board: terrain exactly as drawn, numbers shuffled so 6 and 8 never touch. */
@@ -154,78 +106,188 @@ function drawnMap(spec: DrawnSpec): MapDef {
   };
 
   const cells: { q: number; r: number; terrain: Land; label?: string }[] = [];
+  const sea: string[] = [];
+  const foreign: string[] = [];
   spec.rows.forEach((line, row) =>
     [...line].forEach((ch, col) => {
+      const { q, r } = at(row, col);
+      if (ch === '~') sea.push(tileId(q, r));
+      else if (ch === '.') foreign.push(tileId(q, r));
       if (!LETTER[ch]) return;
       const label = spec.labels.find((l) => l.row === row && l.col === col)?.text;
-      cells.push({ ...at(row, col), terrain: LETTER[ch], ...(label ? { label } : {}) });
+      cells.push({ q, r, terrain: LETTER[ch], ...(label ? { label } : {}) });
     }),
   );
 
   const rng = { rng: spec.seed };
   const numbered = cells.filter((c) => c.terrain !== 'desert').length;
-  let tiles: MapTile[] = [];
-  for (let attempt = 0; ; attempt++) {
-    if (attempt > 5000) throw new Error(`${spec.name}: could not place numbers`);
-    const numbers = shuffle(rng, Array.from({ length: numbered }, (_, i) => STANDARD_NUMBERS[i % STANDARD_NUMBERS.length]));
-    let n = 0;
-    tiles = cells.map((c) => ({ ...c, number: c.terrain === 'desert' ? null : numbers[n++] }));
-    if (!redNumbersAdjacent(tiles)) break;
-  }
+  const numbers = shuffle(rng, Array.from({ length: numbered }, (_, i) => STANDARD_NUMBERS[i % STANDARD_NUMBERS.length]));
+  let n = 0;
+  const tiles: MapTile[] = cells.map((c) => ({ ...c, number: c.terrain === 'desert' ? null : numbers[n++] }));
+  separateRedNumbers(tiles, rng, spec.name);
 
   const land = new Set(tiles.map((t) => tileId(t.q, t.r)));
+  const water = new Set(sea);
   const ports: MapPort[] = spec.ports.map((p) => {
     const { q, r } = at(p.row, p.col);
-    const side = p.sides.find((s) => !land.has(tileId(q + AXIAL_NEIGHBORS[s][0], r + AXIAL_NEIGHBORS[s][1])));
-    if (side === undefined || !land.has(tileId(q, r))) throw new Error(`${spec.name}: no coast for port at ${p.row},${p.col}`);
+    const side = p.sides.find((s) => water.has(tileId(q + AXIAL_NEIGHBORS[s][0], r + AXIAL_NEIGHBORS[s][1])));
+    if (side === undefined || !land.has(tileId(q, r))) throw new Error(`${spec.name}: no sea for port at ${p.row},${p.col}`);
     return { q, r, side, type: p.type };
   });
-  return { name: spec.name, tiles, ports };
+
+  const bridges = (spec.bridges ?? []).map((b): [string, string] => {
+    const { q, r } = at(b.row, b.col);
+    const below = at(b.row + 2, b.col);
+    if (!land.has(tileId(q, r)) || !land.has(tileId(below.q, below.r))) throw new Error(`${spec.name}: bridge at ${b.row},${b.col} needs land at both ends`);
+    // The bottom corner of the upper cell and the top corner of the lower one, one edge apart.
+    return [hexCorners(q, r)[3], hexCorners(below.q, below.r)[0]];
+  });
+
+  return { name: spec.name, tiles, ports, ...(bridges.length ? { bridges } : {}), surroundings: { sea, land: foreign } };
 }
 
 /**
- * Ukraine, drawn after the physical map: Polissia forests in the north, the Carpathians in the
- * west, wheat steppe in the middle, Kryvyi Rih iron and Donbas coal in the east, Odesa with the
- * Budjak strip down to the Danube, the Oleshky sands, and Crimea with all five resources.
+ * Germany, drawn after the physical map (one hex is about 80 km): North Sea and Baltic coasts,
+ * the Lüneburg heath, the Harz and Sauerland (Brilon), Lusatia, the Erzgebirge, Franconian and
+ * Bavarian clay, the Black Forest with three forests, Lake Constance and the Alps.
+ */
+export function germanyMap(): MapDef {
+  return drawnMap({
+    name: 'Deutschland',
+    rows: [
+      '~~~...~~~~', //  Nordsee, Dänemark, Ostsee
+      '~~~P~~~~~~', //  Schleswig
+      '~~~PA~AW..', //  Dithmarschen, Holstein, Rostock, Vorpommern
+      '.PPAWAWA..', //  Ostfriesland, Oldenburg, Hamburg, Sachsenwald, Schwerin, Seenplatte, Uckermark
+      '..HHDPWA..', //  Emsland, Bremen, Lüneburger Heide, Altmark, Havelland, Berlin
+      '.APHAAPP..', //  Münster, Osnabrück, Hannover, Braunschweig, Magdeburg, Fläming, Spreewald
+      '.AHGGPAHW.', //  Düsseldorf, Dortmund, Brilon, Harz, Halle, Leipzig, Lausitz, Görlitz
+      'HAWWPHHG..', //  Aachen, Köln, Westerwald, Kassel, Erfurt, Jena, Chemnitz, Dresden
+      '.GWAWG....', //  Eifel, Taunus, Frankfurt, Thüringer Wald, Erzgebirge
+      '.WAPHH....', //  Pfälzerwald, Pfalz, Würzburg, Nürnberg, Oberpfalz
+      '.GWPGHW...', //  Saarland, Nordschwarzwald, Stuttgart, Schwäbische Alb, Regensburg, Bayerischer Wald
+      '..WPAAP...', //  Schwarzwald, Alb, Augsburg, München, Passau
+      '..W~GGG...', //  Freiburg, Bodensee, Allgäu, Zugspitze, Berchtesgaden
+      '...~~.....', //  Bodensee mit der Schweiz und Österreich
+    ],
+    ports: [
+      { row: 1, col: 3, type: 'wool', sides: [4, 5, 0] }, // Sylt, Schafe auf dem Deich
+      { row: 2, col: 3, type: 'any', sides: [4, 3] }, // Cuxhaven
+      { row: 3, col: 1, type: 'any', sides: [5, 4] }, // Emden
+      { row: 3, col: 2, type: 'grain', sides: [5, 0] }, // Bremerhaven
+      { row: 2, col: 4, type: 'lumber', sides: [1, 0] }, // Kiel
+      { row: 2, col: 6, type: 'any', sides: [0, 5, 4] }, // Rostock
+      { row: 2, col: 7, type: 'brick', sides: [0, 5] }, // Stralsund, Backsteingotik
+      { row: 12, col: 4, type: 'ore', sides: [3, 4] }, // Lindau am Bodensee
+      { row: 12, col: 2, type: 'any', sides: [1] }, // Konstanz
+    ],
+    labels: [
+      { row: 2, col: 4, text: 'Kiel' },
+      { row: 2, col: 6, text: 'Rostock' },
+      { row: 3, col: 1, text: 'Emden' },
+      { row: 3, col: 3, text: 'Hamburg' },
+      { row: 4, col: 3, text: 'Bremen' },
+      { row: 4, col: 4, text: 'Heide' },
+      { row: 4, col: 7, text: 'Berlin' },
+      { row: 5, col: 1, text: 'Münster' },
+      { row: 5, col: 3, text: 'Hannover' },
+      { row: 5, col: 5, text: 'Magdeburg' },
+      { row: 6, col: 1, text: 'Düsseldorf' },
+      { row: 6, col: 2, text: 'Dortmund' },
+      { row: 6, col: 3, text: 'Brilon' },
+      { row: 6, col: 4, text: 'Harz' },
+      { row: 6, col: 6, text: 'Leipzig' },
+      { row: 7, col: 0, text: 'Aachen' },
+      { row: 7, col: 1, text: 'Köln' },
+      { row: 7, col: 3, text: 'Kassel' },
+      { row: 7, col: 4, text: 'Erfurt' },
+      { row: 7, col: 6, text: 'Chemnitz' },
+      { row: 7, col: 7, text: 'Dresden' },
+      { row: 8, col: 3, text: 'Frankfurt' },
+      { row: 8, col: 5, text: 'Erzgebirge' },
+      { row: 9, col: 3, text: 'Würzburg' },
+      { row: 9, col: 4, text: 'Nürnberg' },
+      { row: 10, col: 1, text: 'Saarbrücken' },
+      { row: 10, col: 2, text: 'Baden-Baden' },
+      { row: 10, col: 3, text: 'Stuttgart' },
+      { row: 10, col: 5, text: 'Regensburg' },
+      { row: 11, col: 2, text: 'Schwarzwald' },
+      { row: 11, col: 4, text: 'Augsburg' },
+      { row: 11, col: 5, text: 'München' },
+      { row: 11, col: 6, text: 'Passau' },
+      { row: 12, col: 2, text: 'Freiburg' },
+      { row: 12, col: 5, text: 'Zugspitze' },
+    ],
+    seed: 49,
+  });
+}
+
+/**
+ * Ukraine, drawn after the physical map (one hex is about 95 km): Polissia forests with a few
+ * sheep in the north, the Carpathians and the Lviv coal in the west, granite and iron along the
+ * Dnipro (Zhytomyr, Kryvyi Rih, Nikopol), wheat steppe, the Donbas in the east, Odesa with the
+ * Budjak strip down to the Danube, the Oleshky sands, and Crimea as an island with all five
+ * resources, joined to the mainland by one bridge at Perekop.
  */
 export function ukraineMap(): MapDef {
   return drawnMap({
     name: 'Ukraine',
-    // Each cell is about 1.8° of longitude by 1° of latitude, placed from real coordinates.
     rows: [
-      '.WWWWWA...', //  Wolyn, Riwne, Schytomyr, Polissja, Tschernihiw, Sumy
-      'HPWWAPA...', //  Tscherwonohrad, Luzk, Riwne, Schytomyr, Kyjiw, Nischyn, Sumy
-      'WHAAAWPAPH', //  Jaworiw, Lwiw, Ternopil, Winnyzja, Bila Zerkwa, Tscherkassy, Poltawa, Charkiw, Kupjansk, Luhansk-Nord
-      'GGPAPAHAHG', //  Uschhorod, Iwano-Frankiwsk, Kamjanez, Winnyzja, Uman, Kropywnyzkyj, Dnipro, Pawlohrad, Kramatorsk, Luhansk
-      '.GW.PAGHGH', //  Howerla, Czernowitz, (Moldau), Podilsk, Perwomajsk, Krywyj Rih, Saporischschja, Donezk, Donbas
-      '....ADAPG.', //  Odesa, Oleschky-Sande, Melitopol, Berdjansk, Mariupol
-      '...PA.AH..', //  Ismajil (Donau), Bilhorod, Krim-Nord, Kertsch
-      '.....PGW..', //  Sewastopol, Jalta, Sudak
+      '.................', //  Belarus, Russland
+      '..WW...WPW.......', //  Wolyn, Polissja, Tschernihiw
+      '..WPWGHWAWP......', //  Kowel, Riwne, Polissja, Owrutsch, Kyjiw-Nord, Tschernihiw, Nischyn, Sumy
+      '..GWAGAPAHPA.....', //  Tscherwonohrad, Riwne, Schytomyr-Süd, Schytomyr, Kyjiw, Perejaslaw, Poltawa-Nord, Sumy-Süd, Charkiw
+      '.HAHPAHWPAHPHHW..', //  Lwiw-West, Lwiw, Ternopil, Chmelnyzkyj, Winnyzja-Nord, Bila Zerkwa, Tscherkassy, Poltawa, Charkiw, Luhansk-Nord
+      '.GWPAHGPGHAGHG...', //  Beskiden, Iwano-Frankiwsk, Podilsk, Winnyzja, Uman, Kropywnyzkyj, Dnipro, Pawlohrad, Luhansk
+      '.WGP..APAGHAPGH..', //  Uschhorod, Howerla, Czernowitz, (Moldau), Odesa-Nord, Krywyj Rih, Donezk
+      '......PAAGHAG....', //  Balta, Mykolajiw-Nord, Nikopol, Saporischschja, Mariupol
+      '.......APADP~~...', //  Odesa, Mykolajiw, Cherson, Oleschky-Sande, Melitopol, Asowsches Meer
+      '......P~~~~~~~...', //  Budschak, Schwarzes Meer, Siwasch
+      '......H~~APH~....', //  Ismajil, Krim: Jewpatorija, Simferopol, Kertsch
+      '.....~~~~GW~~....', //  Sewastopol, Jalta
+      '.....~~~~~~~~~...', //  Schwarzes Meer
     ],
     ports: [
-      { row: 6, col: 3, type: 'wool', sides: [3, 4, 2] }, // Ismajil, Donau (Schafe im Budschak)
-      { row: 6, col: 4, type: 'any', sides: [2, 3] }, // Bilhorod-Dnistrowskyj
-      { row: 5, col: 4, type: 'grain', sides: [2, 3] }, // Odesa, Getreidehafen
-      { row: 7, col: 5, type: 'lumber', sides: [3, 4, 2] }, // Sewastopol
-      { row: 7, col: 6, type: 'any', sides: [2, 3] }, // Jalta
-      { row: 7, col: 7, type: 'any', sides: [2, 1] }, // Sudak
-      { row: 6, col: 7, type: 'brick', sides: [1, 0, 2] }, // Kertsch
-      { row: 5, col: 8, type: 'ore', sides: [2, 1, 3] }, // Mariupol, Stahl
-      { row: 2, col: 9, type: 'any', sides: [1, 0] }, // Luhansk, Grenzhandel
+      { row: 10, col: 6, type: 'wool', sides: [2, 1] }, // Ismajil, Donau (Schafe im Budschak)
+      { row: 9, col: 6, type: 'any', sides: [2, 1] }, // Bilhorod-Dnistrowskyj
+      { row: 8, col: 7, type: 'grain', sides: [2, 3] }, // Odesa, Getreidehafen
+      { row: 8, col: 8, type: 'any', sides: [2, 3] }, // Mykolajiw
+      { row: 11, col: 9, type: 'lumber', sides: [3, 4, 2] }, // Sewastopol
+      { row: 11, col: 10, type: 'any', sides: [2, 1] }, // Jalta
+      { row: 10, col: 11, type: 'brick', sides: [1, 2, 0] }, // Kertsch
+      { row: 7, col: 12, type: 'ore', sides: [2, 1] }, // Mariupol, Stahl
+      { row: 8, col: 11, type: 'any', sides: [2, 1] }, // Berdjansk
     ],
     labels: [
-      { row: 1, col: 4, text: 'Kyjiw' },
-      { row: 2, col: 1, text: 'Lwiw' },
-      { row: 2, col: 7, text: 'Charkiw' },
-      { row: 3, col: 6, text: 'Dnipro' },
-      { row: 4, col: 8, text: 'Donezk' },
-      { row: 5, col: 4, text: 'Odesa' },
-      { row: 5, col: 8, text: 'Mariupol' },
-      { row: 6, col: 3, text: 'Ismajil' },
-      { row: 6, col: 6, text: 'Krim' },
-      { row: 6, col: 7, text: 'Kertsch' },
-      { row: 7, col: 5, text: 'Sewastopol' },
+      { row: 1, col: 7, text: 'Tschernihiw' },
+      { row: 2, col: 10, text: 'Sumy' },
+      { row: 3, col: 5, text: 'Schytomyr' },
+      { row: 3, col: 6, text: 'Kyjiw' },
+      { row: 3, col: 11, text: 'Charkiw' },
+      { row: 4, col: 2, text: 'Lwiw' },
+      { row: 4, col: 8, text: 'Tscherkassy' },
+      { row: 4, col: 10, text: 'Poltawa' },
+      { row: 5, col: 2, text: 'Iwano-Frankiwsk' },
+      { row: 5, col: 5, text: 'Winnyzja' },
+      { row: 5, col: 10, text: 'Dnipro' },
+      { row: 5, col: 13, text: 'Luhansk' },
+      { row: 6, col: 1, text: 'Uschhorod' },
+      { row: 6, col: 3, text: 'Czernowitz' },
+      { row: 6, col: 9, text: 'Krywyj Rih' },
+      { row: 6, col: 13, text: 'Donezk' },
+      { row: 7, col: 10, text: 'Saporischschja' },
+      { row: 7, col: 12, text: 'Mariupol' },
+      { row: 8, col: 7, text: 'Odesa' },
+      { row: 8, col: 8, text: 'Mykolajiw' },
+      { row: 8, col: 9, text: 'Cherson' },
+      { row: 8, col: 11, text: 'Melitopol' },
+      { row: 10, col: 6, text: 'Ismajil' },
+      { row: 10, col: 10, text: 'Simferopol' },
+      { row: 10, col: 11, text: 'Kertsch' },
+      { row: 11, col: 9, text: 'Sewastopol' },
+      { row: 11, col: 10, text: 'Jalta' },
     ],
+    bridges: [{ row: 8, col: 9 }], // Perekop: Cherson to the Crimea
     seed: 1991,
   });
 }

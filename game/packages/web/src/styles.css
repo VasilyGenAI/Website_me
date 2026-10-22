@@ -460,3 +460,11 @@ details p { margin: 0 0 8px; }
 .dev-row .dev-info { flex: 1; display: grid; gap: 4px; }
 @media (max-width: 820px) { .devcard { width: 40px; height: 56px; } }
 .hand-gap { width: 6px; }
+
+/* Neighbouring countries and bridges */
+.abroad { pointer-events: none; }
+.abroad-tint { fill: #6b4a1a; fill-opacity: .1; stroke: none; }
+.bridge { pointer-events: none; }
+.bridge-edge { stroke: #3d2610; stroke-width: 15; stroke-linecap: round; }
+.bridge-wood { stroke: #b07a3f; stroke-width: 11.5; stroke-linecap: round; }
+.bridge-planks { stroke: #6b4420; stroke-width: 11.5; stroke-dasharray: 1.2 3.4; stroke-opacity: .7; }

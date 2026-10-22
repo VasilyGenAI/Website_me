@@ -34,7 +34,7 @@ describe('custom maps', () => {
     const map = fogForestMap();
     const oldStyle = { ...map, tiles: map.tiles.map((t) => (t.hidden ? { q: t.q, r: t.r, terrain: 'fog' as const, number: null } : t)) };
     expect(validateMap(oldStyle)).toContain('Fog pool needs at least 18 entries (has 0)');
-    expect(validateMap({ ...map, tiles: [...map.tiles, { q: 9, r: 0, terrain: 'forest', number: 5 }] })).toContain('Tile 9,0 is too far from the centre');
+    expect(validateMap({ ...map, tiles: [...map.tiles, { q: 13, r: 0, terrain: 'forest', number: 5 }] })).toContain('Tile 13,0 is too far from the centre');
     const p = map.ports[0];
     expect(validateMap({ ...map, ports: [...map.ports, p] })).toContain(`Two ports on ${p.q},${p.r} side ${p.side}`);
   });

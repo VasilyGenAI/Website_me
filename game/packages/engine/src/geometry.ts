@@ -73,7 +73,7 @@ const byLayout = new Map<string, Topology>();
 export function topology(map: MapDef): Topology {
   const direct = byMap.get(map);
   if (direct) return direct;
-  const key = map.tiles.map((t) => tileId(t.q, t.r)).join(';');
+  const key = map.tiles.map((t) => tileId(t.q, t.r)).join(';') + '|' + (map.bridges ?? []).map((b) => b.join('-')).join(';');
   const hit = byLayout.get(key);
   if (hit) {
     byMap.set(map, hit);
@@ -115,6 +115,18 @@ export function topology(map: MapDef): Topology {
     });
   }
   t.vertices = Object.keys(t.vertexTiles);
+
+  // Bridges are edges like any other, they just do not run along a tile.
+  for (const [a, b] of map.bridges ?? []) {
+    const e = edgeKey(a, b);
+    if (!t.vertexTiles[a] || !t.vertexTiles[b] || t.edgeVertices[e]) continue;
+    t.edgeVertices[e] = a < b ? [a, b] : [b, a];
+    t.edges.push(e);
+    t.vertexEdges[a].push(e);
+    t.vertexEdges[b].push(e);
+    t.vertexNeighbors[a].push(b);
+    t.vertexNeighbors[b].push(a);
+  }
 
   // Walk the coastline in angular order so port slots can be spread evenly.
   const coast = Object.entries(edgeTileCount)

@@ -76,7 +76,7 @@ export function generateStandardMap(seed: number): MapDef {
   return { name: 'Standard', tiles, ports };
 }
 
-export const MAX_MAP_RADIUS = 7;
+export const MAX_MAP_RADIUS = 12;
 export const MAX_MAP_TILES = 100;
 
 function numberError(id: string, terrain: string, n: number | null): string | null {
@@ -118,6 +118,16 @@ export function validateMap(map: MapDef): string[] {
     if (!coastal.has(key)) errors.push(`Port at ${p.q},${p.r} side ${p.side} is not on the coast`);
     if (usedEdges.has(key)) errors.push(`Two ports on ${p.q},${p.r} side ${p.side}`);
     usedEdges.add(key);
+  }
+  const corners = new Set(topology(map).vertices);
+  for (const [a, b] of map.bridges ?? []) {
+    if (!corners.has(a) || !corners.has(b)) errors.push(`Bridge ${a} - ${b} must join two land corners`);
+    const [ax, ay] = a.split(',').map(Number);
+    const [bx, by] = b.split(',').map(Number);
+    // One hex edge long: straight down (0, 2) or diagonal (1, 1) in lattice units.
+    const dx = Math.abs(ax - bx);
+    const dy = Math.abs(ay - by);
+    if (!((dx === 0 && dy === 2) || (dx === 1 && dy === 1))) errors.push(`Bridge ${a} - ${b} must be one edge long`);
   }
   return errors;
 }
