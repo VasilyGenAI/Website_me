@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { actingPlayers, applyAction, botAction, createGame, germanyMap, topology, ukraineMap, validateMap } from '../src/index';
+import { AXIAL_NEIGHBORS, actingPlayers, applyAction, botAction, createGame, germanyMap, topology, ukraineMap, validateMap } from '../src/index';
 import type { GameState, MapDef } from '../src/index';
 
 const PLAYERS = ['Ana', 'Ben', 'Cem', 'Dag'].map((name, i) => ({ id: `p${i}`, name, color: `c${i}`, isBot: true }));
@@ -16,11 +16,20 @@ function playOut(map: MapDef, seed: number): GameState {
 }
 
 describe('country boards', () => {
-  it('are valid, with every resource and harbours on the sea', () => {
+  it('are valid, with every resource and eight trading posts on the right borders', () => {
     for (const map of [germanyMap(), ukraineMap()]) {
       expect(validateMap(map)).toEqual([]);
       for (const t of ['forest', 'hills', 'pasture', 'fields', 'mountains']) expect(map.tiles.some((x) => x.terrain === t)).toBe(true);
-      expect(map.ports).toHaveLength(9);
+      expect(map.ports).toHaveLength(8);
+      expect(map.ports.filter((p) => p.type === 'any')).toHaveLength(3);
+      expect(new Set(map.ports.filter((p) => p.type !== 'any').map((p) => p.type)).size).toBe(5);
+      // Harbours look out to sea, the land posts onto the neighbouring country.
+      const sea = new Set(map.surroundings!.sea);
+      const abroad = new Set(map.surroundings!.land);
+      for (const p of map.ports) {
+        const n = AXIAL_NEIGHBORS[p.side];
+        expect((p.kind === 'harbor' ? sea : abroad).has(`${p.q + n[0]},${p.r + n[1]}`)).toBe(true);
+      }
       expect(map.surroundings!.sea.length).toBeGreaterThan(0);
       expect(map.surroundings!.land.length).toBeGreaterThan(0);
     }

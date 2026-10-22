@@ -46,7 +46,15 @@ export interface MapPort {
   /** Tile side 0..5; side i joins corner i and corner i+1 (corner 0 = top, clockwise). */
   side: number;
   type: PortType;
+  /**
+   * How the trading post looks; the rules are the same. A harbour sits in the water; on a land
+   * border it can be a cable car up a mountain, a tree house in the woods or a mine cart.
+   * Defaults to a harbour.
+   */
+  kind?: PortKind;
 }
+
+export type PortKind = 'harbor' | 'gondola' | 'treehouse' | 'mine';
 
 /** What a fog tile can turn into. */
 export interface FogTile {

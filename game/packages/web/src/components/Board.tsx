@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { hexCorners, pips, tileId, topology, vertexPoint } from '@kontinentalist/engine';
-import type { Building, EdgeId, FogTile, MapDef, PortType, TileId, VertexId } from '@kontinentalist/engine';
+import type { Building, EdgeId, FogTile, MapDef, PortKind, PortType, TileId, VertexId } from '@kontinentalist/engine';
 import { FOREIGN_IMAGE, RESOURCE_STYLE, SEA_IMAGE, SHORE, TERRAIN_STYLE, portLabel, portStyle } from '../theme';
 
 const S = 50; // hex size in SVG units
@@ -86,18 +86,21 @@ const distToSegment = (x: number, y: number, a: { x: number; y: number }, b: { x
 
 interface HarborSpot {
   type: PortType;
+  kind: PortKind;
   q: number;
   r: number;
   side: number;
   ends: { x: number; y: number }[];
   bank: { x: number; y: number };
-  boat: { x: number; y: number };
+  /** Only harbours have a boat. */
+  boat: { x: number; y: number } | null;
 }
 
 /**
- * Where every harbour's bank and boat go. The bank stands out at sea in front of its coast; the
- * boat takes the first spot nearby that is open water: clear of the surf and sand around every
- * tile, of all banks and of all walkways, so it never sits on the beach or hides behind anything.
+ * Where every trading post and boat go. The post stands out in front of its border (at sea for a
+ * harbour, on the neighbouring land otherwise); a harbour's boat takes the first spot nearby that
+ * is open water: clear of the surf and sand around every tile, of foreign land, of all posts and
+ * of all walkways, so it never sits on the beach or hides behind anything.
  */
 function placeHarbors(map: MapDef, foreign: (q: number, r: number) => boolean): HarborSpot[] {
   const spots = map.ports.map((p) => {
@@ -110,7 +113,7 @@ function placeHarbors(map: MapDef, foreign: (q: number, r: number) => boolean): 
     const len = Math.hypot(mx - c.x, my - c.y);
     const dx = (mx - c.x) / len;
     const dy = (my - c.y) / len;
-    return { ...p, ends: [a, b], mx, my, dx, dy, bank: { x: mx + dx * S * 0.86, y: my + dy * S * 0.86 } };
+    return { ...p, kind: p.kind ?? ('harbor' as const), ends: [a, b], mx, my, dx, dy, bank: { x: mx + dx * S * 0.86, y: my + dy * S * 0.86 } };
   });
   const centers = map.tiles.map((t) => center(t.q, t.r));
   const onLand = (x: number, y: number) => {
@@ -126,6 +129,8 @@ function placeHarbors(map: MapDef, foreign: (q: number, r: number) => boolean): 
     walkways.every(([a, b]) => distToSegment(x, y - 4, a, b) > 15) &&
     boats.every((o) => Math.hypot(o.x - x, o.y - y) > 30);
   return spots.map((h) => {
+    const base = { type: h.type, kind: h.kind, q: h.q, r: h.r, side: h.side, ends: h.ends, bank: h.bank };
+    if (h.kind !== 'harbor') return { ...base, boat: null };
     const px = -h.dy;
     const py = h.dx;
     const right = px >= 0 ? 1 : -1; // prefer the side that faces right, so boats read the same everywhere
@@ -143,7 +148,7 @@ function placeHarbors(map: MapDef, foreign: (q: number, r: number) => boolean): 
       }
     }
     boats.push(boat);
-    return { type: h.type, q: h.q, r: h.r, side: h.side, ends: h.ends, bank: h.bank, boat };
+    return { ...base, boat };
   });
 }
 
@@ -198,8 +203,12 @@ export function Board(props: BoardProps) {
     ys.push(Math.min(...ys) - pad, Math.max(...ys) + pad);
     // Harbour banks stand far out in the water; keep their roof signs and ratio plates in view.
     for (const h of harbors) {
-      xs.push(h.bank.x - 24, h.bank.x + 24, h.boat.x - 16, h.boat.x + 16);
-      ys.push(h.bank.y - 44, h.bank.y + 28, h.boat.y - 20, h.boat.y + 10);
+      xs.push(h.bank.x - 24, h.bank.x + 24);
+      ys.push(h.bank.y - 46, h.bank.y + 28);
+      if (h.boat) {
+        xs.push(h.boat.x - 16, h.boat.x + 16);
+        ys.push(h.boat.y - 20, h.boat.y + 10);
+      }
     }
     const minX = Math.min(...xs);
     const minY = Math.min(...ys);
@@ -405,14 +414,16 @@ export function Board(props: BoardProps) {
       })}
 
       {/* Boats last among the water things, so no tile, sand or bank ever covers them. */}
-      {harbors.map((h, i) => (
-        <g key={`boat${i}`} transform={`translate(${h.boat.x} ${h.boat.y})`} className="boat">
-          <path className="hull" d="M-11,0 h22 l-4,6 h-14 z" />
-          <line x1={-1} y1={0} x2={-1} y2={-15} />
-          <path className="sail" d="M0,-14 L9,-2 L0,-2 Z" />
-          <path className="sail" d="M-2,-12 L-8,-2 L-2,-2 Z" />
-        </g>
-      ))}
+      {harbors.map((h, i) =>
+        h.boat ? (
+          <g key={`boat${i}`} transform={`translate(${h.boat.x} ${h.boat.y})`} className="boat">
+            <path className="hull" d="M-11,0 h22 l-4,6 h-14 z" />
+            <line x1={-1} y1={0} x2={-1} y2={-15} />
+            <path className="sail" d="M0,-14 L9,-2 L0,-2 Z" />
+            <path className="sail" d="M-2,-12 L-8,-2 L-2,-2 Z" />
+          </g>
+        ) : null,
+      )}
 
       {props.glow?.tiles.map((t) => {
         const [q, r] = t.id.split(',').map(Number);
@@ -610,47 +621,150 @@ function Robber() {
   );
 }
 
+const INK = '#1d1d1d';
+
+/** The traded resource, large in a ring on top of a trading post, and the ratio sign below it. */
+function PostSign({ type, top }: { type: PortType; top: number }) {
+  const style = portStyle(type);
+  return (
+    <>
+      <circle cx={0} cy={top} r={11.2} fill="none" stroke={INK} strokeWidth={1.2} />
+      <circle cx={0} cy={top} r={9.8} fill="#fff8e6" stroke={style.fill} strokeWidth={2.8} />
+      <text x={0} y={top + 4.3} textAnchor="middle" fontSize={12.5}>{type === 'any' ? '❓' : RESOURCE_STYLE[type].icon}</text>
+      <rect x={-11} y={13} width={22} height={10} rx={3} fill="#fff8e6" stroke="#6b4420" strokeWidth={1.2} />
+      <text x={0} y={21} textAnchor="middle" className="port-sign">{style.ratio}</text>
+    </>
+  );
+}
+
+/** A little bank with columns and a roof in the resource colour: the harbour. */
+function Bank({ fill }: { fill: string }) {
+  return (
+    <>
+      <rect className="stone" x={-15} y={8} width={30} height={3.5} />
+      <rect className="stone" x={-13} y={4.8} width={26} height={3.4} />
+      {[-10.5, -4.8, 1.2, 6.9].map((cx) => (
+        <rect key={cx} className="column" x={cx} y={-3} width={3.6} height={7.8} />
+      ))}
+      <rect className="column" x={-14} y={-6.2} width={28} height={3.4} />
+      <path d="M-17.5,-6 L0,-18.5 L17.5,-6 Z" fill={fill} stroke={INK} strokeWidth={1.4} strokeLinejoin="round" />
+      <path d="M-12,-8.2 L0,-16.3 L12,-8.2 Z" fill="#000" fillOpacity=".14" />
+    </>
+  );
+}
+
+/** Cable car up a mountain: valley station, cable to a pylon, and a cabin in the resource colour. */
+function Gondola({ fill }: { fill: string }) {
+  return (
+    <>
+      <path d="M12,11 L14.6,-16 L16.6,-16 L19.2,11 Z" fill="#6b6b74" stroke={INK} strokeWidth={1.1} strokeLinejoin="round" />
+      <path d="M13.2,4 L18.4,-2 M13.8,-2 L17.9,-9 M18.6,4 L13.4,-2" stroke="#3a3a40" strokeWidth={0.8} />
+      <rect x={12.8} y={-17.5} width={5.8} height={2.4} rx={0.6} fill="#3a3a40" stroke={INK} strokeWidth={0.8} />
+      <line x1={-10} y1={-2.5} x2={15.6} y2={-16} stroke="#2b2b2b" strokeWidth={1.3} />
+      <line x1={-10} y1={-0.5} x2={15.6} y2={-14} stroke="#2b2b2b" strokeWidth={0.8} />
+      <rect className="stone" x={-17} y={1.5} width={14} height={9.5} />
+      <path d="M-19,2.2 L-10,-5 L-1,2.2 Z" fill="#6b4420" stroke={INK} strokeWidth={1.2} strokeLinejoin="round" />
+      <rect x={-12} y={5} width={4} height={6} fill={INK} fillOpacity=".55" />
+      <line x1={3.2} y1={-8.6} x2={3.2} y2={-4.6} stroke="#2b2b2b" strokeWidth={1.2} />
+      <rect x={-2.8} y={-4.8} width={12} height={9.6} rx={2.2} fill={fill} stroke={INK} strokeWidth={1.2} />
+      <rect x={-1.3} y={-3.2} width={9} height={3.4} rx={0.8} fill="#e8f4ff" stroke={INK} strokeWidth={0.6} />
+    </>
+  );
+}
+
+/** Tree house: a hut in the resource colour on a platform up a leafy tree, with a ladder. */
+function TreeHouse({ fill }: { fill: string }) {
+  return (
+    <>
+      {[[-10, -7, 9], [10, -7, 9], [0, -14, 9.5], [-5, -2, 7], [6, -2, 7]].map(([cx, cy, r]) => (
+        <circle key={`${cx},${cy}`} cx={cx} cy={cy} r={r} fill="#3f8f3a" stroke={INK} strokeWidth={1.1} />
+      ))}
+      {[[-10, -7, 9], [10, -7, 9], [0, -14, 9.5]].map(([cx, cy, r]) => (
+        <circle key={`l${cx}`} cx={cx - 2} cy={cy - 2.5} r={r * 0.55} fill="#5fb04f" />
+      ))}
+      <path d="M-3.6,12 L-2.6,-1 L2.6,-1 L3.6,12 Z" fill="#7a4a22" stroke={INK} strokeWidth={1.1} strokeLinejoin="round" />
+      <rect x={-12.5} y={-1.5} width={25} height={3} rx={0.8} fill="#8a5a2b" stroke={INK} strokeWidth={1} />
+      <rect x={-8} y={-11} width={16} height={9.5} fill={fill} stroke={INK} strokeWidth={1.2} />
+      <path d="M-10.5,-10.5 L0,-18.5 L10.5,-10.5 Z" fill="#6b4420" stroke={INK} strokeWidth={1.2} strokeLinejoin="round" />
+      <rect x={-2} y={-7.5} width={4} height={6} fill={INK} fillOpacity=".6" />
+      <path d="M-9,2 L-9,12 M-6,2 L-6,12 M-9,5 L-6,5 M-9,8 L-6,8 M-9,11 L-6,11" stroke="#6b4420" strokeWidth={1} />
+    </>
+  );
+}
+
+/** Mine: a timbered shaft in the hillside and a cart full of nuggets on its rails. */
+function MineCart({ fill }: { fill: string }) {
+  return (
+    <>
+      <path d="M3,10 L3,-5 Q11.5,-14.5 20,-5 L20,10 Z" fill="#2a1c0e" stroke={INK} strokeWidth={1.2} strokeLinejoin="round" />
+      <path d="M3.5,10 L3.5,-4.5 M19.5,10 L19.5,-4.5 M2.5,-5 Q11.5,-14.5 20.5,-5" fill="none" stroke="#8a5a2b" strokeWidth={2.2} />
+      <line x1={-19} y1={11.5} x2={21} y2={11.5} stroke="#555" strokeWidth={1.6} />
+      {[-16, -10, -4, 2, 8, 14].map((x) => (
+        <rect key={x} x={x} y={10.3} width={2.6} height={2.4} fill="#6b4420" />
+      ))}
+      {[[-11, -1.5, 3], [-6, -2.8, 3.4], [-1, -1.6, 3]].map(([cx, cy, r]) => (
+        <circle key={cx} cx={cx} cy={cy} r={r} fill="#f2c230" stroke="#8a6a10" strokeWidth={0.8} />
+      ))}
+      <path d="M-16,0 L4,0 L1.5,8.5 L-13.5,8.5 Z" fill={fill} stroke={INK} strokeWidth={1.2} strokeLinejoin="round" />
+      <rect x={-17} y={-1.4} width={22} height={2.6} rx={0.8} fill="#4a4a50" stroke={INK} strokeWidth={0.8} />
+      <circle cx={-10} cy={9.6} r={2.6} fill="#333" stroke={INK} strokeWidth={0.8} />
+      <circle cx={-1.5} cy={9.6} r={2.6} fill="#333" stroke={INK} strokeWidth={0.8} />
+    </>
+  );
+}
+
+/** Where the sign sits above each kind of post, clear of its roof or treetop. */
+const SIGN_TOP: Record<PortKind, number> = { harbor: -28.5, gondola: -28.5, treehouse: -33, mine: -25 };
+
 /**
- * Harbour: two wooden walkways from the coast out into the water and a little bank with columns
- * whose roof is in the colour of the traded resource and carries its symbol large, plus a ratio
- * sign. Its boat is drawn separately, above everything else on the water.
+ * A trading post: the two connections from its corners (wooden walkways, a cobbled path to a
+ * cable car, or mine rails) and the building itself, topped by the traded resource. Exactly
+ * two connections: the corners are neighbours, so only one settlement can ever use it.
  */
 function Harbor({ h }: { h: HarborSpot }) {
-  const { type, ends } = h;
+  const { type, kind, ends } = h;
   const style = portStyle(type);
   const { x: bx, y: by } = h.bank;
+  const end = { x: bx, y: by + (kind === 'harbor' ? 4 : 6) };
   return (
     <>
       <title>{portLabel(type)}</title>
-      {/* Exactly two wooden walkways, one from each corner that may use this harbour. The two
-          corners are neighbours, so only one settlement (one player) can ever stand there. */}
       {ends.map((e, k) => (
-        <g key={k} className="walkway">
-          <line className="walkway-edge" x1={e.x} y1={e.y} x2={bx} y2={by + 4} />
-          <line className="walkway-wood" x1={e.x} y1={e.y} x2={bx} y2={by + 4} />
-          <line className="walkway-planks" x1={e.x} y1={e.y} x2={bx} y2={by + 4} />
-          <circle className="walkway-post" cx={e.x} cy={e.y} r={3.6} />
-        </g>
+        <Connection key={k} kind={kind} from={e} to={end} />
       ))}
       <g transform={`translate(${bx} ${by})`} filter="url(#shadow)" className="bank">
-        {/* steps */}
-        <rect className="stone" x={-15} y={8} width={30} height={3.5} />
-        <rect className="stone" x={-13} y={4.8} width={26} height={3.4} />
-        {/* columns and the beam on top */}
-        {[-10.5, -4.8, 1.2, 6.9].map((cx) => (
-          <rect key={cx} className="column" x={cx} y={-3} width={3.6} height={7.8} />
-        ))}
-        <rect className="column" x={-14} y={-6.2} width={28} height={3.4} />
-        {/* pediment roof in the resource colour */}
-        <path d="M-17.5,-6 L0,-18.5 L17.5,-6 Z" fill={style.fill} stroke="#1d1d1d" strokeWidth={1.4} strokeLinejoin="round" />
-        <path d="M-12,-8.2 L0,-16.3 L12,-8.2 Z" fill="#000" fillOpacity=".14" />
-        {/* the traded resource, large on top of the roof */}
-        <circle cx={0} cy={-28.5} r={11.2} fill="none" stroke="#1d1d1d" strokeWidth={1.2} />
-        <circle cx={0} cy={-28.5} r={9.8} fill="#fff8e6" stroke={style.fill} strokeWidth={2.8} />
-        <text x={0} y={-24.2} textAnchor="middle" fontSize={12.5}>{type === 'any' ? '❓' : RESOURCE_STYLE[type].icon}</text>
-        <rect x={-11} y={13} width={22} height={10} rx={3} fill="#fff8e6" stroke="#6b4420" strokeWidth={1.2} />
-        <text x={0} y={21} textAnchor="middle" className="port-sign">{style.ratio}</text>
+        {kind === 'harbor' && <Bank fill={style.fill} />}
+        {kind === 'gondola' && <Gondola fill={style.fill} />}
+        {kind === 'treehouse' && <TreeHouse fill={style.fill} />}
+        {kind === 'mine' && <MineCart fill={style.fill} />}
+        <PostSign type={type} top={SIGN_TOP[kind]} />
       </g>
     </>
+  );
+}
+
+function Connection({ kind, from, to }: { kind: PortKind; from: { x: number; y: number }; to: { x: number; y: number } }) {
+  const line = (cls: string, ox = 0, oy = 0) => <line className={cls} x1={from.x + ox} y1={from.y + oy} x2={to.x + ox} y2={to.y + oy} />;
+  if (kind === 'mine') {
+    const len = Math.hypot(to.x - from.x, to.y - from.y) || 1;
+    const px = (-(to.y - from.y) / len) * 2.4;
+    const py = ((to.x - from.x) / len) * 2.4;
+    return (
+      <g className="rails">
+        {line('rail-sleepers')}
+        {line('rail', px, py)}
+        {line('rail', -px, -py)}
+        <circle className="walkway-post" cx={from.x} cy={from.y} r={3.6} />
+      </g>
+    );
+  }
+  const path = kind === 'gondola' ? 'stonepath' : 'walkway';
+  return (
+    <g className={path}>
+      {line(`${path}-edge`)}
+      {line(`${path}-fill`)}
+      {line(`${path}-joints`)}
+      <circle className="walkway-post" cx={from.x} cy={from.y} r={3.6} />
+    </g>
   );
 }

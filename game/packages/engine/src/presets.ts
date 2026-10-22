@@ -1,7 +1,7 @@
 import { AXIAL_NEIGHBORS, hexCorners, tileId } from './geometry';
 import { STANDARD_NUMBERS, hexagonCoords, redNumbersAdjacent } from './mapgen';
 import { randInt, shuffle } from './rng';
-import type { MapDef, MapPort, MapTile, PortType, Terrain } from './types';
+import type { MapDef, MapPort, MapTile, PortKind, PortType, Terrain } from './types';
 
 const ring = (q: number, r: number) => (Math.abs(q) + Math.abs(r) + Math.abs(q + r)) / 2;
 
@@ -65,8 +65,11 @@ interface DrawnSpec {
    * (or a lake) and `.` is the land of the neighbouring countries.
    */
   rows: string[];
-  /** Harbours at a cell; the first listed side that faces the sea is used (0 NE, 1 E, 2 SE, 3 SW, 4 W, 5 NW). */
-  ports: { row: number; col: number; type: PortType; sides: number[] }[];
+  /**
+   * Trading posts at a cell; the first listed side that fits is used (0 NE, 1 E, 2 SE, 3 SW, 4 W,
+   * 5 NW). Harbours need a side facing the sea, the land kinds one facing a neighbouring country.
+   */
+  ports: { row: number; col: number; type: PortType; kind: PortKind; sides: number[] }[];
   labels: { row: number; col: number; text: string }[];
   /** Bridges from a cell (on an even row) straight down across one row of sea to the cell two rows below. */
   bridges?: { row: number; col: number }[];
@@ -128,11 +131,13 @@ function drawnMap(spec: DrawnSpec): MapDef {
 
   const land = new Set(tiles.map((t) => tileId(t.q, t.r)));
   const water = new Set(sea);
+  const abroad = new Set(foreign);
   const ports: MapPort[] = spec.ports.map((p) => {
     const { q, r } = at(p.row, p.col);
-    const side = p.sides.find((s) => water.has(tileId(q + AXIAL_NEIGHBORS[s][0], r + AXIAL_NEIGHBORS[s][1])));
-    if (side === undefined || !land.has(tileId(q, r))) throw new Error(`${spec.name}: no sea for port at ${p.row},${p.col}`);
-    return { q, r, side, type: p.type };
+    const facing = p.kind === 'harbor' ? water : abroad;
+    const side = p.sides.find((s) => facing.has(tileId(q + AXIAL_NEIGHBORS[s][0], r + AXIAL_NEIGHBORS[s][1])));
+    if (side === undefined || !land.has(tileId(q, r))) throw new Error(`${spec.name}: no ${p.kind === 'harbor' ? 'sea' : 'border'} for port at ${p.row},${p.col}`);
+    return { q, r, side, type: p.type, kind: p.kind };
   });
 
   const bridges = (spec.bridges ?? []).map((b): [string, string] => {
@@ -170,16 +175,16 @@ export function germanyMap(): MapDef {
       '..W~GGG...', //  Freiburg, Bodensee (der einzige See im Süden), Allgäu, Zugspitze, Berchtesgaden
       '..........', //  Schweiz, Österreich
     ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
     ports: [
-      { row: 1, col: 3, type: 'wool', sides: [4, 5, 0] }, // Sylt, Schafe auf dem Deich
-      { row: 2, col: 3, type: 'any', sides: [4, 3] }, // Cuxhaven
-      { row: 3, col: 1, type: 'any', sides: [5, 4] }, // Emden
-      { row: 3, col: 2, type: 'grain', sides: [5, 0] }, // Bremerhaven
-      { row: 2, col: 4, type: 'lumber', sides: [1, 0] }, // Kiel
-      { row: 2, col: 6, type: 'any', sides: [0, 5, 4] }, // Rostock
-      { row: 2, col: 7, type: 'brick', sides: [0, 5] }, // Stralsund, Backsteingotik
-      { row: 12, col: 4, type: 'ore', sides: [4] }, // Lindau am Bodensee
-      { row: 1, col: 3, type: 'any', sides: [1] }, // Flensburg
+      { row: 3, col: 2, type: 'grain', kind: 'harbor', sides: [5, 0] }, // Norden: Bremerhaven
+      { row: 2, col: 6, type: 'any', kind: 'harbor', sides: [0, 5, 4] }, // Norden: Rostock
+      { row: 6, col: 8, type: 'brick', kind: 'treehouse', sides: [1, 0, 2] }, // Osten: Görlitz, Lausitzer Wald
+      { row: 8, col: 5, type: 'ore', kind: 'gondola', sides: [1, 2, 0] }, // Osten: Fichtelberg im Erzgebirge
+      { row: 12, col: 6, type: 'any', kind: 'gondola', sides: [2, 1, 3] }, // Süden: Berchtesgaden
+      { row: 12, col: 4, type: 'wool', kind: 'harbor', sides: [4] }, // Süden: Lindau am Bodensee
+      { row: 11, col: 2, type: 'lumber', kind: 'treehouse', sides: [4, 3] }, // Westen: Schwarzwald
+      { row: 7, col: 0, type: 'any', kind: 'mine', sides: [4, 3, 5] }, // Westen: Aachener Revier
     ],
     labels: [
       { row: 2, col: 4, text: 'Kiel' },
@@ -247,16 +252,16 @@ export function ukraineMap(): MapDef {
       '.....~~~~GW~~....', //  Sewastopol, Jalta
       '.....~~~~~~~~~...', //  Schwarzes Meer
     ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
     ports: [
-      { row: 10, col: 6, type: 'wool', sides: [2, 1] }, // Ismajil, Donau (Schafe im Budschak)
-      { row: 9, col: 6, type: 'any', sides: [2, 1] }, // Bilhorod-Dnistrowskyj
-      { row: 8, col: 7, type: 'grain', sides: [2, 3] }, // Odesa, Getreidehafen
-      { row: 8, col: 8, type: 'any', sides: [2, 3] }, // Mykolajiw
-      { row: 11, col: 9, type: 'lumber', sides: [3, 4, 2] }, // Sewastopol
-      { row: 11, col: 10, type: 'any', sides: [2, 1] }, // Jalta
-      { row: 10, col: 11, type: 'brick', sides: [1, 2, 0] }, // Kertsch
-      { row: 7, col: 12, type: 'ore', sides: [2, 1] }, // Mariupol, Stahl
-      { row: 8, col: 11, type: 'any', sides: [2, 1] }, // Berdjansk
+      { row: 1, col: 3, type: 'lumber', kind: 'treehouse', sides: [5, 0] }, // Norden: Polissja-Wald in Wolyn
+      { row: 1, col: 9, type: 'any', kind: 'treehouse', sides: [0, 5, 1] }, // Norden: Polissja bei Tschernihiw
+      { row: 4, col: 13, type: 'ore', kind: 'mine', sides: [0, 1, 5] }, // Osten: Luhansker Kohle
+      { row: 6, col: 14, type: 'brick', kind: 'mine', sides: [1, 2, 0] }, // Osten: Donbas
+      { row: 11, col: 9, type: 'any', kind: 'harbor', sides: [3, 4, 2] }, // Süden: Sewastopol
+      { row: 8, col: 7, type: 'grain', kind: 'harbor', sides: [2, 3] }, // Süden: Odesa, Getreidehafen
+      { row: 6, col: 2, type: 'wool', kind: 'gondola', sides: [3, 2] }, // Westen: Howerla, Huzulen-Schafe
+      { row: 3, col: 2, type: 'any', kind: 'gondola', sides: [4, 5, 3] }, // Westen: Grenze zu Polen
     ],
     labels: [
       { row: 1, col: 7, text: 'Tschernihiw' },

@@ -117,6 +117,7 @@ export function validateMap(map: MapDef): string[] {
     const key = `${p.q},${p.r},${p.side}`;
     if (!coastal.has(key)) errors.push(`Port at ${p.q},${p.r} side ${p.side} is not on the coast`);
     if (usedEdges.has(key)) errors.push(`Two ports on ${p.q},${p.r} side ${p.side}`);
+    if (p.kind !== undefined && !['harbor', 'gondola', 'treehouse', 'mine'].includes(p.kind)) errors.push(`Port at ${p.q},${p.r}: unknown kind`);
     usedEdges.add(key);
   }
   const corners = new Set(topology(map).vertices);
