@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { hexCorners, pips, tileId, topology, vertexPoint } from '@kontinentalist/engine';
+import { AXIAL_NEIGHBORS, hexCorners, pips, tileId, topology, vertexPoint } from '@kontinentalist/engine';
 import type { Building, EdgeId, FlagDef, FogTile, MapDef, PortKind, PortType, TileId, VertexId } from '@kontinentalist/engine';
 import { FOREIGN_IMAGE, RESOURCE_STYLE, SEA_IMAGE, SHORE, TERRAIN_STYLE, portLabel, portStyle } from '../theme';
 
@@ -217,6 +217,25 @@ export function Board(props: BoardProps) {
 
   const vb = viewBox.split(' ').map(Number);
 
+  // Tile sides that face a neighbouring country, pushed out to the edge of the sandy shore.
+  const borders = useMemo(() => {
+    if (!map.surroundings?.land.length) return [];
+    const onBoard = new Set(map.tiles.map((t) => tileId(t.q, t.r)));
+    const out: { x: number; y: number }[][] = [];
+    for (const t of map.tiles) {
+      const c = center(t.q, t.r);
+      const cs = hexCorners(t.q, t.r).map(pt);
+      AXIAL_NEIGHBORS.forEach(([dq, dr], side) => {
+        const q = t.q + dq;
+        const r = t.r + dr;
+        if (onBoard.has(tileId(q, r)) || !foreign(q, r)) return;
+        const at = (p: { x: number; y: number }) => ({ x: c.x + (p.x - c.x) * 1.12, y: c.y + (p.y - c.y) * 1.12 });
+        out.push([at(cs[side]), at(cs[(side + 1) % 6])]);
+      });
+    }
+    return out;
+  }, [map, foreign]);
+
   // Neighbouring countries: runs of foreign land cells per hex row, out past every screen edge.
   const abroad = useMemo(() => {
     if (!map.surroundings?.land.length) return [];
@@ -313,7 +332,10 @@ export function Board(props: BoardProps) {
         />
       ))}
 
-      {/* Surf, then a sandy shore under the land, so the coastline reads at a glance. */}
+      {/* Shallow water, surf, then a sandy shore under the land, so the coastline reads at a glance. */}
+      {map.tiles.map((t) => (
+        <polygon key={`w${t.q},${t.r}`} points={polygon(t.q, t.r, 1.36)} className="shallows" />
+      ))}
       {map.tiles.map((t) => (
         <polygon key={`f${t.q},${t.r}`} points={polygon(t.q, t.r, 1.2)} className="surf" />
       ))}
@@ -327,6 +349,12 @@ export function Board(props: BoardProps) {
       {map.tiles.map((t) => (
         <polygon key={`s${t.q},${t.r}`} points={polygon(t.q, t.r, 1.12)} fill="url(#sand)" stroke={SHORE} strokeWidth={1} />
       ))}
+
+      {/* The national border: a dashed line along every side that faces a neighbouring country. */}
+      {borders.map((b, i) => (
+        <line key={`nb${i}`} className="national-border" x1={b[0].x} y1={b[0].y} x2={b[1].x} y2={b[1].y} />
+      ))}
+
 
       {harbors.map((h, i) => (
         <g key={`p${i}`} className="port" onClick={() => props.onCoast?.(h.q, h.r, h.side)}>
@@ -414,6 +442,19 @@ export function Board(props: BoardProps) {
               <circle key={k} className="walkway-post" cx={e.x} cy={e.y} r={4.5} />
             ))}
           </g>
+        );
+      })}
+
+      {/* Names of seas and lakes, sized to fit inside one water hex. */}
+      {map.waterLabels?.map((w) => {
+        const c = center(w.q, w.r);
+        const size = Math.min(S * 0.26, (S * 1.5) / (w.text.length * 0.56));
+        // A lake harbour stands in the middle of its hex; the name then goes underneath it.
+        const busy = harbors.some((h) => Math.hypot(h.bank.x - c.x, h.bank.y - c.y) < S * 0.7);
+        return (
+          <text key={`wl${w.q},${w.r}`} className="water-name" x={c.x} y={c.y + (busy ? S * 0.8 : size * 0.35)} textAnchor="middle" fontSize={size}>
+            {w.text}
+          </text>
         );
       })}
 
@@ -592,6 +633,21 @@ function City({ color }: { color: string }) {
  */
 export function FlagCloth({ flag, x, y, w, h }: { flag: FlagDef; x: number; y: number; w: number; h: number }) {
   const { colors, layout = 'horizontal' } = flag;
+  if (layout === 'union') {
+    const [field, white = '#ffffff', red = '#c8102e'] = colors;
+    const diag = (stroke: string, width: number) => (
+      <path d={`M${x},${y} L${x + w},${y + h} M${x + w},${y} L${x},${y + h}`} stroke={stroke} strokeWidth={width} />
+    );
+    return (
+      <>
+        <rect x={x} y={y} width={w} height={h} fill={field} />
+        {diag(white, h * 0.2)}
+        {diag(red, h * 0.07)}
+        <path d={`M${x + w / 2},${y} V${y + h} M${x},${y + h / 2} H${x + w}`} stroke={white} strokeWidth={h * 0.33} />
+        <path d={`M${x + w / 2},${y} V${y + h} M${x},${y + h / 2} H${x + w}`} stroke={red} strokeWidth={h * 0.2} />
+      </>
+    );
+  }
   if (layout === 'cross') {
     const arm = h * 0.2;
     return (

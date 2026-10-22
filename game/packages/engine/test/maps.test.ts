@@ -23,7 +23,7 @@ describe('custom maps', () => {
   it('the Nebelwald preset is valid: lake, island, harbours on the lake, fog ring', () => {
     const map = fogForestMap();
     expect(validateMap(map)).toEqual([]);
-    expect(map.tiles.filter((t) => t.hidden)).toHaveLength(18);
+    expect(map.tiles.filter((t) => t.hidden)).toHaveLength(24);
     expect(map.ports.length).toBeGreaterThan(0);
     // The six lake hexes are missing, so the desert island is surrounded by water.
     expect(map.tiles.some((t) => Math.abs(t.q) + Math.abs(t.r) + Math.abs(t.q + t.r) === 2)).toBe(false);
@@ -33,7 +33,7 @@ describe('custom maps', () => {
   it('reports fog problems', () => {
     const map = fogForestMap();
     const oldStyle = { ...map, tiles: map.tiles.map((t) => (t.hidden ? { q: t.q, r: t.r, terrain: 'fog' as const, number: null } : t)) };
-    expect(validateMap(oldStyle)).toContain('Fog pool needs at least 18 entries (has 0)');
+    expect(validateMap(oldStyle)).toContain('Fog pool needs at least 24 entries (has 0)');
     expect(validateMap({ ...map, tiles: [...map.tiles, { q: 13, r: 0, terrain: 'forest', number: 5 }] })).toContain('Tile 13,0 is too far from the centre');
     const p = map.ports[0];
     expect(validateMap({ ...map, ports: [...map.ports, p] })).toContain(`Two ports on ${p.q},${p.r} side ${p.side}`);
@@ -69,5 +69,36 @@ describe('custom maps', () => {
     const s = playOut(noDesert, 3);
     expect(createGame({ seed: 3, players: PLAYERS, map: noDesert }).robber).toBeNull();
     expect(s.phase.type).toBe('ended');
+  });
+});
+
+describe('gold fields', () => {
+  it('a roll on gold lets the owner pick any cards from the bank; bots pick on their own', () => {
+    const base = fogForestMap();
+    const map: MapDef = { ...base, tiles: base.tiles.map((t) => (t.q === 0 && t.r === 0 ? { ...t, terrain: 'gold' as const, number: 6 } : t)) };
+    expect(validateMap(map)).toEqual([]);
+    let s = createGame({ seed: 4, players: PLAYERS, map });
+    // Skip setup: one settlement for player 0 on the gold island, everyone ready to roll.
+    const t = topology(s.map);
+    const corner = t.tileVertices['0,0'][0];
+    s = { ...s, phase: { type: 'roll' }, currentPlayer: 0, turn: 3, buildings: { [corner]: { owner: 0, type: 'city' } } };
+    // Find out what the dice will show, then put that number on the gold field.
+    const peek = applyAction(s, 0, { type: 'rollDice' });
+    if (!peek.ok) throw new Error(peek.error);
+    const sum = peek.state.dice![0] + peek.state.dice![1];
+    s = { ...s, map: { ...s.map, tiles: s.map.tiles.map((x) => (x.terrain === 'gold' ? { ...x, number: sum } : x)) } };
+    expect(sum).not.toBe(7); // the seed is picked so that it does not roll a 7
+    s = act(s, 0, { type: 'rollDice' });
+    expect(s.phase).toEqual({ type: 'gold', pending: { 0: 2 } });
+    expect(actingPlayers(s)).toEqual([0]);
+    expect(applyAction(s, 0, { type: 'chooseGold', resources: { ore: 1 } })).toMatchObject({ ok: false });
+    s = act(s, 0, { type: 'chooseGold', resources: { ore: 1, grain: 1 } });
+    expect(s.players[0].resources.ore).toBe(1);
+    expect(s.players[0].resources.grain).toBe(1);
+    expect(s.phase.type).toBe('main');
+    expect(s.log.some((e) => e.type === 'goldChosen' && e.player === 0)).toBe(true);
+    // A bot in the same spot picks by itself.
+    const action = botAction({ ...s, phase: { type: 'gold', pending: { 0: 2 } } }, 0);
+    expect(action?.type).toBe('chooseGold');
   });
 });

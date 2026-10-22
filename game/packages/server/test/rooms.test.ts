@@ -29,7 +29,7 @@ describe('rooms', () => {
     expect(json).not.toContain('"fogPool"');
     expect(json).not.toContain('"devDeck"');
     expect(json).not.toContain('"hidden"'); // fogged tiles go out as plain fog
-    expect(view.game!.fogPoolSize).toBe(18);
+    expect(view.game!.fogPoolSize).toBe(24);
     const spectator = room.view('stranger');
     expect(spectator.you).toBeNull();
     expect(spectator.game!.hand).toBeNull();

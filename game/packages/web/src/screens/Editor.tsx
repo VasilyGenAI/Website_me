@@ -10,8 +10,8 @@ import { TERRAIN_STYLE, portLabel } from '../theme';
 import type { Connection } from '../net';
 
 const GRID_RADIUS = 6;
-const TERRAINS: Terrain[] = ['forest', 'hills', 'pasture', 'fields', 'mountains', 'desert'];
-const FOG_TERRAINS: FogTile['terrain'][] = ['forest', 'hills', 'pasture', 'fields', 'mountains', 'desert'];
+const TERRAINS: Terrain[] = ['forest', 'hills', 'pasture', 'fields', 'mountains', 'gold', 'desert'];
+const FOG_TERRAINS: FogTile['terrain'][] = ['forest', 'hills', 'pasture', 'fields', 'mountains', 'gold', 'desert'];
 const PORT_CYCLE: (PortType | null)[] = [null, 'any', 'lumber', 'brick', 'wool', 'grain', 'ore'];
 const NUMBERS = [2, 3, 4, 5, 6, 8, 9, 10, 11, 12];
 const HISTORY_LIMIT = 100;
@@ -191,7 +191,10 @@ export function Editor({ conn, mapId }: { conn: Connection; mapId?: string }) {
         <h4>Vorlage laden</h4>
         <div className="row-btns">
           {PRESET_CHOICES.map((c) => (
-            <button key={c.key} onClick={() => change(copyOf(c.map, map.name))}>{c.title}</button>
+            <button key={c.key} onClick={() => change(copyOf(c.map, map.name))}>
+              {c.title}
+              {c.size === 'small' ? ' (klein)' : ''}
+            </button>
           ))}
           <button onClick={() => change(emptyMap(map.name))} disabled={empty}>Leeren</button>
         </div>

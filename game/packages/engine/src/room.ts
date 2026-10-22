@@ -199,7 +199,7 @@ export class Room {
    */
   private clockKeys(state: GameState): { turn: string; key: string } {
     const turn = `${state.turn}/${state.currentPlayer}/${state.setupIndex}`;
-    if (state.phase.type === 'discard') return { turn, key: `${turn}/discard` };
+    if (state.phase.type === 'discard' || state.phase.type === 'gold') return { turn, key: `${turn}/${state.phase.type}` };
     const answering = state.tradeOffer && this.waitingHumans(state).some((p) => p !== state.currentPlayer);
     return { turn, key: answering ? `${turn}/trade` : turn };
   }
@@ -208,7 +208,7 @@ export class Room {
   private autoAction(state: GameState, p: number): Action | null {
     const { turn, key } = this.clockKeys(state);
     const phase = state.phase;
-    if (phase.type === 'discard') {
+    if (phase.type === 'discard' || phase.type === 'gold') {
       const late = this.expired.has(key) || (p === state.currentPlayer && this.expired.has(turn));
       return phase.pending[p] !== undefined && late ? botAction(state, p) : null;
     }

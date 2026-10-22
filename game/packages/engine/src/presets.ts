@@ -1,42 +1,43 @@
-import { AXIAL_NEIGHBORS, hexCorners, tileId } from './geometry';
-import { STANDARD_NUMBERS, hexagonCoords, redNumbersAdjacent } from './mapgen';
-import { randInt, shuffle } from './rng';
+import { AXIAL_NEIGHBORS, hexCorners, tileId, topology } from './geometry';
+import { hexagonCoords } from './mapgen';
+import { breakClusters, dealNumbers } from './balance';
+import { shuffle } from './rng';
 import type { FlagDef, MapDef, MapPort, MapTile, PortKind, PortType, Terrain } from './types';
 
 const ring = (q: number, r: number) => (Math.abs(q) + Math.abs(r) + Math.abs(q + r)) / 2;
 
 /**
- * "Nebelwald": a forest ring around an inner lake with lumber harbours, a desert island in the
- * middle for the robber, and an outer ring of fog that hides everything except forest.
+ * "Nebelwald": a broad belt of forest (two rings) round an inner lake with lumber harbours, a
+ * desert island in the middle for the robber, and an outer ring of fog that hides everything
+ * except forest - and somewhere one gold field.
  */
 export function fogForestMap(): MapDef {
-  const forestRing: [Terrain, number][] = [
-    ['forest', 5], ['forest', 9], ['hills', 10], ['forest', 6], ['forest', 3], ['pasture', 8],
-    ['forest', 4], ['forest', 11], ['fields', 9], ['forest', 10], ['forest', 4], ['mountains', 5],
-  ];
+  const rng = { rng: 2024 };
+  const forestBelt = (n: number, others: Terrain[]) => shuffle(rng, [...Array<Terrain>(n - others.length).fill('forest'), ...others]);
+  const inner = forestBelt(12, ['hills', 'pasture', 'fields', 'mountains']);
+  const outer = forestBelt(18, ['hills', 'pasture', 'pasture', 'fields', 'fields', 'mountains']);
   // Under the fog: no forest at all, so the outer ring is where brick, wool, grain and ore come from.
-  const underFog: [Terrain, number][] = [
-    ['hills', 2], ['pasture', 3], ['fields', 4], ['mountains', 5], ['hills', 6], ['pasture', 8],
-    ['fields', 9], ['mountains', 10], ['hills', 11], ['pasture', 12], ['fields', 3], ['mountains', 4],
-    ['hills', 5], ['pasture', 6], ['fields', 8], ['mountains', 9], ['hills', 10], ['pasture', 11],
-  ];
+  const underFog = shuffle(rng, [
+    ...(['hills', 'pasture', 'fields'] as Terrain[]).flatMap((t) => Array<Terrain>(6).fill(t)),
+    ...Array<Terrain>(5).fill('mountains'),
+    'gold' as Terrain,
+  ]);
   const tiles: MapTile[] = [{ q: 0, r: 0, terrain: 'desert', number: null }];
   let i = 0;
   let j = 0;
-  for (const c of hexagonCoords(3)) {
-    if (ring(c.q, c.r) === 2) {
-      const [terrain, number] = forestRing[i++];
-      tiles.push({ ...c, terrain, number });
-    } else if (ring(c.q, c.r) === 3) {
-      const [terrain, number] = underFog[j++];
-      tiles.push({ ...c, terrain, number, hidden: true });
-    }
+  let k = 0;
+  for (const c of hexagonCoords(4)) {
+    const ringNo = ring(c.q, c.r);
+    if (ringNo === 2) tiles.push({ ...c, terrain: inner[i++], number: null });
+    else if (ringNo === 3) tiles.push({ ...c, terrain: outer[j++], number: null });
+    else if (ringNo === 4) tiles.push({ ...c, terrain: underFog[k++], number: null, hidden: true });
   }
+  const numbered = dealNumbers(tiles, rng);
 
   // Harbours on the lake shore: six, spread evenly around the lake, alternating lumber and 3:1.
-  const land = new Set(tiles.map((t) => tileId(t.q, t.r)));
+  const land = new Set(numbered.map((t) => tileId(t.q, t.r)));
   const shore: { q: number; r: number; side: number; angle: number }[] = [];
-  for (const t of tiles) {
+  for (const t of numbered) {
     if (ring(t.q, t.r) !== 2) continue;
     AXIAL_NEIGHBORS.forEach(([dq, dr], side) => {
       const n = { q: t.q + dq, r: t.r + dr };
@@ -50,7 +51,7 @@ export function fogForestMap(): MapDef {
     return { q: s.q, r: s.r, side: s.side, type: i % 2 ? 'any' : 'lumber' };
   });
 
-  return { name: 'Nebelwald', tiles, ports, fogReward: true };
+  return { name: 'Nebelwald', tiles: numbered, ports, fogReward: true, shuffleNumbers: true, waterLabels: [{ q: 0, r: -1, text: 'Nebelsee' }] };
 }
 
 type Land = Exclude<Terrain, 'fog'>;
@@ -71,6 +72,8 @@ interface DrawnSpec {
    */
   ports: { row: number; col: number; type: PortType; kind: PortKind; sides: number[] }[];
   labels: { row: number; col: number; text: string }[];
+  /** Names of seas and lakes, written on that water cell. */
+  waters?: { row: number; col: number; text: string }[];
   /** Bridges along one side of a sea cell whose two corners are both on land (0 NE … 5 NW, as for ports). */
   bridges?: { row: number; col: number; side: number }[];
   flag?: FlagDef;
@@ -78,27 +81,9 @@ interface DrawnSpec {
 }
 
 /**
- * On a big board a plain reshuffle almost never keeps every 6 and 8 apart, so instead move each
- * red number that touches another onto a random tile where it touches none.
+ * A hand-drawn board: terrain as drawn (blocks of more than three equal tiles are broken up),
+ * numbers dealt afresh for every game.
  */
-function separateRedNumbers(tiles: MapTile[], rng: { rng: number }, name: string) {
-  const byId = new Map(tiles.map((t) => [tileId(t.q, t.r), t]));
-  const red = (t: MapTile | undefined) => t?.number === 6 || t?.number === 8;
-  const touchesRed = (t: MapTile, except?: MapTile) =>
-    AXIAL_NEIGHBORS.some(([dq, dr]) => {
-      const nb = byId.get(tileId(t.q + dq, t.r + dr));
-      return nb !== except && red(nb);
-    });
-  for (let guard = 0; redNumbersAdjacent(tiles); guard++) {
-    if (guard > 2000) throw new Error(`${name}: could not place numbers`);
-    const bad = tiles.find((t) => red(t) && touchesRed(t))!;
-    const spots = tiles.filter((t) => t.number !== null && !red(t) && !touchesRed(t, bad));
-    const spot = spots[randInt(rng, spots.length)];
-    [bad.number, spot.number] = [spot.number, bad.number];
-  }
-}
-
-/** A hand-drawn board: terrain exactly as drawn, numbers shuffled so 6 and 8 never touch. */
 function drawnMap(spec: DrawnSpec): MapDef {
   const width = Math.max(...spec.rows.map((r) => r.length));
   // Keep the row offset even so odd rows stay the shifted ones after centring.
@@ -123,12 +108,9 @@ function drawnMap(spec: DrawnSpec): MapDef {
     }),
   );
 
-  const rng = { rng: spec.seed };
-  const numbered = cells.filter((c) => c.terrain !== 'desert').length;
-  const numbers = shuffle(rng, Array.from({ length: numbered }, (_, i) => STANDARD_NUMBERS[i % STANDARD_NUMBERS.length]));
-  let n = 0;
-  const tiles: MapTile[] = cells.map((c) => ({ ...c, number: c.terrain === 'desert' ? null : numbers[n++] }));
-  separateRedNumbers(tiles, rng, spec.name);
+  // No block of more than three equal tiles, then numbers dealt by the same rules as every game.
+  const spread = breakClusters(cells.map((c) => ({ ...c, number: null })), 3, (t) => t.terrain === 'desert');
+  const tiles: MapTile[] = dealNumbers(spread, { rng: spec.seed });
 
   const land = new Set(tiles.map((t) => tileId(t.q, t.r)));
   const water = new Set(sea);
@@ -150,7 +132,16 @@ function drawnMap(spec: DrawnSpec): MapDef {
     return ends;
   });
 
-  return { name: spec.name, tiles, ports, ...(bridges.length ? { bridges } : {}), surroundings: { sea, land: foreign }, ...(spec.flag ? { flag: spec.flag } : {}) };
+  return {
+    name: spec.name,
+    tiles,
+    ports,
+    ...(bridges.length ? { bridges } : {}),
+    surroundings: { sea, land: foreign },
+    ...(spec.flag ? { flag: spec.flag } : {}),
+    ...(spec.waters ? { waterLabels: spec.waters.map((w) => ({ ...at(w.row, w.col), text: w.text })) } : {}),
+    shuffleNumbers: true,
+  };
 }
 
 /**
@@ -165,14 +156,14 @@ export function germanyMap(): MapDef {
     rows: [
       '~~~...~~~~', //  Nordsee, Dänemark, Ostsee
       '~~~P~~~~~~', //  Schleswig
-      '~~~PA~AW..', //  Dithmarschen, Holstein, Rostock, Vorpommern
-      '.PPAWAWA..', //  Ostfriesland, Oldenburg, Hamburg, Sachsenwald, Schwerin, Seenplatte, Uckermark
+      '~~~PW~AW..', //  Dithmarschen, Holstein, Rostock, Vorpommern
+      '.APAWAWA..', //  Ostfriesland, Oldenburg, Hamburg, Sachsenwald, Schwerin, Seenplatte, Uckermark
       '..HHDPWA..', //  Emsland, Bremen, Lüneburger Heide, Altmark, Havelland, Berlin
       '.APHAAPP..', //  Münster, Osnabrück, Hannover, Braunschweig, Magdeburg, Fläming, Spreewald
       '.AHGGPAHW.', //  Düsseldorf, Dortmund, Brilon, Harz, Halle, Leipzig, Lausitz, Görlitz
       'HAWWPHHG..', //  Aachen, Köln, Westerwald, Kassel, Erfurt, Jena, Chemnitz, Dresden
-      '.GWAWG....', //  Eifel, Taunus, Frankfurt, Thüringer Wald, Erzgebirge
-      '.WAPHH....', //  Pfälzerwald, Pfalz, Würzburg, Nürnberg, Oberpfalz
+      '.GPAWG....', //  Eifel, Taunus, Frankfurt, Thüringer Wald, Erzgebirge
+      '.HAPHH....', //  Pfälzerwald, Pfalz, Würzburg, Nürnberg, Oberpfalz
       '.GWPGHW...', //  Saarland, Nordschwarzwald, Stuttgart, Schwäbische Alb, Regensburg, Bayerischer Wald
       '..WPAAP...', //  Schwarzwald, Alb, Augsburg, München, Passau
       '..W~GGG...', //  Freiburg, Bodensee (der einzige See im Süden), Allgäu, Zugspitze, Berchtesgaden
@@ -226,6 +217,7 @@ export function germanyMap(): MapDef {
       { row: 12, col: 2, text: 'Freiburg' },
       { row: 12, col: 5, text: 'Zugspitze' },
     ],
+    waters: [{ row: 1, col: 1, text: 'Nordsee' }, { row: 1, col: 7, text: 'Ostsee' }, { row: 12, col: 3, text: 'Bodensee' }],
     seed: 49,
   });
 }
@@ -244,12 +236,12 @@ export function ukraineMap(): MapDef {
     rows: [
       '.................', //  Belarus, Russland
       '..WW...WPW.......', //  Wolyn, Polissja, Tschernihiw
-      '..WPWGHWAWP......', //  Kowel, Riwne, Polissja, Owrutsch, Kyjiw-Nord, Tschernihiw, Nischyn, Sumy
-      '..GWAGAPAHPA.....', //  Tscherwonohrad, Riwne, Schytomyr-Süd, Schytomyr, Kyjiw, Perejaslaw, Poltawa-Nord, Sumy-Süd, Charkiw
-      '.HAHPAHWPAHPHHW..', //  Lwiw-West, Lwiw, Ternopil, Chmelnyzkyj, Winnyzja-Nord, Bila Zerkwa, Tscherkassy, Poltawa, Charkiw, Luhansk-Nord
-      '.GWPAHGPGHAGHG...', //  Beskiden, Iwano-Frankiwsk, Podilsk, Winnyzja, Uman, Kropywnyzkyj, Dnipro, Pawlohrad, Luhansk
+      '..PPWGHWAWP......', //  Kowel, Riwne, Polissja, Owrutsch, Kyjiw-Nord, Tschernihiw, Nischyn, Sumy
+      '..GHAGAPAHPA.....', //  Tscherwonohrad, Riwne, Schytomyr-Süd, Schytomyr, Kyjiw, Perejaslaw, Poltawa-Nord, Sumy-Süd, Charkiw
+      '.HAHPAHWWAHPHHW..', //  Lwiw-West, Lwiw, Ternopil, Chmelnyzkyj, Winnyzja-Nord, Bila Zerkwa, Tscherkassy, Poltawa, Charkiw, Luhansk-Nord
+      '.GWPAHGPGPAGHG...', //  Beskiden, Iwano-Frankiwsk, Podilsk, Winnyzja, Uman, Kropywnyzkyj, Dnipro, Pawlohrad, Luhansk
       '.WGP..APAGHAPGH..', //  Uschhorod, Howerla, Czernowitz, (Moldau), Odesa-Nord, Krywyj Rih, Donezk
-      '......PAAGHAG....', //  Balta, Mykolajiw-Nord, Nikopol, Saporischschja, Mariupol
+      '......PAHGHAG....', //  Balta, Mykolajiw-Nord, Nikopol, Saporischschja, Mariupol
       '.......APADP~~...', //  Odesa, Mykolajiw, Cherson, Oleschky-Sande, Melitopol, Asowsches Meer
       '......P~~~~~~~...', //  Budschak, Schwarzes Meer, Siwasch
       '......H~~APH~....', //  Ismajil, Krim: Jewpatorija, Simferopol, Kertsch
@@ -297,6 +289,7 @@ export function ukraineMap(): MapDef {
       { row: 11, col: 10, text: 'Jalta' },
     ],
     bridges: [{ row: 9, col: 8, side: 1 }], // Perekop: Cherson to the Crimea
+    waters: [{ row: 12, col: 8, text: 'Schwarzes Meer' }, { row: 9, col: 12, text: 'Asowsches Meer' }],
     seed: 1991,
   });
 }
@@ -312,13 +305,13 @@ export function polandMap(): MapDef {
     rows: [
       '~~~~~~~...',
       '~~~P~.....',
-      '.PPPPPW~P.',
+      '.PPWPAW~P.',
       '.WPWWPWWP.',
-      '.HWAAPHPW.',
-      '.WAAAAAH..',
-      '.WWAHHHAA.',
-      '.GAHGGGAA.',
-      '...HHDGWW.',
+      '.HWAAPAAP.',
+      '.HAPHHAH..',
+      '.WWWAHPHA.',
+      '.GGAGGGAA.',
+      '...HHDAWW.',
       '....GGPG..',
       '........G.',
       '..........',
@@ -360,6 +353,7 @@ export function polandMap(): MapDef {
       { row: 5, col: 1, text: 'Zielona Góra' },
       { row: 6, col: 2, text: 'Legnica' },
     ],
+    waters: [{ row: 0, col: 3, text: 'Ostsee' }, { row: 2, col: 7, text: 'Masurische Seen' }],
     seed: 1918,
   });
 }
@@ -376,21 +370,21 @@ export function italyMap(): MapDef {
     rows: [
       '..............',
       '.....GG.......',
-      '...WGGGGP.....',
-      '.GWAA~PW~.....',
-      '.HHAAAAA~~....',
-      '.HPAWAA~~~....',
-      '..P~~GWW~~~...',
-      '~~~~~PDPH~~~..',
+      '...WGAGWP.....',
+      '.GWAW~HP~.....',
+      '.HHAAPAA~~....',
+      '.HPWGAW~~~....',
+      '..A~~GWA~~~...',
+      '~~~~~PDPP~~~..',
       '~~~~~~PHG~~~~~',
       '~~~.~~HPG~~~~~',
-      '~~~.~~~~PWAA~~',
+      '~~~.~~~~PWWA~~',
       '~~~P~~~~~HAH~~',
-      '~~~PP~~~~~HWPP',
-      '~~~P~~~~~~~W~W',
-      '~~~H~~~~~~~~W~',
-      '~~~~~~~~~~~W~~',
-      '~~~~~~~~~~~W~~',
+      '~~~PW~~~~~HWPP',
+      '~~~W~~~~~~~P~A',
+      '~~~A~~~~~~~~W~',
+      '~~~~~~~~~~~H~~',
+      '~~~~~~~~~~~G~~',
       '~~~~~~~HAG~~~~',
       '......~~~AW~~~',
       '......~~~~~~~~',
@@ -439,6 +433,7 @@ export function italyMap(): MapDef {
       { row: 2, col: 8, text: 'Udine' },
     ],
     bridges: [{ row: 17, col: 10, side: 5 }], // Straße von Messina
+    waters: [{ row: 5, col: 9, text: 'Adria' }, { row: 7, col: 2, text: 'Ligurisches Meer' }, { row: 11, col: 6, text: 'Tyrrhenisches Meer' }, { row: 15, col: 13, text: 'Ionisches Meer' }, { row: 19, col: 8, text: 'Mittelmeer' }, { row: 3, col: 5, text: 'Gardasee' }],
     seed: 1861,
   });
 }
@@ -454,19 +449,19 @@ export function franceMap(): MapDef {
     flag: { colors: ['#0055a4', '#ffffff', '#ef4135'], layout: 'vertical' },
     rows: [
       '..............',
-      '......H.......',
+      '......A.......',
       '.~~~~~AH......',
-      '~~~P~AAAHG....',
-      '~~~~PPAAAGGW..',
-      '~PPPPAAAHHW...',
-      '~~~PWAWAWHH...',
-      '~~~PHAWHHW....',
-      '~~~~PPPGWWG...',
-      '~~~~HPPGAGG...',
-      '~~~~DWWPWGG...',
-      '~~~WWAWWPPH...',
-      '....WGAA~~H~~~',
-      '......G~~~~~W~',
+      '~~~P~HPHAG....',
+      '~~~~PPAAHWGW..',
+      '~PPGWHAWPAW...',
+      '~~~APAWPWAH...',
+      '~~~PHAWAHW....',
+      '~~~~WPPGPAG...',
+      '~~~~HPGGAGG...',
+      '~~~~DWAPWHH...',
+      '~~~WWAHWPPG...',
+      '....GGAW~~W~~~',
+      '......H~~~~~W~',
       '........~~~~G~',
       '.......~~~~~.~',
     ],
@@ -516,6 +511,7 @@ export function franceMap(): MapDef {
       { row: 9, col: 10, text: 'Chamonix' },
       { row: 11, col: 3, text: 'Biarritz' },
     ],
+    waters: [{ row: 2, col: 3, text: 'Ärmelkanal' }, { row: 8, col: 1, text: 'Atlantik' }, { row: 11, col: 1, text: 'Golf von Biskaya' }, { row: 13, col: 9, text: 'Mittelmeer' }],
     seed: 1789,
   });
 }
@@ -532,11 +528,11 @@ export function austriaMap(): MapDef {
       '..............',
       '..............',
       '........W.WA..',
-      '......PAWWAAA.',
-      '.......PAHAA~.',
-      '~....HPPHGWD..',
-      '.PPGWGGGPHHW..',
-      '.....GPAWPH...',
+      '......PAAWAPA.',
+      '.......PAHPA~.',
+      '~....HPWHGWD..',
+      '.PGGWPGGAAHW..',
+      '.....GPHWPH...',
       '........W.....',
       '..............',
     ],
@@ -575,6 +571,7 @@ export function austriaMap(): MapDef {
       { row: 2, col: 10, text: 'Zwettl' },
       { row: 6, col: 3, text: 'Landeck' },
     ],
+    waters: [{ row: 5, col: 0, text: 'Bodensee' }, { row: 4, col: 12, text: 'Neusiedler See' }],
     seed: 1955,
   });
 }
@@ -592,10 +589,10 @@ export function switzerlandMap(): MapDef {
       '..........',
       '.......~..',
       '...WHAHA..',
-      '..WWA~PP..',
-      '..WPAHPPW.',
+      '..WAW~PP..',
+      '..WPAHPAW.',
       '.AAPDGGPG.',
-      '.H~GGAW...',
+      '.H~GGPW...',
       '......H...',
       '..........',
     ],
@@ -632,8 +629,573 @@ export function switzerlandMap(): MapDef {
       { row: 5, col: 7, text: 'St. Moritz' },
       { row: 6, col: 3, text: 'Montreux' },
     ],
+    waters: [{ row: 1, col: 7, text: 'Bodensee' }, { row: 3, col: 5, text: 'Vierwaldstättersee' }, { row: 6, col: 2, text: 'Genfersee' }],
     seed: 1291,
   });
+}
+
+/**
+ * United Kingdom: Great Britain and Northern Ireland. Scottish Highlands, the Lake District and Snowdonia,
+ * East Anglian wheat, Welsh and Border sheep, Cornish china clay and the brickworks of the Midlands, and
+ * Dungeness, Britain's only desert, under the flag.
+ */
+export function unitedKingdomMap(): MapDef {
+  return drawnMap({
+    name: 'Vereinigtes Königreich',
+    flag: { colors: ['#012169', '#ffffff', '#c8102e'], layout: 'union' },
+    rows: [
+      '~~~~~~~~~~',
+      '~~~~~~~~~~',
+      '~~~G~~~~~~',
+      '~~P~G~~~~~',
+      '~~GGWP~~~~',
+      '~~GWA~~~~~',
+      '~~PAG~~~~~',
+      '~~WWPW~~~~',
+      '.P~WGH~~~~',
+      '.G~~APP~~~',
+      '..~~~AWH~~',
+      '..~GHHA~~~',
+      '..~~PHWPA~',
+      '~~~PWAHA~~',
+      '~~~~HPAWA~',
+      '~~~PAWAD~.',
+      '~~HH~~~~..',
+    ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
+    ports: [
+      { row: 4, col: 5, type: 'lumber', kind: 'harbor', sides: [0] },
+      { row: 9, col: 6, type: 'any', kind: 'harbor', sides: [0] },
+      { row: 12, col: 8, type: 'wool', kind: 'harbor', sides: [0] },
+      { row: 15, col: 7, type: 'brick', kind: 'mine', sides: [2] },
+      { row: 16, col: 2, type: 'any', kind: 'harbor', sides: [0] },
+      { row: 11, col: 3, type: 'grain', kind: 'harbor', sides: [0] },
+      { row: 8, col: 1, type: 'ore', kind: 'harbor', sides: [0] },
+      { row: 2, col: 3, type: 'any', kind: 'harbor', sides: [0] },
+    ],
+    labels: [
+      { row: 14, col: 7, text: 'London' },
+      { row: 15, col: 7, text: 'Dungeness' },
+      { row: 12, col: 5, text: 'Birmingham' },
+      { row: 6, col: 3, text: 'Glasgow' },
+      { row: 10, col: 5, text: 'Manchester' },
+      { row: 11, col: 4, text: 'Liverpool' },
+      { row: 10, col: 6, text: 'Leeds' },
+      { row: 6, col: 4, text: 'Edinburgh' },
+      { row: 14, col: 5, text: 'Bristol' },
+      { row: 14, col: 4, text: 'Cardiff' },
+      { row: 9, col: 1, text: 'Belfast' },
+      { row: 8, col: 5, text: 'Newcastle' },
+      { row: 11, col: 5, text: 'Sheffield' },
+      { row: 4, col: 5, text: 'Aberdeen' },
+      { row: 4, col: 3, text: 'Inverness' },
+      { row: 16, col: 3, text: 'Plymouth' },
+      { row: 12, col: 8, text: 'Norwich' },
+      { row: 15, col: 5, text: 'Southampton' },
+      { row: 13, col: 7, text: 'Cambridge' },
+      { row: 13, col: 5, text: 'Oxford' },
+      { row: 9, col: 5, text: 'York' },
+      { row: 5, col: 4, text: 'Dundee' },
+      { row: 8, col: 1, text: 'Derry' },
+      { row: 13, col: 3, text: 'Swansea' },
+      { row: 5, col: 2, text: 'Ben Nevis' },
+      { row: 11, col: 3, text: 'Snowdon' },
+      { row: 8, col: 4, text: 'Lake District' },
+    ],
+    waters: [{ row: 7, col: 8, text: 'Nordsee' }, { row: 10, col: 3, text: 'Irische See' }, { row: 16, col: 5, text: 'Ärmelkanal' }, { row: 3, col: 0, text: 'Atlantik' }, { row: 15, col: 1, text: 'Keltische See' }],
+    seed: 1707,
+  });
+}
+
+/**
+ * Ireland: green pastures across the midlands, the mountains of Wicklow, Kerry, Connemara and Donegal,
+ * farmland in the south-east, and the Burren's bare limestone under the flag.
+ */
+export function irelandMap(): MapDef {
+  return drawnMap({
+    name: 'Irland',
+    flag: { colors: ['#169b62', '#ffffff', '#ff883e'], layout: 'vertical' },
+    rows: [
+      '~~~~~~~~.',
+      '~~~~~~~~~',
+      '~~~~GG..~',
+      '~~~WA...~',
+      '~~~~W....',
+      '~~PPAPH~~',
+      '~~GHHPAA~',
+      '~~~WPHW~~',
+      '~~~DWHAG~',
+      '~~PPPHA~~',
+      '~~GWAW~~~',
+      '~WGA~~~~~',
+      '~~~~~~~~~',
+    ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
+    ports: [
+      { row: 5, col: 4, type: 'brick', kind: 'mine', sides: [0] },
+      { row: 6, col: 7, type: 'any', kind: 'harbor', sides: [0] },
+      { row: 9, col: 6, type: 'lumber', kind: 'harbor', sides: [1] },
+      { row: 10, col: 4, type: 'wool', kind: 'harbor', sides: [2] },
+      { row: 11, col: 1, type: 'any', kind: 'harbor', sides: [2] },
+      { row: 9, col: 2, type: 'grain', kind: 'harbor', sides: [4] },
+      { row: 6, col: 2, type: 'ore', kind: 'harbor', sides: [2] },
+      { row: 2, col: 4, type: 'any', kind: 'harbor', sides: [0] },
+    ],
+    labels: [
+      { row: 7, col: 6, text: 'Dublin' },
+      { row: 8, col: 3, text: 'Burren' },
+      { row: 11, col: 3, text: 'Cork' },
+      { row: 9, col: 3, text: 'Limerick' },
+      { row: 7, col: 3, text: 'Galway' },
+      { row: 9, col: 5, text: 'Waterford' },
+      { row: 6, col: 7, text: 'Drogheda' },
+      { row: 8, col: 6, text: 'Kilkenny' },
+      { row: 4, col: 4, text: 'Sligo' },
+      { row: 7, col: 4, text: 'Athlone' },
+      { row: 10, col: 2, text: 'Killarney' },
+      { row: 2, col: 5, text: 'Letterkenny' },
+      { row: 9, col: 6, text: 'Wexford' },
+      { row: 8, col: 7, text: 'Wicklow' },
+      { row: 5, col: 2, text: 'Westport' },
+      { row: 9, col: 2, text: 'Tralee' },
+      { row: 8, col: 4, text: 'Ennis' },
+      { row: 7, col: 5, text: 'Tullamore' },
+      { row: 6, col: 5, text: 'Mullingar' },
+      { row: 3, col: 4, text: 'Donegal' },
+    ],
+    waters: [{ row: 7, col: 8, text: 'Irische See' }, { row: 7, col: 0, text: 'Atlantik' }, { row: 12, col: 5, text: 'Keltische See' }, { row: 8, col: 2, text: 'Shannon' }],
+    seed: 1922,
+  });
+}
+
+/**
+ * Deutschland, small: the same outline and regions in at most 21 tiles (about 144 km per hex).
+ */
+export function germanySmallMap(): MapDef {
+  return drawnMap({
+    name: 'Deutschland',
+    flag: { colors: ['#000000', '#dd0000', '#ffce00'] },
+    rows: [
+      '~~..~.',
+      '~~AG..',
+      '.PDHW.',
+      '.AGHA.',
+      '.WWHW.',
+      'PWP...',
+      '..PA..',
+      '..G...',
+      '......',
+    ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
+    ports: [
+      { row: 1, col: 2, type: 'brick', kind: 'mine', sides: [0] },
+      { row: 1, col: 3, type: 'any', kind: 'harbor', sides: [0] },
+      { row: 3, col: 4, type: 'grain', kind: 'mine', sides: [0] },
+      { row: 4, col: 3, type: 'ore', kind: 'mine', sides: [2] },
+      { row: 7, col: 2, type: 'any', kind: 'gondola', sides: [1] },
+      { row: 6, col: 2, type: 'lumber', kind: 'treehouse', sides: [3] },
+      { row: 5, col: 1, type: 'wool', kind: 'treehouse', sides: [3] },
+      { row: 2, col: 1, type: 'any', kind: 'harbor', sides: [0] },
+    ],
+    labels: [
+      { row: 2, col: 4, text: 'Berlin' },
+      { row: 2, col: 2, text: 'Hamburg' },
+      { row: 6, col: 3, text: 'München' },
+      { row: 4, col: 1, text: 'Köln' },
+      { row: 5, col: 1, text: 'Frankfurt' },
+      { row: 6, col: 2, text: 'Stuttgart' },
+      { row: 4, col: 3, text: 'Leipzig' },
+      { row: 4, col: 4, text: 'Dresden' },
+    ],
+    waters: [{ row: 1, col: 0, text: 'Nordsee' }, { row: 0, col: 4, text: 'Ostsee' }],
+    seed: 49,
+  });
+}
+
+/**
+ * Ukraine, small: the same outline and regions in at most 21 tiles (about 182 km per hex).
+ */
+export function ukraineSmallMap(): MapDef {
+  return drawnMap({
+    name: 'Ukraine',
+    flag: { colors: ['#0057b7', '#ffd700'] },
+    rows: [
+      '.........',
+      '.WWPW....',
+      '.HPWAWHP.',
+      'PG.AAHG..',
+      '....PDA~.',
+      '...~G~...',
+      '....~~~..',
+    ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
+    ports: [
+      { row: 2, col: 5, type: 'lumber', kind: 'treehouse', sides: [0] },
+      { row: 2, col: 7, type: 'any', kind: 'treehouse', sides: [0] },
+      { row: 4, col: 6, type: 'brick', kind: 'harbor', sides: [1] },
+      { row: 5, col: 4, type: 'grain', kind: 'harbor', sides: [1] },
+      { row: 3, col: 3, type: 'any', kind: 'mine', sides: [3] },
+      { row: 3, col: 0, type: 'wool', kind: 'treehouse', sides: [2] },
+      { row: 1, col: 1, type: 'ore', kind: 'treehouse', sides: [0] },
+      { row: 1, col: 3, type: 'any', kind: 'treehouse', sides: [0] },
+    ],
+    labels: [
+      { row: 1, col: 3, text: 'Kyjiw' },
+      { row: 2, col: 6, text: 'Charkiw' },
+      { row: 4, col: 4, text: 'Odesa' },
+      { row: 3, col: 5, text: 'Dnipro' },
+      { row: 2, col: 1, text: 'Lwiw' },
+      { row: 3, col: 6, text: 'Donezk' },
+      { row: 4, col: 5, text: 'Saporischschja' },
+      { row: 3, col: 4, text: 'Krywyj Rih' },
+    ],
+    waters: [{ row: 6, col: 4, text: 'Schwarzes Meer' }, { row: 5, col: 5, text: 'Asowsches Meer' }],
+    seed: 1991,
+  });
+}
+
+/**
+ * Polen, small: the same outline and regions in at most 21 tiles (about 131 km per hex).
+ */
+export function polandSmallMap(): MapDef {
+  return drawnMap({
+    name: 'Polen',
+    flag: { colors: ['#ffffff', '#dc143c'] },
+    rows: [
+      '~~~~...',
+      '.PPGP..',
+      '.WWPWP.',
+      '.AAAG..',
+      '.WHGHA.',
+      '..HDW..',
+      '.......',
+    ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
+    ports: [
+      { row: 1, col: 4, type: 'lumber', kind: 'treehouse', sides: [0] },
+      { row: 2, col: 5, type: 'any', kind: 'treehouse', sides: [0] },
+      { row: 4, col: 5, type: 'brick', kind: 'mine', sides: [0] },
+      { row: 5, col: 3, type: 'ore', kind: 'mine', sides: [2] },
+      { row: 5, col: 2, type: 'any', kind: 'mine', sides: [2] },
+      { row: 4, col: 1, type: 'wool', kind: 'treehouse', sides: [2] },
+      { row: 2, col: 1, type: 'grain', kind: 'treehouse', sides: [3] },
+      { row: 1, col: 1, type: 'any', kind: 'harbor', sides: [0] },
+    ],
+    labels: [
+      { row: 3, col: 3, text: 'Warschau' },
+      { row: 5, col: 3, text: 'Krakau' },
+      { row: 4, col: 2, text: 'Breslau' },
+      { row: 3, col: 1, text: 'Posen' },
+      { row: 1, col: 2, text: 'Danzig' },
+      { row: 2, col: 1, text: 'Stettin' },
+      { row: 5, col: 2, text: 'Kattowitz' },
+    ],
+    waters: [{ row: 0, col: 2, text: 'Ostsee' }],
+    seed: 7,
+  });
+}
+
+/**
+ * Italien, small: the same outline and regions in at most 21 tiles (about 134 km per hex).
+ */
+export function italySmallMap(): MapDef {
+  return drawnMap({
+    name: 'Italien',
+    flag: { colors: ['#009246', '#ffffff', '#ce2b37'], layout: 'vertical' },
+    rows: [
+      '.........',
+      '.WGGP....',
+      '.HAA~....',
+      '.~WW~~...',
+      '~~~DP~~..',
+      '~.~HP~~~.',
+      '~~P~~AH~~',
+      '~W~~~~~W.',
+      '~~~~~~~~~',
+      '~~~~AG~~~',
+      '....~~~~~',
+    ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
+    ports: [
+      { row: 1, col: 4, type: 'brick', kind: 'harbor', sides: [3] },
+      { row: 7, col: 7, type: 'any', kind: 'harbor', sides: [0] },
+      { row: 6, col: 6, type: 'wool', kind: 'harbor', sides: [0] },
+      { row: 5, col: 4, type: 'grain', kind: 'harbor', sides: [0] },
+      { row: 9, col: 4, type: 'any', kind: 'harbor', sides: [0] },
+      { row: 6, col: 2, type: 'lumber', kind: 'treehouse', sides: [5] },
+      { row: 3, col: 2, type: 'ore', kind: 'harbor', sides: [3] },
+      { row: 1, col: 1, type: 'any', kind: 'treehouse', sides: [0] },
+    ],
+    labels: [
+      { row: 5, col: 3, text: 'Rom' },
+      { row: 2, col: 2, text: 'Mailand' },
+      { row: 6, col: 5, text: 'Neapel' },
+      { row: 2, col: 1, text: 'Turin' },
+      { row: 9, col: 4, text: 'Palermo' },
+      { row: 3, col: 3, text: 'Florenz' },
+      { row: 1, col: 3, text: 'Venedig' },
+      { row: 6, col: 6, text: 'Bari' },
+    ],
+    waters: [{ row: 4, col: 5, text: 'Adria' }, { row: 7, col: 3, text: 'Tyrrhenisches Meer' }, { row: 10, col: 4, text: 'Mittelmeer' }, { row: 8, col: 7, text: 'Ionisches Meer' }, { row: 3, col: 1, text: 'Ligurisches Meer' }],
+    seed: 5,
+  });
+}
+
+/**
+ * Frankreich, small: the same outline and regions in at most 21 tiles (about 176 km per hex).
+ */
+export function franceSmallMap(): MapDef {
+  return drawnMap({
+    name: 'Frankreich',
+    flag: { colors: ['#0055a4', '#ffffff', '#ef4135'], layout: 'vertical' },
+    rows: [
+      '........',
+      '~~~H....',
+      '~~PAAG..',
+      '~PAWW...',
+      '~~WPHG..',
+      '~~DPP...',
+      '~~WAHW~~',
+      '....~~G~',
+      '....~~.~',
+    ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
+    ports: [
+      { row: 2, col: 5, type: 'ore', kind: 'gondola', sides: [0] },
+      { row: 4, col: 5, type: 'any', kind: 'gondola', sides: [0] },
+      { row: 7, col: 6, type: 'lumber', kind: 'harbor', sides: [0] },
+      { row: 6, col: 4, type: 'brick', kind: 'harbor', sides: [2] },
+      { row: 6, col: 2, type: 'any', kind: 'treehouse', sides: [2] },
+      { row: 4, col: 2, type: 'wool', kind: 'harbor', sides: [3] },
+      { row: 2, col: 2, type: 'grain', kind: 'harbor', sides: [0] },
+      { row: 1, col: 3, type: 'any', kind: 'mine', sides: [0] },
+    ],
+    labels: [
+      { row: 2, col: 3, text: 'Paris' },
+      { row: 6, col: 5, text: 'Marseille' },
+      { row: 4, col: 4, text: 'Lyon' },
+      { row: 6, col: 3, text: 'Toulouse' },
+      { row: 3, col: 1, text: 'Nantes' },
+      { row: 2, col: 5, text: 'Straßburg' },
+      { row: 5, col: 2, text: 'Bordeaux' },
+      { row: 1, col: 3, text: 'Lille' },
+    ],
+    waters: [{ row: 1, col: 1, text: 'Ärmelkanal' }, { row: 4, col: 0, text: 'Atlantik' }, { row: 7, col: 4, text: 'Mittelmeer' }, { row: 5, col: 1, text: 'Golf von Biskaya' }],
+    seed: 3,
+  });
+}
+
+/**
+ * Österreich, small: the same outline and regions in at most 21 tiles (about 67 km per hex).
+ */
+export function austriaSmallMap(): MapDef {
+  return drawnMap({
+    name: 'Österreich',
+    flag: { colors: ['#ed2939', '#ffffff', '#ed2939'] },
+    rows: [
+      '..........',
+      '..........',
+      '.....HWWA.',
+      '....PAGWD.',
+      '.PGWGAAHP.',
+      '....HWPP..',
+      '..........',
+    ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
+    ports: [
+      { row: 2, col: 7, type: 'lumber', kind: 'treehouse', sides: [0] },
+      { row: 3, col: 8, type: 'any', kind: 'mine', sides: [0] },
+      { row: 5, col: 7, type: 'wool', kind: 'treehouse', sides: [1] },
+      { row: 5, col: 4, type: 'brick', kind: 'mine', sides: [2] },
+      { row: 4, col: 3, type: 'any', kind: 'treehouse', sides: [0] },
+      { row: 4, col: 2, type: 'ore', kind: 'gondola', sides: [0] },
+      { row: 4, col: 1, type: 'grain', kind: 'treehouse', sides: [0] },
+      { row: 2, col: 5, type: 'any', kind: 'mine', sides: [0] },
+    ],
+    labels: [
+      { row: 2, col: 8, text: 'Wien' },
+      { row: 4, col: 7, text: 'Graz' },
+      { row: 2, col: 6, text: 'Linz' },
+      { row: 3, col: 4, text: 'Salzburg' },
+      { row: 4, col: 3, text: 'Innsbruck' },
+      { row: 5, col: 5, text: 'Klagenfurt' },
+      { row: 3, col: 8, text: 'Seewinkel' },
+      { row: 4, col: 1, text: 'Bregenz' },
+    ],
+    seed: 11,
+  });
+}
+
+/**
+ * Schweiz, small: the same outline and regions in at most 21 tiles (about 46 km per hex).
+ */
+export function switzerlandSmallMap(): MapDef {
+  return drawnMap({
+    name: 'Schweiz',
+    flag: { colors: ['#da291c', '#ffffff'], layout: 'cross' },
+    rows: [
+      '.........',
+      '.........',
+      '..WAHA...',
+      '.WAPPW...',
+      '.APDHGGW.',
+      '.GP.W....',
+      '..H......',
+      '.........',
+    ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
+    ports: [
+      { row: 3, col: 5, type: 'lumber', kind: 'treehouse', sides: [0] },
+      { row: 4, col: 7, type: 'any', kind: 'treehouse', sides: [0] },
+      { row: 4, col: 6, type: 'ore', kind: 'gondola', sides: [0] },
+      { row: 5, col: 4, type: 'wool', kind: 'treehouse', sides: [1] },
+      { row: 6, col: 2, type: 'any', kind: 'mine', sides: [1] },
+      { row: 4, col: 3, type: 'brick', kind: 'mine', sides: [2] },
+      { row: 4, col: 1, type: 'grain', kind: 'mine', sides: [3] },
+      { row: 2, col: 3, type: 'any', kind: 'mine', sides: [0] },
+    ],
+    labels: [
+      { row: 3, col: 2, text: 'Bern' },
+      { row: 2, col: 4, text: 'Zürich' },
+      { row: 2, col: 2, text: 'Basel' },
+      { row: 4, col: 1, text: 'Lausanne' },
+      { row: 3, col: 3, text: 'Luzern' },
+      { row: 5, col: 4, text: 'Lugano' },
+      { row: 4, col: 3, text: 'Aletschgletscher' },
+      { row: 3, col: 5, text: 'Chur' },
+    ],
+    seed: 13,
+  });
+}
+
+/**
+ * Vereinigtes Königreich, small: the same outline and regions in at most 21 tiles (about 119 km per hex).
+ */
+export function unitedKingdomSmallMap(): MapDef {
+  return drawnMap({
+    name: 'Vereinigtes Königreich',
+    flag: { colors: ['#012169', '#ffffff', '#c8102e'], layout: 'union' },
+    rows: [
+      '~~~~~~~',
+      '~~W~~~~',
+      '~~GG~~~',
+      '~~G~~~~',
+      '~~WP~~~',
+      '.P~W~~~',
+      '..~~W~~',
+      '.~PHAA~',
+      '.~APAW~',
+      '~~PHD~.',
+      '~~H~~..',
+      '~~~~...',
+    ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
+    ports: [
+      { row: 6, col: 4, type: 'lumber', kind: 'harbor', sides: [0] },
+      { row: 7, col: 5, type: 'any', kind: 'harbor', sides: [0] },
+      { row: 9, col: 4, type: 'brick', kind: 'mine', sides: [2] },
+      { row: 10, col: 2, type: 'wool', kind: 'harbor', sides: [1] },
+      { row: 8, col: 2, type: 'any', kind: 'harbor', sides: [3] },
+      { row: 4, col: 2, type: 'grain', kind: 'harbor', sides: [2] },
+      { row: 2, col: 2, type: 'ore', kind: 'harbor', sides: [3] },
+      { row: 1, col: 2, type: 'any', kind: 'harbor', sides: [0] },
+    ],
+    labels: [
+      { row: 8, col: 5, text: 'London' },
+      { row: 9, col: 4, text: 'Dungeness' },
+      { row: 7, col: 3, text: 'Birmingham' },
+      { row: 4, col: 2, text: 'Glasgow' },
+      { row: 6, col: 4, text: 'Manchester' },
+      { row: 4, col: 3, text: 'Edinburgh' },
+      { row: 8, col: 3, text: 'Cardiff' },
+      { row: 5, col: 1, text: 'Belfast' },
+    ],
+    waters: [{ row: 4, col: 6, text: 'Nordsee' }, { row: 6, col: 2, text: 'Irische See' }, { row: 10, col: 3, text: 'Ärmelkanal' }, { row: 2, col: 1, text: 'Atlantik' }, { row: 9, col: 1, text: 'Keltische See' }],
+    seed: 1707,
+  });
+}
+
+/**
+ * Irland, small: the same outline and regions in at most 21 tiles (about 63 km per hex).
+ */
+export function irelandSmallMap(): MapDef {
+  return drawnMap({
+    name: 'Irland',
+    flag: { colors: ['#169b62', '#ffffff', '#ff883e'], layout: 'vertical' },
+    rows: [
+      '~~~~..~',
+      '~~~...~',
+      '~~PHWA~',
+      '~~HPA~~',
+      '~~DWHW~',
+      '~GPPA~~',
+      '~GGA~~~',
+      '~~~~~~~',
+    ],
+    // Two trading posts at each end of the country, the 3:1 ones never side by side.
+    ports: [
+      { row: 2, col: 4, type: 'lumber', kind: 'treehouse', sides: [0] },
+      { row: 2, col: 5, type: 'any', kind: 'mine', sides: [0] },
+      { row: 4, col: 5, type: 'brick', kind: 'harbor', sides: [0] },
+      { row: 5, col: 3, type: 'wool', kind: 'harbor', sides: [2] },
+      { row: 6, col: 2, type: 'any', kind: 'harbor', sides: [2] },
+      { row: 6, col: 1, type: 'grain', kind: 'harbor', sides: [2] },
+      { row: 4, col: 2, type: 'ore', kind: 'harbor', sides: [4] },
+      { row: 2, col: 2, type: 'any', kind: 'harbor', sides: [0] },
+    ],
+    labels: [
+      { row: 3, col: 4, text: 'Dublin' },
+      { row: 4, col: 2, text: 'Burren' },
+      { row: 6, col: 3, text: 'Cork' },
+      { row: 4, col: 3, text: 'Limerick' },
+      { row: 3, col: 2, text: 'Galway' },
+      { row: 5, col: 4, text: 'Waterford' },
+      { row: 2, col: 3, text: 'Sligo' },
+    ],
+    waters: [{ row: 3, col: 6, text: 'Irische See' }, { row: 3, col: 0, text: 'Atlantik' }, { row: 7, col: 3, text: 'Keltische See' }, { row: 4, col: 1, text: 'Shannon' }],
+    seed: 1922,
+  });
+}
+
+/**
+ * "Goldrausch": a gold field in the centre (it pays any resource), ringed by mountains and hills,
+ * then a ring of six lakes with farmland between them, and two broad outer rings of everything.
+ * Everyone wants a corner on the gold, so the middle is where the fights happen.
+ */
+export function goldRushMap(): MapDef {
+  const rng = { rng: 1849 };
+  const ringOf = (q: number, r: number) => (Math.abs(q) + Math.abs(r) + Math.abs(q + r)) / 2;
+  const angle = (q: number, r: number) => Math.atan2(1.5 * r, Math.sqrt(3) * (q + r / 2));
+  const byAngle = (ring: number) =>
+    hexagonCoords(4)
+      .filter((c) => ringOf(c.q, c.r) === ring)
+      .sort((a, b) => angle(a.q, a.r) - angle(b.q, b.r));
+
+  const tiles: MapTile[] = [{ q: 0, r: 0, terrain: 'gold', number: null, label: 'Goldader' }];
+  byAngle(1).forEach((c, i) => tiles.push({ ...c, terrain: i % 2 ? 'hills' : 'mountains', number: null }));
+  // Ring 2: the six corner hexes are lakes, the hexes between them farmland.
+  const farm: Terrain[] = ['fields', 'pasture', 'forest'];
+  let f = 0;
+  byAngle(2).forEach((c) => {
+    const corner = [c.q, c.r, -c.q - c.r].some((x) => Math.abs(x) === 2) && [c.q, c.r, -c.q - c.r].some((x) => x === 0);
+    if (!corner) tiles.push({ ...c, terrain: farm[f++ % 3], number: null });
+  });
+  // Outer rings: the usual mix (4:4:4:3:3) with two deserts opposite each other.
+  const outer = [...byAngle(3), ...byAngle(4)];
+  const deserts = new Set([tileId(4, -4), tileId(-4, 4)]);
+  const mix = shuffle(rng, (['forest', 'pasture', 'fields', 'hills', 'mountains'] as Land[]).flatMap((t, i) => Array<Land>(i < 3 ? 9 : 7).fill(t)));
+  let m = 0;
+  for (const c of outer) tiles.push({ ...c, terrain: deserts.has(tileId(c.q, c.r)) ? 'desert' : mix[m++ % mix.length], number: null });
+  const spread = dealNumbers(breakClusters(tiles, 3, (t) => ringOf(t.q, t.r) < 2 || t.terrain === 'desert'), rng);
+
+  // Eight harbours round the outside, evenly spaced, the 3:1 ones never side by side.
+  const coast = topology({ name: '', tiles: spread, ports: [] }).coastalEdges.filter((c) => ringOf(c.q, c.r) === 4);
+  const types: PortType[] = ['lumber', 'any', 'brick', 'wool', 'any', 'grain', 'ore', 'any'];
+  const ports: MapPort[] = types.map((type, i) => {
+    const c = coast[Math.floor(((i + 0.5) * coast.length) / types.length)];
+    return { q: c.q, r: c.r, side: c.side, type };
+  });
+  return { name: 'Goldrausch', tiles: spread, ports, shuffleNumbers: true };
 }
 
 /** Fixed boards anyone can pick. 'standard' is generated fresh for every game. */
@@ -645,5 +1207,17 @@ export const PRESET_MAPS = {
   frankreich: franceMap,
   oesterreich: austriaMap,
   schweiz: switzerlandMap,
+  uk: unitedKingdomMap,
+  irland: irelandMap,
+  'deutschland-klein': germanySmallMap,
+  'ukraine-klein': ukraineSmallMap,
+  'polen-klein': polandSmallMap,
+  'italien-klein': italySmallMap,
+  'frankreich-klein': franceSmallMap,
+  'oesterreich-klein': austriaSmallMap,
+  'schweiz-klein': switzerlandSmallMap,
+  'uk-klein': unitedKingdomSmallMap,
+  'irland-klein': irelandSmallMap,
   nebelwald: fogForestMap,
+  goldrausch: goldRushMap,
 } as const;

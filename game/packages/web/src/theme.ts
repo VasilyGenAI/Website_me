@@ -1,6 +1,7 @@
 import type { PortType, Resource, Terrain } from '@kontinentalist/engine';
 import acker1 from './art/acker-1.webp';
 import gebirge1 from './art/gebirge-1.webp';
+import gold1 from './art/gold-1.webp';
 import huegel1 from './art/huegel-1.webp';
 import duenen from './art/duenen.webp';
 import meer1 from './art/meer-1.webp';
@@ -21,6 +22,7 @@ export const TERRAIN_STYLE: Record<Terrain, { fill: string; icon: string; images
   pasture: { fill: '#8cc63f', icon: '🐑', images: [weide1] },
   fields: { fill: '#f2c230', icon: '🌾', images: [acker1], focus: { zoom: 0.9, dy: 0.05 } },
   mountains: { fill: '#9aa4ad', icon: '⛰️', images: [gebirge1], focus: { zoom: 0.9, dy: 0.05 } },
+  gold: { fill: '#d9a520', icon: '🪙', images: [gold1], focus: { zoom: 0.9, dy: 0.05 } },
   desert: { fill: '#e6d29a', icon: '🌵', images: [wueste1] },
   fog: { fill: '#c9d1d9', icon: '☁️', images: [nebel1] },
 };

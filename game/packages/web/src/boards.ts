@@ -11,6 +11,8 @@ export interface BoardChoice {
   /** What createRoom needs: a preset id, or the board itself. */
   preset?: PresetId;
   custom?: MapDef;
+  /** Country boards come in a big and a small (at most 21 tiles) version. */
+  size?: 'big' | 'small';
 }
 
 /** Tiles and trading posts, counted from the board itself so the text never goes stale. */
@@ -19,26 +21,40 @@ function counts(map: MapDef): string {
   return `${map.tiles.length} Felder${fog ? ` (${fog} im Nebel)` : ''} · ${map.ports.length} Tauschstellen`;
 }
 
-/** A country board: its three largest cities, the capital first, then the counts. */
-function country(id: Exclude<PresetId, 'standard' | 'nebelwald'>, capital: string, cities: [string, string]): BoardChoice {
-  const map = PRESET_MAPS[id]();
-  return { key: `p:${id}`, title: map.name, subtitle: `${capital} (Hauptstadt), ${cities.join(', ')} · ${counts(map)}`, map, preset: id };
+type Country = 'deutschland' | 'ukraine' | 'frankreich' | 'italien' | 'polen' | 'oesterreich' | 'schweiz' | 'uk' | 'irland';
+
+/** A country board in both sizes: its three largest cities, the capital first, then the counts. */
+function country(id: Country, capital: string, cities: [string, string]): BoardChoice[] {
+  return (['big', 'small'] as const).map((size) => {
+    const preset: PresetId = size === 'big' ? id : `${id}-klein`;
+    const map = PRESET_MAPS[preset]();
+    return { key: `p:${preset}`, title: map.name, subtitle: `${capital} (Hauptstadt), ${cities.join(', ')} · ${counts(map)}`, map, preset, size };
+  });
 }
 
 const standard = generateStandardMap(7);
 const fogForest = PRESET_MAPS.nebelwald();
+const goldRush = PRESET_MAPS.goldrausch();
 
 export const PRESET_CHOICES: BoardChoice[] = [
   { key: 'p:standard', title: 'Klassisch', subtitle: `Jedes Mal neu gemischt · ${counts(standard)}`, map: standard, preset: 'standard' },
-  country('deutschland', 'Berlin', ['Hamburg', 'München']),
-  country('ukraine', 'Kyjiw', ['Charkiw', 'Odesa']),
-  country('frankreich', 'Paris', ['Marseille', 'Lyon']),
-  country('italien', 'Rom', ['Mailand', 'Neapel']),
-  country('polen', 'Warschau', ['Krakau', 'Łódź']),
-  country('oesterreich', 'Wien', ['Graz', 'Linz']),
-  country('schweiz', 'Bern', ['Zürich', 'Genf']),
+  ...country('deutschland', 'Berlin', ['Hamburg', 'München']),
+  ...country('ukraine', 'Kyjiw', ['Charkiw', 'Odesa']),
+  ...country('frankreich', 'Paris', ['Marseille', 'Lyon']),
+  ...country('italien', 'Rom', ['Mailand', 'Neapel']),
+  ...country('polen', 'Warschau', ['Krakau', 'Łódź']),
+  ...country('oesterreich', 'Wien', ['Graz', 'Linz']),
+  ...country('schweiz', 'Bern', ['Zürich', 'Genf']),
+  ...country('uk', 'London', ['Birmingham', 'Glasgow']),
+  ...country('irland', 'Dublin', ['Cork', 'Limerick']),
   { key: 'p:nebelwald', title: 'Nebelwald', subtitle: `Waldring am See, Nebel deckt Neues auf · ${counts(fogForest)}`, map: fogForest, preset: 'nebelwald' },
+  { key: 'p:goldrausch', title: 'Goldrausch', subtitle: `Gold in der Mitte zahlt jeden Rohstoff · ${counts(goldRush)}`, map: goldRush, preset: 'goldrausch' },
 ];
+
+/** The same board in the other size, for switching between big and small. */
+export function otherSize(key: string): string {
+  return key.endsWith('-klein') ? key.slice(0, -'-klein'.length) : PRESET_CHOICES.some((c) => c.key === `${key}-klein`) ? `${key}-klein` : key;
+}
 
 export function ownChoice(m: SavedMap): BoardChoice {
   return { key: `o:${m.id}`, title: m.map.name, subtitle: `${m.map.tiles.length} Felder`, map: m.map, custom: m.map };

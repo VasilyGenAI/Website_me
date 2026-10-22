@@ -1,9 +1,11 @@
+import type { PRESET_MAPS } from './presets';
 import type { Action, MapDef } from './types';
 import type { GameView } from './view';
 
 export type Role = 'admin' | 'pro' | 'basic';
 
-export type PresetId = 'standard' | 'deutschland' | 'ukraine' | 'polen' | 'italien' | 'frankreich' | 'oesterreich' | 'schweiz' | 'nebelwald';
+/** A fixed board: the classic random one or any of PRESET_MAPS. */
+export type PresetId = 'standard' | keyof typeof PRESET_MAPS;
 
 export const CAN_CREATE_MAPS: Record<Role, boolean> = { admin: true, pro: true, basic: false };
 

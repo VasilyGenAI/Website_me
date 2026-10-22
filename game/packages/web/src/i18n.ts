@@ -15,6 +15,7 @@ export const TERRAIN_NAME: Record<Terrain, string> = {
   pasture: 'Weide',
   fields: 'Acker',
   mountains: 'Gebirge',
+  gold: 'Gold',
   desert: 'Wüste',
   fog: 'Nebel',
 };

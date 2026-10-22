@@ -131,6 +131,9 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
     case 'discard':
       status = me !== null && phase.pending[me] !== undefined ? `Wirf ${phase.pending[me]} Karten ab` : 'Warten auf Abwurf…';
       break;
+    case 'gold':
+      status = me !== null && phase.pending[me] !== undefined ? `Gold! Wähle ${phase.pending[me]} Rohstoff(e)` : 'Andere wählen ihr Gold…';
+      break;
     case 'robber':
       status = myTurn ? 'Versetze den Räuber' : `${current.name} versetzt den Räuber…`;
       break;
@@ -374,6 +377,9 @@ export function Game({ room, conn }: { room: RoomView; conn: Connection }) {
       {me !== null && phase.type === 'discard' && phase.pending[me] !== undefined && (
         <DiscardDialog need={phase.pending[me]} hand={hand} onDone={(r) => act({ type: 'discard', resources: r })} />
       )}
+      {me !== null && phase.type === 'gold' && phase.pending[me] !== undefined && (
+        <GoldDialog owed={Math.min(phase.pending[me], totalCards(g.bank))} bank={g.bank} onDone={(r) => act({ type: 'chooseGold', resources: r })} />
+      )}
       {myTurn && phase.type === 'steal' && (
         <Modal title="Von wem stehlen?">
           <div className="choices">
@@ -497,6 +503,19 @@ function DiscardDialog({ need, hand, onDone }: { need: number; hand: ResourceCou
       <p className="muted">Deine Hand: {RESOURCES.map((r) => `${RESOURCE_STYLE[r].icon}${hand[r]}`).join('  ')}</p>
       <Picker value={pick} onChange={setPick} max={hand} />
       <button className="primary" disabled={n !== need} onClick={() => onDone(pick)}>Abwerfen ({n}/{need})</button>
+    </Modal>
+  );
+}
+
+/** Gold field paid out: pick any resources the bank still has. */
+function GoldDialog({ owed, bank, onDone }: { owed: number; bank: ResourceCounts; onDone: (r: ResourceCounts) => void }) {
+  const [pick, setPick] = useState(empty());
+  const n = totalCards(pick);
+  return (
+    <Modal title={`🪙 Gold: wähle ${owed} Rohstoff${owed > 1 ? 'e' : ''}`}>
+      <p className="muted">Ein Goldfeld zahlt aus, was du brauchst. Tippe auf die Karten.</p>
+      <Picker value={pick} onChange={(v) => totalCards(v) <= owed && setPick(v)} max={bank} />
+      <button className="primary" disabled={n !== owed} onClick={() => onDone(pick)}>Nehmen ({n}/{owed})</button>
     </Modal>
   );
 }

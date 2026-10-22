@@ -3,7 +3,7 @@ import { CAN_CREATE_MAPS } from '@kontinentalist/engine';
 import { Tabs } from '../components/Shell';
 import { MapCard } from '../components/MapCard';
 import { SettingsPanel, useSavedSettings } from '../components/Settings';
-import { PRESET_CHOICES, canPlayWithPeople, ownChoice } from '../boards';
+import { PRESET_CHOICES, canPlayWithPeople, otherSize, ownChoice } from '../boards';
 import type { BoardChoice } from '../boards';
 import { STAGE_LABEL, stage, startingGameWith, useLibrary } from '../library';
 import { OFFLINE } from '../local';
@@ -13,6 +13,24 @@ import type { Connection } from '../net';
 export function Play({ conn }: { conn: Connection }) {
   const [tab, setTab] = useState<'bots' | 'people'>('bots');
   const [pick, setPick] = useState('p:standard');
+  // Country boards come big (real detail) or small (at most 21 tiles, quicker games).
+  const [size, setSize] = useState<'big' | 'small'>(() => {
+    try {
+      return localStorage.getItem('kontinentalist.size') === 'small' ? 'small' : 'big';
+    } catch {
+      return 'big';
+    }
+  });
+  const presets = PRESET_CHOICES.filter((c) => !c.size || c.size === size);
+  const switchSize = (next: 'big' | 'small') => {
+    if (next !== size) setPick(otherSize(pick));
+    setSize(next);
+    try {
+      localStorage.setItem('kontinentalist.size', next);
+    } catch {
+      /* private window: the choice lasts for this visit */
+    }
+  };
   const [bots, setBots] = useState(3);
   const [code, setCode] = useState('');
   const [settings, setSettings] = useSavedSettings();
@@ -25,12 +43,12 @@ export function Play({ conn }: { conn: Connection }) {
   const groups: { title: string; items: BoardChoice[] }[] =
     tab === 'bots'
       ? [
-          { title: 'Vorgefertigt', items: PRESET_CHOICES },
+          { title: 'Vorgefertigt', items: presets },
           { title: 'Custom', items: shared },
           { title: 'Meine Karten', items: own },
         ]
       : [
-          { title: 'Vorgefertigt', items: PRESET_CHOICES },
+          { title: 'Vorgefertigt', items: presets },
           { title: 'Custom', items: shared },
           { title: 'Meine veröffentlichten Karten', items: ownForPeople },
         ];
@@ -59,7 +77,15 @@ export function Play({ conn }: { conn: Connection }) {
         (g) =>
           g.items.length > 0 && (
             <section key={g.title}>
-              <h3 className="section-title">{g.title}</h3>
+              <h3 className="section-title">
+                {g.title}
+                {g.title === 'Vorgefertigt' && (
+                  <span className="size-switch" role="group" aria-label="Kartengröße">
+                    <button className={size === 'big' ? 'on' : ''} onClick={() => switchSize('big')}>Groß</button>
+                    <button className={size === 'small' ? 'on' : ''} onClick={() => switchSize('small')}>Klein (≤ 21 Felder)</button>
+                  </span>
+                )}
+              </h3>
               <div className="mapgrid">
                 {g.items.map((c) => (
                   <MapCard key={c.key} map={c.map} title={c.title} subtitle={c.subtitle} selected={chosen.key === c.key} onSelect={() => setPick(c.key)} />

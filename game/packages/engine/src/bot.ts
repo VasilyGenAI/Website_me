@@ -6,6 +6,7 @@ import {
   legalRoadEdges,
   legalSettlementVertices,
   robberTiles,
+  tileInfo,
   tileNumber,
   tileResource,
   topo,
@@ -27,6 +28,10 @@ export function botAction(state: GameState, me: number): Action | null {
   if (phase.type === 'discard') {
     const need = phase.pending[me];
     return need === undefined ? null : { type: 'discard', resources: chooseDiscard(state, me, need) };
+  }
+  if (phase.type === 'gold') {
+    const owed = phase.pending[me];
+    return owed === undefined ? null : { type: 'chooseGold', resources: chooseGold(state, me, Math.min(owed, totalCards(state.bank))) };
   }
 
   const offer = state.tradeOffer;
@@ -86,9 +91,11 @@ function vertexValue(state: GameState, me: number, v: VertexId): number {
   }
   let score = 0;
   for (const tile of t.vertexTiles[v]) {
+    const p = pips(tileNumber(state, tile)) * (tile === state.robber ? 0.3 : 1);
+    // A gold field pays any resource, so it is worth more than any single one.
+    if (tileInfo(state, tile)?.terrain === 'gold') score += p * 1.35 + 1;
     const r = tileResource(state, tile);
     if (!r) continue;
-    const p = pips(tileNumber(state, tile)) * (tile === state.robber ? 0.3 : 1);
     score += p * RESOURCE_WEIGHT[r] + (have.has(r) ? 0 : 1.5);
     have.add(r);
   }
@@ -147,6 +154,24 @@ function chooseRobberTile(state: GameState, me: number): TileId {
     }
     return s;
   });
+}
+
+/** Gold: take what the current goal still lacks, otherwise what the hand has least of. */
+function chooseGold(state: GameState, me: number, count: number): Partial<ResourceCounts> {
+  const hand = { ...state.players[me].resources };
+  const bank = { ...state.bank };
+  const goal = goalCost(state, me) ?? {};
+  const out: Partial<ResourceCounts> = {};
+  for (let i = 0; i < count; i++) {
+    const r = best(
+      RESOURCES.filter((x) => bank[x] > 0),
+      (x) => ((goal[x] ?? 0) - hand[x]) * 2 - hand[x] * 0.5 + RESOURCE_WEIGHT[x] * 0.1,
+    );
+    hand[r]++;
+    bank[r]--;
+    out[r] = (out[r] ?? 0) + 1;
+  }
+  return out;
 }
 
 function chooseDiscard(state: GameState, me: number, count: number): Partial<ResourceCounts> {

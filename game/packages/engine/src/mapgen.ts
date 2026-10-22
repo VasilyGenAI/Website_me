@@ -1,4 +1,5 @@
 import { AXIAL_NEIGHBORS, topology, tileId } from './geometry';
+import { dealNumbers } from './balance';
 import { shuffle } from './rng';
 import type { MapDef, MapPort, MapTile, PortType, Terrain } from './types';
 
@@ -45,23 +46,16 @@ export function redNumbersAdjacent(tiles: MapTile[]): boolean {
   );
 }
 
-/** Random standard 19-tile board (3-4 players), with 6s and 8s never touching. */
+/** Random standard 19-tile board (3-4 players); numbers are spaced out and balanced (balance.ts). */
 export function generateStandardMap(seed: number): MapDef {
   const rng = { rng: seed | 0 };
   const coords = hexagonCoords(2);
   const terrains = shuffle(rng, STANDARD_TERRAINS);
 
-  let tiles: MapTile[];
-  do {
-    const numbers = shuffle(rng, STANDARD_NUMBERS);
-    let i = 0;
-    tiles = coords.map((c, k) => ({
-      q: c.q,
-      r: c.r,
-      terrain: terrains[k],
-      number: terrains[k] === 'desert' ? null : numbers[i++],
-    }));
-  } while (redNumbersAdjacent(tiles));
+  const tiles = dealNumbers(
+    coords.map((c, k) => ({ q: c.q, r: c.r, terrain: terrains[k], number: null })),
+    rng,
+  );
 
   const coast = topology({ name: '', tiles, ports: [] }).coastalEdges;
   const types = shuffle(rng, STANDARD_PORTS);
@@ -124,7 +118,10 @@ export function validateMap(map: MapDef): string[] {
   if (flag !== undefined) {
     const colours = Array.isArray(flag?.colors) ? flag.colors : [];
     if (colours.length < 1 || colours.length > 5 || !colours.every((c) => /^#[0-9a-fA-F]{6}$/.test(c))) errors.push('Flag must be one to five colours like #ffcc00');
-    if (flag.layout !== undefined && !['horizontal', 'vertical', 'cross'].includes(flag.layout)) errors.push('Unknown flag layout');
+    if (flag.layout !== undefined && !['horizontal', 'vertical', 'cross', 'union'].includes(flag.layout)) errors.push('Unknown flag layout');
+  }
+  for (const w of map.waterLabels ?? []) {
+    if (typeof w.text !== 'string' || w.text.length > 30) errors.push('Water names must be at most 30 characters');
   }
   const corners = new Set(topology(map).vertices);
   for (const [a, b] of map.bridges ?? []) {

@@ -35,6 +35,8 @@ function line(ev: GameEvent, P: (i: number | null) => ReactNode) {
       );
     case 'productionBlocked':
       return <>Die Bank hat nicht genug {RES_NAME[ev.resource]}: niemand bekommt welches</>;
+    case 'goldChosen':
+      return <>{P(ev.player)} nimmt aus dem Gold <Cards r={ev.resources} /></>;
     case 'discarded':
       return <>{P(ev.player)} wirft ab <Cards r={ev.resources} /></>;
     case 'robberMoved':

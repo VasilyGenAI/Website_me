@@ -3,7 +3,8 @@ export type Resource = (typeof RESOURCES)[number];
 export type ResourceCounts = Record<Resource, number>;
 
 /** 'fog' is a hidden tile that turns into an entry of the map's fog pool once a road is built along it. */
-export type Terrain = 'forest' | 'hills' | 'pasture' | 'fields' | 'mountains' | 'desert' | 'fog';
+/** `gold` pays a card of the owner's choice instead of a fixed resource. */
+export type Terrain = 'forest' | 'hills' | 'pasture' | 'fields' | 'mountains' | 'gold' | 'desert' | 'fog';
 
 export const TERRAIN_RESOURCE: Record<Terrain, Resource | null> = {
   forest: 'lumber',
@@ -11,6 +12,7 @@ export const TERRAIN_RESOURCE: Record<Terrain, Resource | null> = {
   pasture: 'wool',
   fields: 'grain',
   mountains: 'ore',
+  gold: null,
   desert: null,
   fog: null,
 };
@@ -84,17 +86,22 @@ export interface MapDef {
    * these take the kind of the nearest listed cell; without this everything around is water.
    */
   surroundings?: { sea: TileId[]; land: TileId[] };
+  /** Names written on seas and lakes (on the water cell at q, r), so players learn them. */
+  waterLabels?: { q: number; r: number; text: string }[];
+  /** Deal the numbers afresh for every game (spaced out and balanced, see balance.ts). */
+  shuffleNumbers?: boolean;
   /** The country's flag; it flies over the desert and sits next to the board's name. */
   flag?: FlagDef;
 }
 
 /**
- * A flag as stripes of colour: horizontal top to bottom (default), vertical left to right, or
- * 'cross' for a centred cross in colors[1] on colors[0] (Switzerland).
+ * A flag as stripes of colour: horizontal top to bottom (default), vertical left to right,
+ * 'cross' for a centred cross in colors[1] on colors[0] (Switzerland), or 'union' for the
+ * Union Jack (colors: field, white, red).
  */
 export interface FlagDef {
   colors: string[];
-  layout?: 'horizontal' | 'vertical' | 'cross';
+  layout?: 'horizontal' | 'vertical' | 'cross' | 'union';
 }
 
 export type DevCardType = 'knight' | 'roadBuilding' | 'yearOfPlenty' | 'monopoly' | 'victoryPoint';
@@ -145,6 +152,8 @@ export type Phase =
   | { type: 'setup'; step: 'settlement' | 'road'; lastSettlement: VertexId | null }
   | { type: 'roll' }
   | { type: 'discard'; pending: Record<number, number> }
+  /** After a roll that hit gold fields: these players each pick that many cards from the bank. */
+  | { type: 'gold'; pending: Record<number, number> }
   | { type: 'robber'; then: ResumePhase }
   | { type: 'steal'; tile: TileId; candidates: number[]; then: ResumePhase }
   | { type: 'main' }
@@ -166,6 +175,7 @@ export type GameEvent =
   | { type: 'diceRolled'; player: number; dice: [number, number] }
   | { type: 'produced'; gains: Record<number, Partial<ResourceCounts>> }
   | { type: 'productionBlocked'; resource: Resource }
+  | { type: 'goldChosen'; player: number; resources: Partial<ResourceCounts> }
   | { type: 'discarded'; player: number; resources: Partial<ResourceCounts> }
   | { type: 'robberMoved'; player: number; tile: TileId }
   | { type: 'fogRevealed'; player: number; tile: TileId; revealed: FogTile; reward: Resource | null }
@@ -220,6 +230,7 @@ export type Action =
   | { type: 'placeCity'; vertex: VertexId }
   | { type: 'rollDice' }
   | { type: 'discard'; resources: Partial<ResourceCounts> }
+  | { type: 'chooseGold'; resources: Partial<ResourceCounts> }
   | { type: 'moveRobber'; tile: TileId }
   | { type: 'steal'; victim: number }
   | { type: 'buyDevCard' }

@@ -1,4 +1,5 @@
 import { tileId } from './geometry';
+import { dealNumbers } from './balance';
 import { generateStandardMap } from './mapgen';
 import { randInt, shuffle } from './rng';
 import {
@@ -49,7 +50,9 @@ const BANK_SIZE = 19;
 export function createGame(config: GameConfig): GameState {
   const n = config.players.length;
   if (n < 2 || n > 4) throw new Error('The standard game supports 2-4 players');
-  const map = config.map ?? generateStandardMap(config.seed);
+  const given = config.map ?? generateStandardMap(config.seed);
+  // Boards that ask for it get their numbers dealt afresh for every game.
+  const map = given.shuffleNumbers ? { ...given, tiles: dealNumbers(given.tiles, { rng: config.seed ^ 0x2c1b3c6d }) } : given;
   const desert = map.tiles.find((t) => t.terrain === 'desert' && !t.hidden);
   const rng = { rng: config.seed ^ 0x5bd1e995 };
   const fogPool = shuffle(rng, map.fogPool ?? []);
@@ -153,10 +156,12 @@ function reduce(state: GameState, player: number, action: Action) {
 
   // Actions that are not tied to the current player.
   if (action.type === 'discard') return discard(state, player, action.resources);
+  if (action.type === 'chooseGold') return chooseGold(state, player, action.resources);
   if (action.type === 'respondTrade') return respondTrade(state, player, action.accept);
 
   check(player === state.currentPlayer, 'It is not your turn');
   check(phase.type !== 'discard', 'Waiting for players to discard');
+  check(phase.type !== 'gold', 'Waiting for players to pick their gold');
 
   switch (action.type) {
     case 'placeSettlement':
@@ -326,21 +331,26 @@ function rollDice(state: GameState, player: number) {
     return;
   }
 
-  produce(state, sum);
-  state.phase = { type: 'main' };
+  const gold = produce(state, sum);
+  state.phase = Object.keys(gold).length ? { type: 'gold', pending: gold } : { type: 'main' };
 }
 
-function produce(state: GameState, sum: number) {
+/** Pays out a roll. Returns how many cards each player may pick from gold fields. */
+function produce(state: GameState, sum: number): Record<number, number> {
   const t = topo(state);
   const owed: Record<number, ResourceCounts> = {};
+  const gold: Record<number, number> = {};
   for (const tile of t.tiles) {
     if (tile === state.robber || tileNumber(state, tile) !== sum) continue;
+    const isGold = tileInfo(state, tile)?.terrain === 'gold';
     const r = tileResource(state, tile);
-    if (!r) continue;
+    if (!r && !isGold) continue;
     for (const v of t.tileVertices[tile]) {
       const b = state.buildings[v];
       if (!b) continue;
-      (owed[b.owner] ??= emptyResources())[r] += b.type === 'city' ? 2 : 1;
+      const n = b.type === 'city' ? 2 : 1;
+      if (isGold) gold[b.owner] = (gold[b.owner] ?? 0) + n;
+      else (owed[b.owner] ??= emptyResources())[r!] += n;
     }
   }
 
@@ -360,6 +370,28 @@ function produce(state: GameState, sum: number) {
   }
   for (const [p, g] of Object.entries(gains)) giveFromBank(state, Number(p), g);
   if (Object.keys(gains).length) emit(state, { type: 'produced', gains });
+
+  // Gold is picked afterwards, from whatever the bank still holds.
+  const left = totalCards(state.bank);
+  for (const p of Object.keys(gold)) gold[Number(p)] = Math.min(gold[Number(p)], left);
+  for (const p of Object.keys(gold)) if (gold[Number(p)] === 0) delete gold[Number(p)];
+  return gold;
+}
+
+function chooseGold(state: GameState, player: number, resources: Partial<ResourceCounts>) {
+  const phase = state.phase;
+  check(phase.type === 'gold', 'Nothing to pick from gold');
+  const owed = phase.pending[player];
+  check(owed !== undefined, 'You have no gold to pick');
+  const r = sanitizeCounts(resources);
+  // Earlier pickers may have emptied the bank, so take what is left if it is less.
+  const want = Math.min(owed, totalCards(state.bank));
+  check(totalCards(r) === want, `Pick exactly ${want} cards`);
+  check(hasResources(state.bank, r), 'The bank does not have those cards');
+  giveFromBank(state, player, r);
+  emit(state, { type: 'goldChosen', player, resources: r });
+  delete phase.pending[player];
+  if (Object.keys(phase.pending).length === 0) state.phase = { type: 'main' };
 }
 
 function discard(state: GameState, player: number, resources: Partial<ResourceCounts>) {

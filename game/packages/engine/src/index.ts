@@ -1,6 +1,7 @@
 export * from './types';
 export * from './geometry';
 export * from './mapgen';
+export * from './balance';
 export * from './rules';
 export * from './game';
 export * from './bot';

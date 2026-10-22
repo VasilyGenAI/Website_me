@@ -158,7 +158,7 @@ export function victoryPoints(state: GameState, player: number, includeHidden = 
 export function actingPlayers(state: GameState): number[] {
   const p = state.phase;
   if (p.type === 'ended') return [];
-  if (p.type === 'discard') return Object.keys(p.pending).map(Number);
+  if (p.type === 'discard' || p.type === 'gold') return Object.keys(p.pending).map(Number);
   if (state.tradeOffer) {
     const waiting = Object.entries(state.tradeOffer.responses)
       .filter(([, r]) => r === 'pending')
