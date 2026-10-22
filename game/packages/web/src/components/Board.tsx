@@ -280,6 +280,9 @@ export function Board(props: BoardProps) {
         <filter id="roadShadow" filterUnits="userSpaceOnUse" x={vb[0] - S} y={vb[1] - S} width={vb[2] + 2 * S} height={vb[3] + 2 * S}>
           <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" floodOpacity="0.45" />
         </filter>
+        <clipPath id="flagWave">
+          <path d="M0,0 C8,-3 16,3 25,0 L25,16 C16,19 8,13 0,16 Z" />
+        </clipPath>
         <linearGradient id="cloak" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#4a4a58" />
           <stop offset="1" stopColor="#15151b" />
@@ -363,6 +366,7 @@ export function Board(props: BoardProps) {
             )}
             <polygon className="tile-light" points={polygon(t.q, t.r, INNER)} />
             <polygon className="tile-bevel" points={polygon(t.q, t.r, INNER)} />
+            {map.flag && shown.terrain === 'desert' && <Flag x={c.x - S * 0.38} y={c.y + S * 0.34} stripes={map.flag} />}
             {shown.number !== null && (
               <g filter="url(#shadow)">
                 <circle cx={c.x} cy={c.y + S * 0.12} r={S * 0.34} fill="url(#wood)" stroke="#9c7a45" strokeWidth={1.5} />
@@ -579,6 +583,27 @@ function City({ color }: { color: string }) {
       <path d="M-3.5,-8 L4,-17 L11.5,-8 z" fill="#000" fillOpacity=".28" />
       <path d="M2,-3 h4 v4 h-4 z M-10.5,10 v-5 h4 v5" fill="#1d1d1d" fillOpacity=".6" />
     </>
+  );
+}
+
+/** A flagpole on a stone base with the country's flag waving from the top; (x, y) is the foot. */
+function Flag({ x, y, stripes }: { x: number; y: number; stripes: string[] }) {
+  // Stripes cover the whole waving outline (it bulges 3 units above and below the 16-high cloth).
+  const h = 22 / stripes.length;
+  return (
+    <g transform={`translate(${x} ${y})`} filter="url(#shadow)" className="flag" pointerEvents="none">
+      <ellipse cx={0} cy={0} rx={6} ry={2.4} fill="#8f8574" stroke={INK} strokeWidth={0.9} />
+      <line x1={0} y1={0} x2={0} y2={-34} stroke="#5c3b1a" strokeWidth={2.2} strokeLinecap="round" />
+      <circle cx={0} cy={-35} r={1.9} fill="#e0b84a" stroke={INK} strokeWidth={0.7} />
+      <g transform="translate(1 -33)">
+        <g clipPath="url(#flagWave)">
+          {stripes.map((c, i) => (
+            <rect key={i} x={0} y={-3 + i * h} width={25} height={h + 0.3} fill={c} />
+          ))}
+        </g>
+        <path d="M0,0 C8,-3 16,3 25,0 L25,16 C16,19 8,13 0,16 Z" fill="none" stroke={INK} strokeWidth={0.9} strokeLinejoin="round" />
+      </g>
+    </g>
   );
 }
 

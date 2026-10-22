@@ -73,6 +73,8 @@ interface DrawnSpec {
   labels: { row: number; col: number; text: string }[];
   /** Bridges from a cell (on an even row) straight down across one row of sea to the cell two rows below. */
   bridges?: { row: number; col: number }[];
+  /** Flag stripes, top to bottom. */
+  flag?: string[];
   seed: number;
 }
 
@@ -148,7 +150,7 @@ function drawnMap(spec: DrawnSpec): MapDef {
     return [hexCorners(q, r)[3], hexCorners(below.q, below.r)[0]];
   });
 
-  return { name: spec.name, tiles, ports, ...(bridges.length ? { bridges } : {}), surroundings: { sea, land: foreign } };
+  return { name: spec.name, tiles, ports, ...(bridges.length ? { bridges } : {}), surroundings: { sea, land: foreign }, ...(spec.flag ? { flag: spec.flag } : {}) };
 }
 
 /**
@@ -159,6 +161,7 @@ function drawnMap(spec: DrawnSpec): MapDef {
 export function germanyMap(): MapDef {
   return drawnMap({
     name: 'Deutschland',
+    flag: ['#000000', '#dd0000', '#ffce00'],
     rows: [
       '~~~...~~~~', //  Nordsee, Dänemark, Ostsee
       '~~~P~~~~~~', //  Schleswig
@@ -237,6 +240,7 @@ export function germanyMap(): MapDef {
 export function ukraineMap(): MapDef {
   return drawnMap({
     name: 'Ukraine',
+    flag: ['#0057b7', '#ffd700'],
     rows: [
       '.................', //  Belarus, Russland
       '..WW...WPW.......', //  Wolyn, Polissja, Tschernihiw

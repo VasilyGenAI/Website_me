@@ -84,6 +84,8 @@ export interface MapDef {
    * these take the kind of the nearest listed cell; without this everything around is water.
    */
   surroundings?: { sea: TileId[]; land: TileId[] };
+  /** The country's flag as horizontal stripes, top to bottom; it flies over the desert. */
+  flag?: string[];
 }
 
 export type DevCardType = 'knight' | 'roadBuilding' | 'yearOfPlenty' | 'monopoly' | 'victoryPoint';

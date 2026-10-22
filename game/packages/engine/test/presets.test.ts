@@ -32,6 +32,8 @@ describe('country boards', () => {
       }
       expect(map.surroundings!.sea.length).toBeGreaterThan(0);
       expect(map.surroundings!.land.length).toBeGreaterThan(0);
+      expect(map.flag!.length).toBeGreaterThan(1);
+      expect(map.tiles.some((t) => t.terrain === 'desert')).toBe(true); // where the flag flies
     }
   });
 

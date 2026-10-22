@@ -13,11 +13,26 @@ export interface BoardChoice {
   custom?: MapDef;
 }
 
+/** Tiles and trading posts, counted from the board itself so the text never goes stale. */
+function counts(map: MapDef): string {
+  const fog = map.tiles.filter((t) => t.hidden).length;
+  return `${map.tiles.length} Felder${fog ? ` (${fog} im Nebel)` : ''} · ${map.ports.length} Tauschstellen`;
+}
+
+/** A country board: its three largest cities, the capital first, then the counts. */
+function country(id: 'deutschland' | 'ukraine', capital: string, cities: [string, string]): BoardChoice {
+  const map = PRESET_MAPS[id]();
+  return { key: `p:${id}`, title: map.name, subtitle: `${capital} (Hauptstadt), ${cities.join(', ')} · ${counts(map)}`, map, preset: id };
+}
+
+const standard = generateStandardMap(7);
+const fogForest = PRESET_MAPS.nebelwald();
+
 export const PRESET_CHOICES: BoardChoice[] = [
-  { key: 'p:standard', title: 'Klassisch', subtitle: '19 Felder, jedes Mal neu gemischt', map: generateStandardMap(7), preset: 'standard' },
-  { key: 'p:deutschland', title: 'Deutschland', subtitle: 'Küste im Norden, Alpen im Süden · 30 Felder', map: PRESET_MAPS.deutschland(), preset: 'deutschland' },
-  { key: 'p:ukraine', title: 'Ukraine', subtitle: 'Karpaten, Steppe, Donbas, Odesa, Krim · 53 Felder', map: PRESET_MAPS.ukraine(), preset: 'ukraine' },
-  { key: 'p:nebelwald', title: 'Nebelwald', subtitle: 'Waldring am See, Nebel deckt Neues auf', map: PRESET_MAPS.nebelwald(), preset: 'nebelwald' },
+  { key: 'p:standard', title: 'Klassisch', subtitle: `Jedes Mal neu gemischt · ${counts(standard)}`, map: standard, preset: 'standard' },
+  country('deutschland', 'Berlin', ['Hamburg', 'München']),
+  country('ukraine', 'Kyjiw', ['Charkiw', 'Odesa']),
+  { key: 'p:nebelwald', title: 'Nebelwald', subtitle: `Waldring am See, Nebel deckt Neues auf · ${counts(fogForest)}`, map: fogForest, preset: 'nebelwald' },
 ];
 
 export function ownChoice(m: SavedMap): BoardChoice {

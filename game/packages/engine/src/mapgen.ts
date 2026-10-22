@@ -120,6 +120,9 @@ export function validateMap(map: MapDef): string[] {
     if (p.kind !== undefined && !['harbor', 'gondola', 'treehouse', 'mine'].includes(p.kind)) errors.push(`Port at ${p.q},${p.r}: unknown kind`);
     usedEdges.add(key);
   }
+  if (map.flag !== undefined && (!Array.isArray(map.flag) || map.flag.length > 5 || !map.flag.every((c) => /^#[0-9a-fA-F]{6}$/.test(c)))) {
+    errors.push('Flag must be up to five colours like #ffcc00');
+  }
   const corners = new Set(topology(map).vertices);
   for (const [a, b] of map.bridges ?? []) {
     if (!corners.has(a) || !corners.has(b)) errors.push(`Bridge ${a} - ${b} must join two land corners`);
